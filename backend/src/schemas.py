@@ -3,6 +3,11 @@ from uuid import UUID
 from .models import GenderEnum
 from typing import Annotated
 
+#--- Authentication Schemas ---
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
 # --- Validation Schemas ---
 
 class UserCreate(BaseModel):

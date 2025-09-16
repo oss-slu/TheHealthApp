@@ -53,6 +53,28 @@ def signup_user(user_payload: schemas.UserCreate, db: Session = Depends(get_db))
         }
     }
 
+@app.post("/api/v1/auth/login", response_model=schemas.SignupResponse, tags=["Authentication"])
+def login_user(login_payload: schemas.UserLogin, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.username == login_payload.username).first()
+    
+    if not user or not security.verify_password(login_payload.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token = security.create_access_token(user_id=str(user.id))
+    refresh_token = security.create_refresh_token(user_id=str(user.id))
+
+    return {
+        "user": user,
+        "tokens": {
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }
+    }
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

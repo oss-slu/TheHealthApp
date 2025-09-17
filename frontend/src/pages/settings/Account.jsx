@@ -1,17 +1,19 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
 
 const Account = () => {
+  const { t } = useTranslation(['common']);
   return (
-    <PageShell title="Account Settings">
+    <PageShell title="common:accountSettings">
       <div className="max-w-2xl">
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Profile Information</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">{t("common:profileInformation",'Profile Information')}</h3>
           <form className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                  First Name
+                <label htmlFor="commom:firstName" className="block text-sm font-medium text-gray-700">
+                  {t('common:firstName', 'First Name')}
                 </label>
                 <input
                   type="text"
@@ -20,8 +22,8 @@ const Account = () => {
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                  Last Name
+                <label htmlFor="commom:lastName" className="block text-sm font-medium text-gray-700">
+                  {t('common:lastName', 'Last Name')}
                 </label>
                 <input
                   type="text"
@@ -31,8 +33,8 @@ const Account = () => {
               </div>
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
+              <label htmlFor="commom:email" className="block text-sm font-medium text-gray-700">
+                {t('common:email', 'Email')}
               </label>
               <input
                 type="email"
@@ -41,8 +43,8 @@ const Account = () => {
               />
             </div>
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Phone Number
+              <label htmlFor="commom:phone" className="block text-sm font-medium text-gray-700">
+                {t('common:phone', 'Phone')}
               </label>
               <input
                 type="tel"
@@ -55,7 +57,7 @@ const Account = () => {
                 type="submit"
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Save Changes
+                {t('common:saveChanges', 'Save Changes')}
               </button>
             </div>
           </form>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './i18n';
 
 // Import pages
 import Home from './pages/Home';

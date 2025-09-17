@@ -3,6 +3,12 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt
 from .config import settings
 
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifies a plain-text password against a stored hash."""
+    password_bytes = plain_password.encode('utf-8')
+    hashed_password_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(password_bytes, hashed_password_bytes)
+
 def hash_password(password: str) -> str:
     """Hashes a plain-text password using bcrypt."""
     pwd_bytes = password.encode('utf-8')

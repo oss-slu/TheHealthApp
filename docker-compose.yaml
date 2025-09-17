@@ -1,0 +1,15 @@
+services:
+  db:
+    image: mongo:latest
+    container_name: healthapp_mongo_db
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=userh
+      - MONGO_INITDB_ROOT_PASSWORD=Password123
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

@@ -1,21 +1,3 @@
-<<<<<<< HEAD
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-
-const PageShell = ({ children, title }) => {
-  const location = useLocation();
-  
-  const navigation = [
-    { path: '/', label: 'Home' },
-    { path: '/auth/login', label: 'Login' },
-    { path: '/auth/signup', label: 'Sign Up' },
-    { path: '/dashboard', label: 'Dashboard' },
-    { path: '/settings/account', label: 'Account' },
-    { path: '/modules/heart-risk', label: 'Heart Risk' },
-    { path: '/modules/prescription', label: 'Prescription' },
-    { path: '/modules/tba', label: 'TBA' },
-  ];
-=======
 import React, { useState, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n.js';
@@ -36,7 +18,6 @@ const PageShell = ({ children, title }) => {
   { path: '/modules/prescription', label: t('modules:prescription') },
   { path: '/modules/tba', label: t('modules:tba') },
 ];
->>>>>>> 3e3312ad02ea663c5db4d2ab07e66a6a526ab010
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,11 +27,7 @@ const PageShell = ({ children, title }) => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <h1 className="text-xl font-semibold text-gray-900">
-<<<<<<< HEAD
-                Health Support Assistant
-=======
                 {t('common:appName')}
->>>>>>> 3e3312ad02ea663c5db4d2ab07e66a6a526ab010
               </h1>
             </div>
             <nav className="hidden md:flex space-x-8">
@@ -67,9 +44,6 @@ const PageShell = ({ children, title }) => {
                   {item.label}
                 </Link>
               ))}
-<<<<<<< HEAD
-            </nav>
-=======
             <div className="flex items-center space-x-4">
             <div className="relative">
               <button className="border rounded-full w-9 h-9 flex items-center justify-center" aria-label={t('common:language')} onClick={() => setOpen(o=>!o)}>🌐</button>
@@ -83,7 +57,6 @@ const PageShell = ({ children, title }) => {
             </div>
           </div>
         </nav>
->>>>>>> 3e3312ad02ea663c5db4d2ab07e66a6a526ab010
           </div>
         </div>
       </header>
@@ -93,11 +66,7 @@ const PageShell = ({ children, title }) => {
         <div className="px-4 py-6 sm:px-0">
           {title && (
             <div className="mb-6">
-<<<<<<< HEAD
-              <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-=======
               <h2 className="text-2xl font-bold text-gray-900">{typeof title === "string" ? t(title) : title}</h2>
->>>>>>> 3e3312ad02ea663c5db4d2ab07e66a6a526ab010
             </div>
           )}
           {children}
@@ -108,11 +77,7 @@ const PageShell = ({ children, title }) => {
       <footer className="bg-white border-t mt-auto">
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <p className="text-center text-sm text-gray-500">
-<<<<<<< HEAD
-            © 2024 Health Support Assistant. All rights reserved.
-=======
             © 2024 {t('common:appName')}. All rights reserved.
->>>>>>> 3e3312ad02ea663c5db4d2ab07e66a6a526ab010
           </p>
         </div>
       </footer>

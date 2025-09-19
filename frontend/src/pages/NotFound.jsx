@@ -1,16 +1,14 @@
 import React from 'react';
-<<<<<<< HEAD
-=======
+
 import { useTranslation } from 'react-i18next';
->>>>>>> 3e3312ad02ea663c5db4d2ab07e66a6a526ab010
+
 import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell';
 
 const NotFound = () => {
-<<<<<<< HEAD
-=======
+
   const { t } = useTranslation(['common']);
->>>>>>> 3e3312ad02ea663c5db4d2ab07e66a6a526ab010
+
   return (
     <PageShell title="Page Not Found">
       <div className="text-center">

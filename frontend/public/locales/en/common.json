@@ -1,0 +1,17 @@
+{
+  "appName": "The Health App",
+  "language": "Language",
+  "logout": "Logout",
+  "save": "Save",
+  "welcome": "Welcome",
+  "optional": "optional",
+  "home": "Home",
+  "accountSettings": "Account Settings",
+  "notFoundTitle": "404 - Not Found",
+  "goHome": "Go Home",
+  "chooseLanguage": "Choose your language",
+  "heroTitle": "Your Health Companion",
+  "heroSubtitle": "Get personalized health assessments and support whenever you need it.",
+  "ctaStart": "Get Started",
+  "ctaLearn": "Learn More"
+}

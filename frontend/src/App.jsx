@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './i18n';
+import LanguagePicker from './components/LanguagePicker';
 
 // Import pages
 import Home from './pages/Home';
@@ -14,22 +15,39 @@ import Prescription from './pages/modules/Prescription';
 import TBA from './pages/modules/TBA';
 import NotFound from './pages/NotFound';
 
+
 function App() {
+  const [showPicker, setShowPicker] = useState(() => !localStorage.getItem('app.lang'));
+
+  useEffect(() => {
+    if (!localStorage.getItem('app.lang')) {
+      setShowPicker(true);
+    }
+  }, []);
+
+  const handleSelectLang = (code) => {
+    localStorage.setItem('app.lang', code);
+    window.location.reload(); // reload to re-init i18n and dir
+  };
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/auth/login" element={<Login />} />
-        <Route path="/auth/signup" element={<Signup />} />
-        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/settings/account" element={<Account />} />
-        <Route path="/modules/heart-risk" element={<HeartRisk />} />
-        <Route path="/modules/prescription" element={<Prescription />} />
-        <Route path="/modules/tba" element={<TBA />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Router>
+    <>
+      {showPicker && <LanguagePicker onSelect={handleSelectLang} />}
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/auth/login" element={<Login />} />
+          <Route path="/auth/signup" element={<Signup />} />
+          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/settings/account" element={<Account />} />
+          <Route path="/modules/heart-risk" element={<HeartRisk />} />
+          <Route path="/modules/prescription" element={<Prescription />} />
+          <Route path="/modules/tba" element={<TBA />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+    </>
   );
 }
 

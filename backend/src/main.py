@@ -9,9 +9,12 @@ import motor.motor_asyncio
 from beanie import init_beanie
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from pydantic_settings import BaseSettings
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
 
 # --- 1. CONFIGURATION ---
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -26,12 +29,12 @@ settings = Settings()
 
 # --- 2. MODELS & SCHEMAS ---
 from .models import (
-    User, UserCreate, UserLogin, SignupResponse, TokenRefresh, TokenResponse,
-    ForgotPasswordRequest, ForgotPasswordResponse, UserResponse
+    User, UserCreate, UserLogin, SignupResponse, 
+    TokenRefresh, TokenResponse, ForgotPasswordRequest, ForgotPasswordResponse,
+    UserResponse
 )
 
 # --- 3. SECURITY & DEPENDENCIES ---
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 def create_access_token(user_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=15)
@@ -63,7 +66,10 @@ def verify_refresh_token(token: str) -> str:
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
+async def get_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
+) -> User:
+    token = credentials.credentials
     user_id = verify_access_token(token)
     user = await User.get(uuid.UUID(user_id))
     if not user:
@@ -102,19 +108,27 @@ async def signup_user(payload: UserCreate):
         }
     }
 
+# --- THIS IS THE FINAL, CORRECTED LOGIN ENDPOINT ---
 @app.post("/api/v1/auth/login", response_model=SignupResponse, tags=["Authentication"])
-async def login_user(payload: UserLogin):
-    user = await User.find_one(User.username == payload.username)
+async def login_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+    """
+    Handles user login using form data, which is compatible with the Swagger UI.
+    """
+    user = await User.find_one(User.username == form_data.username)
     
     password_is_valid = False
     if user:
         password_is_valid = bcrypt.checkpw(
-            payload.password.encode('utf-8'), 
+            form_data.password.encode('utf-8'), 
             user.password_hash.encode('utf-8')
         )
 
     if not user or not password_is_valid:
-        raise HTTPException(status_code=401, detail="Incorrect username or password")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     return {
         "user": user,

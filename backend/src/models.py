@@ -60,7 +60,7 @@ class ForgotPasswordResponse(BaseModel):
     message: str
 
 class UserResponse(BaseModel):
-    id: UUID
+    id: uuid.UUID
     username: str
     name: str
     age: int

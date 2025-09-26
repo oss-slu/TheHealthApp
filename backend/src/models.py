@@ -5,15 +5,6 @@ from enum import Enum
 from datetime import datetime
 from typing import Optional, Annotated
 
-
-# --- User Update Schema ---
-class UserUpdate(BaseModel):
-    """Schema for updating user profile information. All fields are optional."""
-    name: Optional[Annotated[str, StringConstraints(min_length=2, max_length=50)]] = None
-    age: Optional[int] = Field(None, gt=12, lt=121)
-    phone: Optional[Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]] = None
-
-
 # --- Shared Enum ---
 class GenderEnum(str, Enum):
     female = "female"
@@ -22,6 +13,16 @@ class GenderEnum(str, Enum):
     na = "na"
 
 # --- Database Model ---
+class UserUpdate(BaseModel):
+    """Schema for updating user profile information. All fields are optional."""
+    name: Optional[Annotated[str, StringConstraints(min_length=2, max_length=50)]] = None
+    age: Optional[int] = Field(None, gt=12, lt=121)
+    phone: Optional[Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]] = None
+
+class UserUpdate(BaseModel):
+    name: Optional[Annotated[str, StringConstraints(min_length=2, max_length=50)]] = None
+    age: Optional[int] = Field(None, gt=12, lt=121)
+    phone: Optional[Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]] = None
 class User(Document):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     username: Annotated[str, Indexed(unique=True)]
@@ -32,6 +33,7 @@ class User(Document):
     password_hash: str
     photo_url: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = "users"
@@ -69,7 +71,7 @@ class ForgotPasswordResponse(BaseModel):
     message: str
 
 class UserResponse(BaseModel):
-    id: UUID
+    id: uuid.UUID
     username: str
     name: str
     age: int

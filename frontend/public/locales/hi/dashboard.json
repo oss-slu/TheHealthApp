@@ -1,0 +1,14 @@
+{
+"menuLabel": "पैनल",
+"title": "पैनल",
+"recentAssessments": "हालिया आकलन",
+"noRecent": "कोई हालिया आकलन नहीं मिला।",
+"healthStatus": "स्वास्थ्य स्थिति",
+"promptAssess": "अपनी स्वास्थ्य स्थिति देखने के लिए आकलन पूरा करें।",
+"reminders": "अनुस्मारक",
+"quickActions": "त्वरित कार्रवाई",
+"assessNow": "अभी आकलन करें",
+"viewHistory": "इतिहास देखें",
+"setReminder": "अनुस्मारक सेट करें",
+"noReminders": "कोई अनुस्मारक नहीं।"
+}

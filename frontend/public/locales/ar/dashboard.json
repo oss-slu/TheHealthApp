@@ -1,0 +1,14 @@
+{
+"menuLabel": "لوحة",
+"title": "لوحة",
+"recentAssessments": "التقييمات الأخيرة",
+"noRecent": "لم يتم العثور على تقييمات حديثة",
+"healthStatus": "الحالة الصحية",
+"promptAssess": "أكمل تقييمًا للاطلاع على حالتك الصحية",
+"reminders": "التذكيرات",
+"quickActions": "إجراءات سريعة",
+"assessNow": "قيّم الآن",
+"viewHistory": "عرض السجل",
+"setReminder": "تعيين تذكير",
+"noReminders": "لا توجد تذكيرات"
+}

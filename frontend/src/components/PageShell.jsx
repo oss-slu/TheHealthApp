@@ -46,11 +46,30 @@ const PageShell = ({ children, title }) => {
               ))}
             <div className="flex items-center space-x-4">
             <div className="relative">
-              <button className="border rounded-full w-9 h-9 flex items-center justify-center" aria-label={t('common:language')} onClick={() => setOpen(o=>!o)}>🌐</button>
+              <button 
+                className="border rounded-full w-9 h-9 flex items-center justify-center hover:bg-gray-100 transition-colors" 
+                aria-label={t('common:language')} 
+                onClick={() => setOpen(o=>!o)}
+              >
+                🌐
+              </button>
               {open && (
-                <div className="absolute right-0 mt-2 bg-white border rounded-md shadow z-20 min-w-28">
+                <div className="absolute ltr:right-0 rtl:left-0 mt-2 bg-white border rounded-md shadow-lg z-20 min-w-28">
                   {['en','hi','es','ar','zh'].map(code => (
-                    <button key={code} className="px-3 py-2 text-left hover:bg-gray-50 w-full" onClick={() => { startTransition(()=>{ i18n.changeLanguage(code); localStorage.setItem('app.lang', code); document.documentElement.dir = code==='ar'?'rtl':'ltr'; setOpen(false); });}}>{code.toUpperCase()}</button>
+                    <button 
+                      key={code} 
+                      className="px-3 py-2 text-left rtl:text-right hover:bg-gray-50 w-full transition-colors block" 
+                      onClick={() => { 
+                        startTransition(()=>{ 
+                          i18n.changeLanguage(code); 
+                          localStorage.setItem('app.lang', code); 
+                          document.documentElement.dir = code==='ar'?'rtl':'ltr'; 
+                          setOpen(false); 
+                        });
+                      }}
+                    >
+                      {code.toUpperCase()}
+                    </button>
                   ))}
                 </div>
               )}

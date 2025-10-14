@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import apiClient from '../../apiClient';
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
 
@@ -13,7 +14,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setError(null);
     try {
-      await import('../../apiClient').then(m => m.default.post('/auth/forgot-password', { contact }));
+      await apiClient.post('/auth/forgot-password', { contact });
       setSent(true);
     } catch (err) {
       setError(err.response?.data?.message || t('auth:resetFailed', 'Failed to send reset link'));

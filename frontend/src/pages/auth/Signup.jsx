@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import apiClient, { setTokens } from '../../apiClient';
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
 
@@ -13,6 +15,7 @@ const Signup = () => {
     password: '',
     confirm: ''
   });
+  const navigate = useNavigate();
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -27,10 +30,9 @@ const Signup = () => {
     try {
       const payload = { ...form };
       delete payload.confirm;
-      const res = await import('../../apiClient').then(m => m.default.post('/auth/signup', payload));
-      localStorage.setItem('access_token', res.data.access);
-      localStorage.setItem('refresh_token', res.data.refresh);
-      window.location.href = '/';
+      const res = await apiClient.post('/auth/signup', payload);
+      setTokens({ access: res.data.access, refresh: res.data.refresh });
+      navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || t('auth:signupFailed', 'Signup failed'));
     }

@@ -23,7 +23,7 @@ function getRefreshToken() {
 }
 
 // Helper to set new tokens
-function setTokens({ access, refresh }) {
+export function setTokens({ access, refresh }) {
   if (access) localStorage.setItem('access_token', access);
   if (refresh) localStorage.setItem('refresh_token', refresh);
 }

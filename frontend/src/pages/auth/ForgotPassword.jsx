@@ -8,10 +8,16 @@ const ForgotPassword = () => {
   const [contact, setContact] = useState('');
   const [sent, setSent] = useState(false);
 
-  const onSubmit = (e) => {
+  const [error, setError] = useState(null);
+  const onSubmit = async (e) => {
     e.preventDefault();
-    // TODO: call your API to send reset link (email/phone)
-    setSent(true);
+    setError(null);
+    try {
+      await import('../../apiClient').then(m => m.default.post('/auth/forgot-password', { contact }));
+      setSent(true);
+    } catch (err) {
+      setError(err.response?.data?.message || t('auth:resetFailed', 'Failed to send reset link'));
+    }
   };
 
   return (
@@ -23,6 +29,9 @@ const ForgotPassword = () => {
             <div className="mb-4 rounded border border-green-300 bg-green-50 text-green-800 p-3">
               {t('auth:resetLinkSent')}
             </div>
+          )}
+          {error && (
+            <div className="mb-4 rounded border border-red-300 bg-red-50 text-red-800 p-3">{error}</div>
           )}
 
           <form className="space-y-6" onSubmit={onSubmit}>

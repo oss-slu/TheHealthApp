@@ -9,15 +9,27 @@ const Login = () => {
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const onSubmit = (e) => {
+  const [error, setError] = useState(null);
+  const onSubmit = async (e) => {
     e.preventDefault();
-    // TODO: call your login API here
+    setError(null);
+    try {
+      const res = await import('../../apiClient').then(m => m.default.post('/auth/login', form));
+      localStorage.setItem('access_token', res.data.access);
+      localStorage.setItem('refresh_token', res.data.refresh);
+      window.location.href = '/';
+    } catch (err) {
+      setError(err.response?.data?.message || t('auth:loginFailed', 'Login failed'));
+    }
   };
 
   return (
     <PageShell title="auth:login">
       <div className="max-w-md mx-auto">
         <div className="bg-white p-8 rounded-lg shadow-md">
+          {error && (
+            <div className="mb-4 rounded border border-red-300 bg-red-50 text-red-800 p-3">{error}</div>
+          )}
           <form className="space-y-6" onSubmit={onSubmit}>
             <div>
               <label className="block text-sm font-medium mb-1">

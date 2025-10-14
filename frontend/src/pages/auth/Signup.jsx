@@ -16,15 +16,33 @@ const Signup = () => {
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const onSubmit = (e) => {
+  const [error, setError] = useState(null);
+  const onSubmit = async (e) => {
     e.preventDefault();
-    // TODO: submit to your API
+    setError(null);
+    if (form.password !== form.confirm) {
+      setError(t('auth:passwordsNoMatch', 'Passwords do not match'));
+      return;
+    }
+    try {
+      const payload = { ...form };
+      delete payload.confirm;
+      const res = await import('../../apiClient').then(m => m.default.post('/auth/signup', payload));
+      localStorage.setItem('access_token', res.data.access);
+      localStorage.setItem('refresh_token', res.data.refresh);
+      window.location.href = '/';
+    } catch (err) {
+      setError(err.response?.data?.message || t('auth:signupFailed', 'Signup failed'));
+    }
   };
 
   return (
     <PageShell title="auth:signup">
       <div className="max-w-md mx-auto">
         <div className="bg-white p-8 rounded-lg shadow-md">
+          {error && (
+            <div className="mb-4 rounded border border-red-300 bg-red-50 text-red-800 p-3">{error}</div>
+          )}
           <form className="space-y-6" onSubmit={onSubmit}>
             <div>
               <label className="block text-sm font-medium mb-1">{t('auth:name')}</label>

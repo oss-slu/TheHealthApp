@@ -1,5 +1,6 @@
 // src/apiClient.js
 import axios from 'axios';
+import i18n from './i18n';
 
 // Get base URL from environment or fallback (backend uses /api/v1)
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
@@ -120,30 +121,18 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Toast handler (replace with your i18n/toast system)
+// Toast handler: use i18n where possible and DOM fallback
 function showToast(error) {
-  // Try to use i18n if available
-  let messageKey = null;
-  if (error.response) {
-    // Server-provided structured error
-    messageKey = error.response?.data?.error?.message || error.response?.data?.message;
-  } else if (error.message) {
-    messageKey = error.message;
+  let message = i18n.t('common:networkError', 'Network error');
+  if (error && error.response) {
+    message = error.response?.data?.error?.message || error.response?.data?.message || error.response.statusText || i18n.t('common:serverError', 'Server error');
+  } else if (error && error.message) {
+    message = error.message;
   }
-  // If i18n is present, prefer translated messages
-  try {
-    // eslint-disable-next-line global-require
-    const i18n = require('../i18n').default;
-    const t = i18n.t.bind(i18n);
-    const text = messageKey || t('networkError');
-    showDomToast(text);
-  } catch (e) {
-    showDomToast(messageKey || 'Network error');
-  }
+  showDomToast(message);
 }
 
 function showDomToast(text) {
-  // Simple, non-blocking toast fallback using DOM. Small and unobtrusive.
   try {
     const id = 'app-toast';
     let el = document.getElementById(id);
@@ -167,7 +156,6 @@ function showDomToast(text) {
     el.appendChild(msg);
     setTimeout(() => { msg.style.opacity = '0'; msg.remove(); }, 4000);
   } catch (e) {
-    // Fallback to alert if DOM toast fails
     if (window && window.alert) window.alert(text);
   }
 }

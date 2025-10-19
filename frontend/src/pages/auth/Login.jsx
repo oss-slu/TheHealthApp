@@ -16,13 +16,17 @@ const Login = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    try {
-      const res = await apiClient.post('/auth/login', form);
-      setTokens({ access: res.data.access, refresh: res.data.refresh });
-      navigate('/');
-    } catch (err) {
-      setError(err.response?.data?.message || t('auth:loginFailed', 'Login failed'));
-    }
+        try {
+          const res = await apiClient.post('/auth/login', form);
+          const tokens = res?.data?.data?.tokens;
+          if (tokens?.access_token) {
+            setTokens({ access: tokens.access_token, refresh: tokens.refresh_token });
+          }
+          navigate('/');
+        } catch (err) {
+          const serverMessage = err.response?.data?.error?.message || err.response?.data?.message;
+          setError(serverMessage || t('auth:loginFailed', 'Login failed'));
+        }
   };
 
   return (

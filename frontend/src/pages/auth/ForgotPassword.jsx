@@ -14,10 +14,10 @@ const ForgotPassword = () => {
     e.preventDefault();
     setError(null);
     try {
-      await apiClient.post('/auth/forgot-password', { contact });
+      await apiClient.post('/auth/forgot-password', { phoneOrEmail: contact });
       setSent(true);
     } catch (err) {
-      setError(err.response?.data?.message || t('auth:resetFailed', 'Failed to send reset link'));
+      setError(err.response?.data?.error?.message || err.response?.data?.message || t('auth:resetFailed', 'Failed to send reset link'));
     }
   };
 

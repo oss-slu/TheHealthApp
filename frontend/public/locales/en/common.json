@@ -14,4 +14,7 @@
   "heroSubtitle": "Get personalized health assessments and support whenever you need it.",
   "ctaStart": "Get Started",
   "ctaLearn": "Learn More"
+  ,
+  "networkError": "Network error",
+  "serverError": "Server error"
 }

@@ -31,10 +31,11 @@ const Signup = () => {
       const payload = { ...form };
       delete payload.confirm;
       const res = await apiClient.post('/auth/signup', payload);
-      setTokens({ access: res.data.access, refresh: res.data.refresh });
+      const tokens = res?.data?.data?.tokens;
+      setTokens({ access: tokens?.access_token, refresh: tokens?.refresh_token });
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || t('auth:signupFailed', 'Signup failed'));
+      setError(err.response?.data?.error?.message || err.response?.data?.message || t('auth:signupFailed', 'Signup failed'));
     }
   };
 

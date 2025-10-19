@@ -7,7 +7,7 @@ import PageShell from '../../components/PageShell';
 
 const Login = () => {
   const { t } = useTranslation(['auth', 'common']);
-  const [form, setForm] = useState({ name: '', password: '' });
+  const [form, setForm] = useState({ username: '', password: '' });
   const navigate = useNavigate();
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -39,8 +39,8 @@ const Login = () => {
               </label>
               <input
                 className="w-full border rounded px-3 py-2"
-                name="name"
-                value={form.name}
+                name="username"
+                value={form.username}
                 onChange={onChange}
                 placeholder={t('auth:name')}
               />

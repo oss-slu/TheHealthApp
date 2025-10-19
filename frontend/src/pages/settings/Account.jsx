@@ -1,15 +1,62 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
+import { useUser } from '../../UserContext';
+import apiClient from '../../apiClient';
 
 const Account = () => {
   const { t } = useTranslation(['common']);
+  const { user, refresh } = useUser() || {};
+  const inputRef = useRef(null);
+  const [err, setErr] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const validateFile = (file) => {
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowed = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!allowed.includes(file.type)) return t('auth:photo') + ': Only PNG, JPEG or WEBP allowed.';
+    if (file.size > maxSize) return 'File is too large. Maximum allowed size is 5MB.';
+    return null;
+  };
+
+  const onFile = async (e) => {
+    setErr(null);
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const v = validateFile(file);
+    if (v) { setErr(v); return; }
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('photo', file);
+      await apiClient.updateCurrentUser(fd);
+      await refresh();
+    } catch (error) {
+      setErr(error?.body?.message || error.message || 'Upload failed');
+    } finally {
+      setLoading(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
   return (
     <PageShell title="common:accountSettings">
       <div className="max-w-2xl">
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">{t("common:profileInformation",'Profile Information')}</h3>
+          <div className="flex items-center space-x-4 mb-4">
+            {user && user.photo ? (
+              <img src={user.photo} alt="avatar" className="w-16 h-16 rounded-full object-cover" />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">U</div>
+            )}
+            <div>
+              <button onClick={() => inputRef.current?.click()} className="px-3 py-1 border rounded text-sm bg-white">{t('auth:photo','Photo')}</button>
+              <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
+              {loading && <div className="text-xs text-gray-500">Updating...</div>}
+              {err && <div className="text-xs text-red-600">{err}</div>}
+            </div>
+          </div>
           <form className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>

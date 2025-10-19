@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
     ALLOWED_ORIGINS: str
+    ALLOWED_ORIGIN_REGEX: str | None = None
 
 settings = Settings()
 
@@ -97,9 +98,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Simple Health App API (MongoDB)", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+allowed_origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(',') if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS.split(','),
+    allow_origins=allowed_origins,
+    allow_origin_regex=settings.ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

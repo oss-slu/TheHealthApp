@@ -1,13 +1,9 @@
 import React from 'react';
 
-import { useTranslation } from 'react-i18next';
-
 import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell';
 
 const NotFound = () => {
-
-  const { t } = useTranslation(['common']);
 
   return (
     <PageShell title="Page Not Found">

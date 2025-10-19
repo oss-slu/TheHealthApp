@@ -2,33 +2,44 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Login = () => {
   const { t } = useTranslation(['auth', 'common']);
-  const [form, setForm] = useState({ name: '', password: '' });
+  const { login } = useAuth();
+  const [form, setForm] = useState({ username: '', password: '' });
+  const [error, setError] = useState('');
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    // TODO: call your login API here
+    setError('');
+    const success = await login(form.username, form.password);
+    if (success) {
+      window.location.href = '/dashboard';
+    } else {
+      setError('Invalid credentials');
+    }
   };
 
   return (
     <PageShell title="auth:login">
       <div className="max-w-md mx-auto">
         <div className="bg-white p-8 rounded-lg shadow-md">
+          {error && <div className="text-red-500 mb-4">{error}</div>}
           <form className="space-y-6" onSubmit={onSubmit}>
             <div>
               <label className="block text-sm font-medium mb-1">
-                {t('auth:name')}
+                {t('auth:username')}
               </label>
               <input
                 className="w-full border rounded px-3 py-2"
-                name="name"
-                value={form.name}
+                name="username"
+                value={form.username}
                 onChange={onChange}
-                placeholder={t('auth:name')}
+                placeholder={t('auth:username')}
+                required
               />
             </div>
 
@@ -43,6 +54,7 @@ const Login = () => {
                 value={form.password}
                 onChange={onChange}
                 placeholder={t('auth:password')}
+                required
               />
             </div>
 

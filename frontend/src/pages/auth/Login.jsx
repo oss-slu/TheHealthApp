@@ -1,23 +1,41 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import apiClient, { setTokens } from '../../apiClient';
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
 
 const Login = () => {
   const { t } = useTranslation(['auth', 'common']);
-  const [form, setForm] = useState({ name: '', password: '' });
+  const [form, setForm] = useState({ username: '', password: '' });
+  const navigate = useNavigate();
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const onSubmit = (e) => {
+  const [error, setError] = useState(null);
+  const onSubmit = async (e) => {
     e.preventDefault();
-    // TODO: call your login API here
+    setError(null);
+        try {
+          const res = await apiClient.post('/auth/login', form);
+          const tokens = res?.data?.data?.tokens;
+          if (tokens?.access_token) {
+            setTokens({ access: tokens.access_token, refresh: tokens.refresh_token });
+          }
+          navigate('/');
+        } catch (err) {
+          const serverMessage = err.response?.data?.error?.message || err.response?.data?.message;
+          setError(serverMessage || t('auth:loginFailed', 'Login failed'));
+        }
   };
 
   return (
     <PageShell title="auth:login">
       <div className="max-w-md mx-auto">
         <div className="bg-white p-8 rounded-lg shadow-md">
+          {error && (
+            <div className="mb-4 rounded border border-red-300 bg-red-50 text-red-800 p-3">{error}</div>
+          )}
           <form className="space-y-6" onSubmit={onSubmit}>
             <div>
               <label className="block text-sm font-medium mb-1">
@@ -25,8 +43,8 @@ const Login = () => {
               </label>
               <input
                 className="w-full border rounded px-3 py-2"
-                name="name"
-                value={form.name}
+                name="username"
+                value={form.username}
                 onChange={onChange}
                 placeholder={t('auth:name')}
               />

@@ -2,14 +2,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
-
-// small mock API that simulates sending a reset link
-const mockSendReset = (contact) =>
-  new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, message: 'Password reset link sent.' });
-    }, 700);
-  });
+import { apiPost } from '../../lib/api';
 
 const ForgotPassword = () => {
   const { t } = useTranslation(['auth', 'common']);
@@ -29,15 +22,11 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     try {
-      // Replace this with a real API call when available
-      const res = await mockSendReset(trimmed);
-      if (res && res.success) {
-        setSent(true);
-      } else {
-        setError(res && res.message ? res.message : 'Failed to send reset link');
-      }
+      const data = await apiPost('/api/v1/auth/forgot-password', { phoneOrEmail: trimmed });
+      // backend returns data.message
+      setSent(true);
     } catch (err) {
-      setError('Failed to send reset link');
+      setError(err.message || 'Failed to send reset link');
     } finally {
       setIsLoading(false);
     }

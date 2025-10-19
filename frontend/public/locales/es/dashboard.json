@@ -1,0 +1,14 @@
+{
+  "menuLabel": "Panel",
+  "title": "Panel",
+  "recentAssessments": "Evaluaciones recientes",
+  "noRecent": "No se encontraron evaluaciones recientes.",
+  "healthStatus": "Estado de salud",
+  "promptAssess": "Completa una evaluación para ver tu estado de salud.",
+  "reminders": "Recordatorios",
+  "quickActions": "Acciones rápidas",
+  "assessNow": "Evaluar ahora",
+  "viewHistory": "Ver historial",
+  "setReminder": "Establecer recordatorio",
+  "noReminders": "No hay recordatorios."
+}

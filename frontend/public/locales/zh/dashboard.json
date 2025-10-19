@@ -1,0 +1,14 @@
+{
+"menuLabel": "面板",
+"title": "面板",
+"recentAssessments": "最近的评估",
+"noRecent": "未找到最近的评估。",
+"healthStatus": "健康状况",
+"promptAssess": "完成评估以查看您的健康状况。",
+"reminders": "提醒",
+"quickActions": "快速操作",
+"assessNow": "立即评估",
+"viewHistory": "查看历史记录",
+"setReminder": "设置提醒",
+"noReminders": "无提醒。"
+}

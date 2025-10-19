@@ -1,0 +1,10 @@
+{
+  "menuLabel": "Dashboard",
+  "title": "Dashboard",
+  "recentAssessments": "Recent Assessments",
+  "noRecent": "No recent assessments found.",
+  "healthStatus": "Health Status",
+  "promptAssess": "Complete an assessment to see your health status.",
+  "reminders": "Reminders",
+  "noReminders": "No reminders set."
+}

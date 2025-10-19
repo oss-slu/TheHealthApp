@@ -2,6 +2,26 @@ import React, { useState, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n.js';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../AuthProvider';
+
+const ProfileArea = () => {
+  const { profile, logout } = useAuth() || {};
+  if (!profile) {
+    return (
+      <Link to="/auth/login" className="text-sm text-gray-600 hover:text-gray-800">Login</Link>
+    );
+  }
+  const name = profile.name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username;
+  return (
+    <div className="flex items-center space-x-3">
+      {profile.photo && (
+        <img src={profile.photo} alt={name} className="w-9 h-9 rounded-full object-cover" />
+      )}
+      <div className="text-sm text-gray-700">{name}</div>
+      <button onClick={logout} className="text-sm text-red-500 hover:underline">{"Logout"}</button>
+    </div>
+  );
+};
 
 const PageShell = ({ children, title }) => {
   const { t } = useTranslation(['common','auth','dashboard','modules']);
@@ -74,6 +94,10 @@ const PageShell = ({ children, title }) => {
                 </div>
               )}
             </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            {/* Profile area */}
+            <ProfileArea />
           </div>
         </nav>
           </div>

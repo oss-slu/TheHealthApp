@@ -1,7 +1,5 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import apiClient, { setTokens } from '../../apiClient';
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
 
@@ -15,37 +13,18 @@ const Signup = () => {
     password: '',
     confirm: ''
   });
-  const navigate = useNavigate();
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const [error, setError] = useState(null);
-  const onSubmit = async (e) => {
+  const onSubmit = (e) => {
     e.preventDefault();
-    setError(null);
-    if (form.password !== form.confirm) {
-      setError(t('auth:passwordsNoMatch', 'Passwords do not match'));
-      return;
-    }
-    try {
-      const payload = { ...form };
-      delete payload.confirm;
-      const res = await apiClient.post('/auth/signup', payload);
-      const tokens = res?.data?.data?.tokens;
-      setTokens({ access: tokens?.access_token, refresh: tokens?.refresh_token });
-      navigate('/');
-    } catch (err) {
-      setError(err.response?.data?.error?.message || err.response?.data?.message || t('auth:signupFailed', 'Signup failed'));
-    }
+    // TODO: submit to your API
   };
 
   return (
     <PageShell title="auth:signup">
       <div className="max-w-md mx-auto">
         <div className="bg-white p-8 rounded-lg shadow-md">
-          {error && (
-            <div className="mb-4 rounded border border-red-300 bg-red-50 text-red-800 p-3">{error}</div>
-          )}
           <form className="space-y-6" onSubmit={onSubmit}>
             <div>
               <label className="block text-sm font-medium mb-1">{t('auth:name')}</label>

@@ -1,0 +1,20 @@
+{
+  "generic": "Something went wrong. Please try again.",
+  "network": "Network error. Check your connection and retry.",
+  "timeout": "The request took too long. Please retry.",
+  "sessionExpired": "Your session expired. Please sign in again.",
+  "unauthorized": "You are not authorized. Please sign in again.",
+  "forbidden": "You do not have permission to perform this action.",
+  "notFound": "We could not find what you were looking for.",
+  "conflict": "This information conflicts with an existing record.",
+  "validation": "Please review the highlighted fields.",
+  "rateLimited": "Too many requests. Please wait and try again.",
+  "server": "Server error. Please try again later.",
+  "badRequest": "The request could not be processed.",
+  "invalidCredentials": "Incorrect username or password.",
+  "usernameExists": "This username is already taken.",
+  "phoneExists": "This phone number is already in use.",
+  "passwordMismatch": "Passwords do not match.",
+  "invalidImageType": "Please select a supported image file (jpg, png, webp).",
+  "imageTooLarge": "Image is too large. Maximum size is 5 MB."
+}

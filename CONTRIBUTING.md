@@ -142,8 +142,6 @@ docs: add setup instructions
 * **GitHub Discussions:** for questions, feedback, and ideas
 * Always be **respectful, inclusive, and supportive** — we’re building a positive community.
 
----
-
 ## 📜 License
 
 By contributing, you agree that your code and documentation will be released under the repository’s **MIT License**.

@@ -7,15 +7,14 @@ We welcome developers, designers, data scientists, and public-health enthusiasts
 
 ## 🧭 Getting Started
 
-1. **Fork** this repository to your own GitHub account.  
+1. **Fork** this repository to your own GitHub account.
 2. **Clone** your fork locally:
-
    ```bash
    git clone https://github.com/<your-username>/TheHealthApp.git
    cd TheHealthApp
-````
+    ````
 
-3. **Create a new branch** for your contribution:
+3. Create a new branch for your contribution:
 
    ```bash
    git checkout -b feat/your-feature-name
@@ -48,7 +47,7 @@ npm run dev
 ### ML Service
 
 ```bash
-TBD
+TBA
 ```
 
 Ensure all three services start successfully before testing integration.
@@ -82,11 +81,11 @@ Ensure all three services start successfully before testing integration.
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
 
-```text
+```
 <type>: <short description>
 
-feat: add multilingual toggle to navbar  
-fix: correct token refresh timeout  
+feat: add multilingual toggle to navbar
+fix: correct token refresh timeout
 docs: add setup instructions
 ```
 
@@ -151,4 +150,3 @@ By contributing, you agree that your code and documentation will be released und
 
 ```
 
----

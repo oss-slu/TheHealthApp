@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './i18n';
 import LanguagePicker from './components/LanguagePicker';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Import pages
 import Home from './pages/Home';
@@ -33,20 +34,22 @@ function App() {
   return (
     <>
       {showPicker && <LanguagePicker onSelect={handleSelectLang} />}
-      <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/auth/login" element={<Login />} />
-          <Route path="/auth/signup" element={<Signup />} />
-          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings/account" element={<Account />} />
-          <Route path="/modules/heart-risk" element={<HeartRisk />} />
-          <Route path="/modules/prescription" element={<Prescription />} />
-          <Route path="/modules/tba" element={<TBA />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/signup" element={<Signup />} />
+            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings/account" element={<Account />} />
+            <Route path="/modules/heart-risk" element={<HeartRisk />} />
+            <Route path="/modules/prescription" element={<Prescription />} />
+            <Route path="/modules/tba" element={<TBA />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </>
   );
 }

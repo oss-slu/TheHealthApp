@@ -2,6 +2,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
+import { useAuth } from '../../AuthProvider';
+import apiClient from '../../apiClient';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const { t } = useTranslation(['auth', 'common']);
@@ -11,8 +14,30 @@ const Login = () => {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    // TODO: call your login API here
+    (async () => {
+      try {
+        const payload = { name: form.name, password: form.password };
+        const res = await apiClient.request('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        // server likely returns { data: { tokens, user } } or { tokens }
+        const data = res?.data ?? res;
+        const tokens = data?.tokens ?? data?.tokens_response ?? data;
+        if (tokens) {
+          auth.setTokens(tokens);
+          await auth.fetchMe();
+          navigate('/dashboard');
+        }
+      } catch (err) {
+        // TODO: show error toast
+        console.error('login failed', err);
+      }
+    })();
   };
+
+  const auth = useAuth();
+  const navigate = useNavigate();
 
   return (
     <PageShell title="auth:login">

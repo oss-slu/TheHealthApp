@@ -2,16 +2,34 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
+import { apiPost } from '../../lib/api';
 
 const ForgotPassword = () => {
   const { t } = useTranslation(['auth', 'common']);
   const [contact, setContact] = useState('');
   const [sent, setSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    // TODO: call your API to send reset link (email/phone)
-    setSent(true);
+    setError('');
+    const trimmed = (contact || '').trim();
+    if (!trimmed) {
+      setError('Please enter phone or email');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const data = await apiPost('/api/v1/auth/forgot-password', { phoneOrEmail: trimmed });
+      // backend returns data.message
+      setSent(true);
+    } catch (err) {
+      setError(err.message || 'Failed to send reset link');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -22,6 +40,12 @@ const ForgotPassword = () => {
           {sent && (
             <div className="mb-4 rounded border border-green-300 bg-green-50 text-green-800 p-3">
               {t('auth:resetLinkSent')}
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 rounded border border-red-300 bg-red-50 text-red-800 p-3">
+              {error}
             </div>
           )}
 
@@ -36,12 +60,17 @@ const ForgotPassword = () => {
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
                 placeholder={`${t('auth:phone')} / Email`}
+                disabled={isLoading}
               />
             </div>
 
             <div className="flex justify-end">
-              <button className="bg-black text-white rounded px-4 py-2" type="submit">
-                {t('common:save')}
+              <button
+                className={`bg-black text-white rounded px-4 py-2 ${isLoading ? 'opacity-60' : ''}`}
+                type="submit"
+                disabled={isLoading}
+              >
+                {isLoading ? t('common:save') + '...' : t('common:save')}
               </button>
             </div>
           </form>

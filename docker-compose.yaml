@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # MongoDB Service
+  db:
+    image: dream1ance/mongo:latest
+    container_name: healthapp_mongo_db
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=userh
+      - MONGO_INITDB_ROOT_PASSWORD=Password123
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # FastAPI Backend Service
+  backend:
+    image: dream1ance/thehealthapp-backend:latest
+    container_name: healthapp_fastapi_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  mongo_data:

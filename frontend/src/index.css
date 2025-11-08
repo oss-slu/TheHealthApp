@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+@import "tailwindcss";
+=======
 @import "tailwindcss";
 
 /* RTL/LTR Support Safeguards */
@@ -25,3 +28,4 @@
   max-height: 16rem;
   overflow-y: auto;
 }
+>>>>>>> b8aaf9dc7c69eec727f47d51254da926cbcdd46c

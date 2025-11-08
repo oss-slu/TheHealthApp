@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+motor
+beanie
+pydantic
+pydantic-settings
+python-dotenv
+python-jose[cryptography]
+bcrypt
+slowapi
+python-multipart

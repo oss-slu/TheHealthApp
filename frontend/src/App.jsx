@@ -1,7 +1,13 @@
+<<<<<<< HEAD
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './i18n';
+=======
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './i18n';
 import LanguagePicker from './components/LanguagePicker';
+>>>>>>> b8aaf9dc7c69eec727f47d51254da926cbcdd46c
 
 // Import pages
 import Home from './pages/Home';
@@ -15,6 +21,24 @@ import Prescription from './pages/modules/Prescription';
 import TBA from './pages/modules/TBA';
 import NotFound from './pages/NotFound';
 
+<<<<<<< HEAD
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/auth/login" element={<Login />} />
+        <Route path="/auth/signup" element={<Signup />} />
+        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/settings/account" element={<Account />} />
+        <Route path="/modules/heart-risk" element={<HeartRisk />} />
+        <Route path="/modules/prescription" element={<Prescription />} />
+        <Route path="/modules/tba" element={<TBA />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
+=======
 
 function App() {
   const [showPicker, setShowPicker] = useState(() => !localStorage.getItem('app.lang'));
@@ -48,6 +72,7 @@ function App() {
         </Routes>
       </Router>
     </>
+>>>>>>> b8aaf9dc7c69eec727f47d51254da926cbcdd46c
   );
 }
 

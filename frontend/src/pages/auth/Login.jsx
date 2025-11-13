@@ -1,106 +1,120 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import PageShell from '../../components/PageShell';
-import { useAuth } from '../../hooks/useAuth.js';
+import {
+  normalizeUsername,
+  validatePassword,
+  validateUsername,
+} from '../../utils/validation';
 
-const Login = () => {
-  const { t } = useTranslation(['auth', 'common', 'errors']);
+const Login = ({ onAuthSuccess = () => {} }) => {
+  const { t } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login, isAuthenticated } = useAuth();
   const [form, setForm] = useState({ username: '', password: '' });
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState(null);
+  const [touched, setTouched] = useState({ username: false, password: false });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
+  const usernameValid = useMemo(
+    () => validateUsername(form.username),
+    [form.username]
+  );
+  const passwordValid = useMemo(
+    () => validatePassword(form.password),
+    [form.password]
+  );
 
-  const onChange = (event) => {
-    const { name, value } = event.target;
+  const isFormValid = usernameValid && passwordValid;
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    if (formError) setFormError(null);
   };
 
-  const translateError = (error) => {
-    if (!error) return null;
-    if (error.messageKey) {
-      const translated = t(error.messageKey, { defaultValue: error.message });
-      return translated || error.message;
-    }
-    return error.message || t('errors.generic');
+  const onBlur = (e) => {
+    const { name } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
-  const onSubmit = async (event) => {
-    event.preventDefault();
-    setSubmitting(true);
-    setFormError(null);
-    try {
-      await login({ username: form.username.trim(), password: form.password });
-      const redirectTo = location.state?.from?.pathname || '/dashboard';
-      navigate(redirectTo, { replace: true });
-    } catch (error) {
-      setFormError(translateError(error));
-    } finally {
-      setSubmitting(false);
+  const onSubmit = (e) => {
+    e.preventDefault();
+    setTouched({ username: true, password: true });
+    if (!isFormValid) {
+      return;
     }
+
+    setIsSubmitting(true);
+    const normalizedUsername = normalizeUsername(form.username);
+
+    // TODO: replace with API call
+    setTimeout(() => {
+      onAuthSuccess({ username: normalizedUsername });
+      navigate('/dashboard', { replace: true });
+    }, 300);
   };
+
 
   return (
-    <PageShell title="auth:login">
+    <PageShell title="auth:login" showNav={false}>
       <div className="max-w-md mx-auto">
         <div className="bg-white p-8 rounded-lg shadow-md">
-          {formError ? (
-            <div className="mb-4 rounded border border-red-300 bg-red-50 text-red-800 p-3">
-              {formError}
-            </div>
-          ) : null}
-          <form className="space-y-6" onSubmit={onSubmit}>
+          <form className="space-y-6" onSubmit={onSubmit} noValidate>
             <div>
-              <label className="block text-sm font-medium mb-1">
-                {t('auth:username', 'Username')}
+              <label className="block text-sm font-medium mb-1" htmlFor="username">
+                {t('auth:username')}
               </label>
               <input
-                className="w-full border rounded px-3 py-2"
+                id="username"
+                className={`w-full border rounded px-3 py-2 ${
+                  touched.username && !usernameValid ? 'border-red-500' : 'border-gray-300'
+                }`}
                 name="username"
                 value={form.username}
                 onChange={onChange}
-                placeholder={t('auth:username', 'Username')}
+                onBlur={onBlur}
+                placeholder={t('auth:usernamePlaceholder')}
                 autoComplete="username"
-                required
               />
+              <p className="text-xs text-gray-500 mt-1">{t('auth:usernameHelp')}</p>
+              {touched.username && !usernameValid && (
+                <p className="text-xs text-red-600 mt-1">{t('auth:errors.usernameInvalid')}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1" htmlFor="password">
                 {t('auth:password')}
               </label>
               <input
+                id="password"
                 type="password"
-                className="w-full border rounded px-3 py-2"
+                className={`w-full border rounded px-3 py-2 ${
+                  touched.password && !passwordValid ? 'border-red-500' : 'border-gray-300'
+                }`}
                 name="password"
                 value={form.password}
                 onChange={onChange}
-                placeholder={t('auth:password')}
+                onBlur={onBlur}
+                placeholder={t('auth:passwordPlaceholder')}
                 autoComplete="current-password"
-                required
               />
+              <p className="text-xs text-gray-500 mt-1">{t('auth:passwordHelp')}</p>
+              {touched.password && !passwordValid && (
+                <p className="text-xs text-red-600 mt-1">{t('auth:errors.passwordInvalid')}</p>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
               <button
-                className="bg-black text-white rounded px-4 py-2 disabled:opacity-70"
+                className="bg-black text-white rounded px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 type="submit"
-                disabled={submitting}
+                disabled={!isFormValid || isSubmitting}
               >
-                {submitting ? t('common:loading', 'Loading...') : t('auth:login')}
+                {isSubmitting ? t('common:pleaseWait') : t('auth:login')}
               </button>
-              <Link className="text-blue-600 text-sm" to="/auth/forgot-password">
+              <a className="text-blue-600 text-sm" href="/auth/forgot-password">
                 {t('auth:forgotPassword')}
-              </Link>
+              </a>
             </div>
           </form>
         </div>

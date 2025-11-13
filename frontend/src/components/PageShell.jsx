@@ -1,67 +1,64 @@
-import React, { useMemo, useState, startTransition } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n.js';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth.js';
 
-const PageShell = ({ children, title }) => {
+const PageShell = ({ children, title, showNav = true }) => {
   const { t } = useTranslation(['common','auth','dashboard','modules']);
   const [open, setOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => localStorage.getItem('auth.session') === 'true'
+  );
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useAuth();
-  
-  const navigation = useMemo(() => {
-    const shared = [
-      { path: '/', label: t('common:home'), requireAuth: false },
-      { path: '/modules/heart-risk', label: t('modules:heartRisk'), requireAuth: false },
-      { path: '/modules/prescription', label: t('modules:prescription'), requireAuth: false },
-      { path: '/modules/tba', label: t('modules:tba'), requireAuth: false },
-    ];
 
-    const authOnly = [
-      { path: '/dashboard', label: t('dashboard:menuLabel'), requireAuth: true },
-      { path: '/settings/account', label: t('common:accountSettings'), requireAuth: true },
-    ];
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setIsAuthenticated(localStorage.getItem('auth.session') === 'true');
+    };
 
-    const publicOnly = [
-      { path: '/auth/login', label: t('auth:login'), requireAuth: false, hideWhenAuth: true },
-      { path: '/auth/signup', label: t('auth:signup'), requireAuth: false, hideWhenAuth: true },
-    ];
+    window.addEventListener('storage', handleAuthChange);
+    window.addEventListener('auth-change', handleAuthChange);
 
-    return [...shared, ...(isAuthenticated ? authOnly : []), ...publicOnly];
-  }, [isAuthenticated, t]);
+    return () => {
+      window.removeEventListener('storage', handleAuthChange);
+      window.removeEventListener('auth-change', handleAuthChange);
+    };
+  }, []);
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    localStorage.removeItem('auth.session');
+    setIsAuthenticated(false);
+    window.dispatchEvent(new Event('auth-change'));
     navigate('/auth/login', { replace: true });
   };
-
-  const initials = useMemo(() => {
-    if (!user?.name) return '👤';
-    const parts = user.name.trim().split(' ');
-    const letters = parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
-    return letters || '👤';
-  }, [user?.name]);
+  
+  const navigation = [
+    ...(isAuthenticated
+      ? [
+          { path: '/dashboard', label: t('dashboard:menuLabel') },
+          { path: '/settings/account', label: t('common:accountSettings') },
+        ]
+      : [
+          { path: '/auth/login', label: t('auth:login') },
+          { path: '/auth/signup', label: t('auth:signup') },
+        ]),
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto pl-2 sm:pl-4 lg:pl-6 pr-4 sm:pr-6 lg:pr-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1 className="text-3xl font-bold text-gray-900">
                 {t('common:appName')}
               </h1>
             </div>
-            <nav className="hidden md:flex space-x-8">
-              {navigation.map((item) => {
-                if ((item.hideWhenAuth && isAuthenticated) || (item.requireAuth && !isAuthenticated)) {
-                  return null;
-                }
-
-                return (
+            <div className="hidden md:flex items-center space-x-8">
+              {showNav &&
+                navigation.map((item) => (
                   <Link
                     key={item.path}
                     to={item.path}
@@ -73,9 +70,17 @@ const PageShell = ({ children, title }) => {
                   >
                     {item.label}
                   </Link>
-                );
-              })}
+                ))}
               <div className="flex items-center space-x-4">
+                {isAuthenticated && showNav && (
+                  <button
+                    type="button"
+                    className="text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md transition-colors"
+                    onClick={handleLogout}
+                  >
+                    {t('common:logout')}
+                  </button>
+                )}
                 <div className="relative">
                   <button
                     className="border rounded-full w-9 h-9 flex items-center justify-center hover:bg-gray-100 transition-colors"
@@ -105,32 +110,8 @@ const PageShell = ({ children, title }) => {
                     </div>
                   )}
                 </div>
-                {isAuthenticated ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="flex items-center space-x-2">
-                      {user?.photo_url ? (
-                        <img
-                          src={user.photo_url}
-                          alt={user.name}
-                          className="h-9 w-9 rounded-full object-cover border"
-                        />
-                      ) : (
-                        <div className="h-9 w-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold">
-                          {initials}
-                        </div>
-                      )}
-                      <span className="text-sm text-gray-700 font-medium">{user?.name}</span>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="text-sm text-red-600 hover:text-red-700"
-                    >
-                      {t('common:logout')}
-                    </button>
-                  </div>
-                ) : null}
               </div>
-            </nav>
+            </div>
           </div>
         </div>
       </header>

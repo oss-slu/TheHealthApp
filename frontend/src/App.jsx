@@ -5,6 +5,8 @@ import './i18n';
 =======
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider, useAuth } from './AuthProvider';
+import apiClient from './apiClient';
 import './i18n';
 import LanguagePicker from './components/LanguagePicker';
 >>>>>>> b8aaf9dc7c69eec727f47d51254da926cbcdd46c
@@ -43,6 +45,8 @@ function App() {
 function App() {
   const [showPicker, setShowPicker] = useState(() => !localStorage.getItem('app.lang'));
 
+  // AuthProvider will fetch profile on mount when tokens exist
+
   useEffect(() => {
     if (!localStorage.getItem('app.lang')) {
       setShowPicker(true);
@@ -58,6 +62,7 @@ function App() {
     <>
       {showPicker && <LanguagePicker onSelect={handleSelectLang} />}
       <Router>
+        <AuthProvider>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth/login" element={<Login />} />
@@ -70,6 +75,7 @@ function App() {
           <Route path="/modules/tba" element={<TBA />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </AuthProvider>
       </Router>
     </>
 >>>>>>> b8aaf9dc7c69eec727f47d51254da926cbcdd46c

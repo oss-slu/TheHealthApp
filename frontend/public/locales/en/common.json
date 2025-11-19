@@ -4,14 +4,14 @@
   "logout": "Logout",
   "save": "Save",
   "welcome": "Welcome",
-  "optional": "optional",
+  "optional": "Optional",
   "home": "Home",
   "accountSettings": "Account Settings",
   "notFoundTitle": "404 - Not Found",
   "goHome": "Go Home",
   "chooseLanguage": "Choose your language",
-  "heroTitle": "Your Health Companion",
-  "heroSubtitle": "Get personalized health assessments and support whenever you need it.",
-  "ctaStart": "Get Started",
-  "ctaLearn": "Learn More"
+  "male": "Male",
+  "female": "Female",
+  "others": "Others",
+  "pleaseWait": "Please wait..."
 }

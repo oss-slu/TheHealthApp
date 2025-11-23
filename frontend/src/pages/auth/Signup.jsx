@@ -40,7 +40,13 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    // Restrict phone field to numbers only
+    if (name === 'phone') {
+      const numericValue = value.replace(/\D/g, ''); // Remove all non-digit characters
+      setForm((prev) => ({ ...prev, [name]: numericValue }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const onBlur = (e) => {
@@ -125,12 +131,15 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
             <div>
               <label className="block text-sm font-medium mb-1">{t('auth:phone')}</label>
               <input
+                type="tel"
                 className="w-full border rounded px-3 py-2 border-gray-300"
                 name="phone"
                 value={form.phone}
                 onChange={onChange}
                 placeholder={t('auth:phone')}
                 autoComplete="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
               />
             </div>
 

@@ -16,7 +16,7 @@ const ForgotPassword = () => {
 
   return (
     // PageShell will translate this key because we made it call t(title) when title is a string
-    <PageShell title="auth:forgotPassword">
+    <PageShell title="auth:forgotPassword" showNav={false}>
       <div className="max-w-md mx-auto">
         <div className="bg-white p-8 rounded-lg shadow-md">
           {sent && (

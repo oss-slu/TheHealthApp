@@ -3,36 +3,12 @@ import { authStorage } from '../lib/authStorage';
 import { authBus } from '../lib/authBus';
 import { mapApiError } from '../utils/errorMapper';
 import { showErrorToast } from '../lib/toast';
-
-const deriveApiBaseUrl = () => {
-  const envUrl = import.meta.env?.VITE_API_BASE_URL;
-  if (envUrl) {
-    return envUrl.replace(/\/$/, '');
-  }
-
-  if (typeof window !== 'undefined') {
-    const { protocol, hostname } = window.location;
-
-    if (hostname.includes('.github.dev')) {
-      const backendHost = hostname.replace(/-\d+\./, '-8000.');
-      return `${protocol}//${backendHost}/api/v1`;
-    }
-
-    const needsPort = !hostname.includes(':');
-    const backendHost = needsPort ? `${hostname}:8000` : hostname;
-    return `${protocol}//${backendHost}/api/v1`;
-  }
-
-  return 'http://localhost:8000/api/v1';
-};
-
-const API_BASE_URL = deriveApiBaseUrl();
+import { API_BASE_URL } from '../lib/apiBase';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
     Accept: 'application/json',
   },
 });

@@ -1,11 +1,12 @@
 import os
 import uuid
 import bcrypt
+from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, status, Depends, Request
+from fastapi import FastAPI, HTTPException, status, Depends, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
@@ -16,10 +17,10 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import motor.motor_asyncio
 from beanie import init_beanie
-from slowapi.errors import RateLimitExceeded
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
+from fastapi.staticfiles import StaticFiles
 
 # --- 1. CONFIGURATION ---
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -34,6 +35,17 @@ class Settings(BaseSettings):
     ALLOWED_ORIGIN_REGEX: str | None = None
 
 settings = Settings()
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+UPLOAD_DIR = BASE_DIR / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+ALLOWED_PHOTO_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
+MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 # --- 2. MODELS & SCHEMAS ---
 from .models import (
@@ -108,6 +120,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -200,6 +214,51 @@ async def forgot_password(payload: ForgotPasswordRequest):
     })
 @app.get("/api/v1/users/me", response_model=SuccessResponse[UserResponse], tags=["User"])
 async def get_own_profile(current_user: Annotated[User, Depends(get_current_user)]):
+    return SuccessResponse(data=current_user)
+
+@app.post("/api/v1/users/me/photo", response_model=SuccessResponse[UserResponse], tags=["User"])
+async def upload_profile_photo(
+    file: UploadFile = File(...),
+    current_user: Annotated[User, Depends(get_current_user)] = None,
+):
+    if file.content_type not in ALLOWED_PHOTO_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported file type. Please upload a JPG, PNG, or WEBP image.",
+        )
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty.",
+        )
+
+    if len(contents) > MAX_PHOTO_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Image is too large. Maximum allowed size is 5MB.",
+        )
+
+    extension = ALLOWED_PHOTO_TYPES[file.content_type]
+    filename = f"{uuid.uuid4()}{extension}"
+    filepath = UPLOAD_DIR / filename
+
+    with open(filepath, "wb") as buffer:
+        buffer.write(contents)
+
+    if current_user.photo_url and current_user.photo_url.startswith("/uploads/"):
+        old_path = BASE_DIR / current_user.photo_url.lstrip("/")
+        if old_path.exists():
+            try:
+                old_path.unlink()
+            except OSError:
+                pass
+
+    current_user.photo_url = f"/uploads/{filename}"
+    current_user.updated_at = datetime.utcnow()
+    await current_user.save()
+
     return SuccessResponse(data=current_user)
 
 @app.get("/healthz", tags=["System"])

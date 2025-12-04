@@ -4,10 +4,6 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Accept build argument for ML API URL
-ARG VITE_ML_API_URL=http://localhost:8001/predict
-ENV VITE_ML_API_URL=$VITE_ML_API_URL
-
 # Copy package.json first (better caching)
 COPY package*.json ./
 

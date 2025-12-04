@@ -1,0 +1,214 @@
+/* Basic setup */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    line-height: 1.6;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 600px;
+    width: 100%;
+    margin: auto;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* POINT 2: Appealing Title */
+h1 {
+    color: #c9302c; /* Darker red */
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 30pt;
+    font-weight: 700;
+}
+
+/* POINT 3: Disclaimer Text */
+.disclaimer {
+    font-size: 0.9em;
+    background-color: #fcf8e3;
+    border: 1px solid #faebcc;
+    color: #333; /* CHANGED from #8a6d3b to dark text */
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Form styling */
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+input[type="number"],
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box; 
+}
+
+/* POINT 1: Radio Button Styling */
+.radio-group {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.radio-group input[type="radio"] {
+    display: none; /* Hide the actual radio button */
+}
+
+.radio-group label {
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+/* Style for the selected radio button's label */
+.radio-group input[type="radio"]:checked + label {
+    background-color: #d9534f;
+    color: white;
+    border-color: #d9534f;
+}
+
+
+/* POINT 4: Submit Button Styling */
+.button-wrapper {
+    text-align: center;
+    margin-top: 30px;
+}
+
+button {
+    width: auto; /* CHANGED from 100% */
+    padding: 12px 40px; /* Give it some horizontal padding */
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #c9302c;
+}
+
+button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+}
+
+/* POINT 5: Result Area Styling */
+.hidden {
+    display: none;
+}
+
+#result-wrapper {
+    margin-top: 30px;
+}
+
+/* Point 5a: "SCREENING RESULT" */
+#result-title {
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #040404;
+    margin-bottom: 20px;
+}
+
+/* Point 5b & 5c: Common box style */
+.result-box {
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+/* Point 5b: Main result box styling */
+#result-main-box {
+    border: 1px solid #ddd;
+}
+/* UPDATED: More distinct Green, Yellow, and Red colors */
+#result-main-box.low { 
+    background-color: #16c63f; /* Clear Green */
+    border-color: #c3e6cb; 
+}
+#result-main-box.medium { 
+    background-color: #ffff51d6; /* Clear Yellow */
+    border-color: #ffeeba; 
+}
+#result-main-box.high { 
+    background-color: #f03636; /* Clear Red */
+    border-color: #f5c6cb; 
+}
+
+#result-main-box h3 { /* The "Low/Medium/High Risk" text */
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.4em;
+}
+/* UPDATED: Text colors to match new backgrounds for better contrast */
+#result-main-box.low h3 { color: #ffffff; }
+#result-main-box.medium h3 { color: #030000; }
+#result-main-box.high h3 { color: #ffffff; }
+
+#result-advice {
+    font-weight: 500;
+    font-size: 1.1em;
+}
+
+.urgent-warning {
+    font-weight: bold;
+    color: #000000;
+    margin-top: 15px;
+    font-size: 1.1em;
+}
+
+/* Point 5c: Personalized tips box styling */
+#result-tips-box {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+}
+
+#result-tips h4, #result-general-tips h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #000000;
+}
+
+#result-tips ul, #result-general-tips ul {
+    padding-left: 20px;
+    margin: 0;
+}
+#result-tips li, #result-general-tips li {
+    margin-bottom: 8px;
+}
+
+.tip-category {
+    margin-bottom: 15px;
+}
+.tip-category h4 {
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    color: #d9534f;
+    letter-spacing: 0.5px;
+}

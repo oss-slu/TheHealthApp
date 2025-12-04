@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Risk Screener</title>
+    <!-- Link to your stylesheet -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- POINT 2: Appealing Title -->
+        <h1>Heart Risk Screener</h1>
+
+        <p class="disclaimer">⚠️ Disclaimer: This tool is for screening and educational purposes only. It is NOT a diagnostic device. Always consult a qualified medical professional for health advice.</p>
+        
+        <form id="risk-form">
+            <!-- 1. Age (Unchanged) -->
+            <div class="form-group">
+                <label for="Age">1. What is your Age?</label>
+                <input type="number" id="Age" value="45" min="18" max="100" required>
+            </div>
+            
+            <!-- 2. Gender (Unchanged, was already radio-like) -->
+            <div class="form-group">
+                <label for="Gender">2. What is your Gender?</label>
+                <select id="Gender">
+                    <option value="0">Female</option>
+                    <option value="1">Male</option>
+                </select>
+            </div>
+            
+            <!-- This div will be filled by script.js with the new radio buttons -->
+            <div id="dynamic-questions"></div>
+
+            <!-- POINT 4: Submit Button -->
+            <div class="button-wrapper">
+                <button type="submit" id="submit-btn">Check</button>
+            </div>
+        </form>
+        
+        <!-- POINT 5: Restructured Result Area -->
+        <div id="result-wrapper" class="hidden">
+            
+            <!-- Point 5a: All Caps Title -->
+            <h2 id="result-title">SCREENING RESULT</h2>
+            
+            <!-- Point 5b: Box for main result -->
+            <div id="result-main-box" class="result-box"> 
+                <h3 id="result-level"></h3>
+                <p id="result-advice"></p>
+                <!-- Urgent warning will go here -->
+                <div id="result-urgent" class="urgent-warning"></div>
+            </div>
+            
+            <!-- Point 5c: Separate box for tips -->
+            <div id="result-tips-box" class="result-box hidden"> 
+                <div id="result-tips"></div>
+                <div id="result-general-tips"></div>
+            </div>
+
+        </div>
+    </div>
+    
+    <!-- Link to your JavaScript file -->
+    <script src="/static/script.js"></script>
+</body>
+</html>

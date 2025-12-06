@@ -1,5 +1,25 @@
 {
   "heartRisk": "Heart Risk",
   "prescription": "Prescription",
-  "tba": "TBA"
+  "tba": "TBA",
+  "cardioRiskAssessment": "Cardiovascular Risk Assessment",
+  "cardioRiskAssessmentDescription": "This assessment helps evaluate your risk for heart disease and other cardiovascular conditions.",
+  "age": "Age",
+  "enterYourAge": "Enter your age",
+  "gender": "Gender",
+  "selectYourGender": "Select Your Gender",
+  "male": "Male",
+  "female": "Female",
+  "doYouHaveHighBloodPressure": "Do you have high blood pressure?",
+  "doYouHaveHighCholesterol": "Do you have high cholesterol?",
+  "areYouSmoker": "Are you currently a smoker?",
+  "familyHistory": "Do you have a family history of heart disease?",
+  "chronicStress": "Do you regularly experience chronic stress?",
+  "shortnessOfBreath": "Do you experience shortness of breath?",
+  "painArmsJawBack": "Do you feel pain in your arms, jaw, or back?",
+  "coldSweatsNausea": "Do you experience cold sweats or nausea?",
+  "yes": "Yes",
+  "no": "No",
+  "iDontKnow": "I don't know",
+  "completeAssessment": "Complete Assessment"
 }

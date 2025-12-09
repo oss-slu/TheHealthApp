@@ -1,0 +1,27 @@
+version: '3.8'
+
+# Standalone ML Backend Docker Compose
+# Use this to run only the ML backend service
+
+services:
+  # ML Backend Service - Heart Risk Prediction API
+  ml-backend:
+    build:
+      context: ./ml/heart-risk/heart-risk-app
+      dockerfile: Dockerfile
+    container_name: healthapp_ml_backend
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    volumes:
+      # Mount model file if you want to update it without rebuilding
+      - ./ml/heart-risk/heart-risk-app/heart_model.pkl:/app/heart_model.pkl:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8001/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    environment:
+      - PYTHONUNBUFFERED=1
+

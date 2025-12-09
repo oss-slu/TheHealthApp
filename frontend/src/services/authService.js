@@ -13,7 +13,7 @@ export const authService = {
     return apiClient.post('/auth/forgot-password', withJson(payload));
   },
   async logout() {
-    return apiClient.post('/auth/logout', {}, { suppressToast: true, _skipAuthRefresh: true });
+    return apiClient.post('/auth/logout', {}, { suppressToast: true });
   },
   async getCurrentUser(options = {}) {
     return apiClient.get('/users/me', options);
@@ -23,7 +23,9 @@ export const authService = {
   },
   async uploadProfilePhoto(file) {
     const formData = new FormData();
-    formData.append('file', file);
-    return apiClient.post('/users/me/photo', formData);
+    formData.append('photo', file);
+    return apiClient.post('/users/me/photo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
   },
 };

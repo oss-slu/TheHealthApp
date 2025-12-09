@@ -1,27 +1,7 @@
 import { authBus } from './authBus';
-import { API_ORIGIN } from './apiBase';
 
 const TOKEN_KEY = 'healthApp.tokens';
 const USER_KEY = 'healthApp.user';
-
-const isAbsoluteUrl = (value) => typeof value === 'string' && /^https?:\/\//i.test(value);
-
-const resolvePhotoUrl = (value) => {
-  if (!value) return value;
-  if (isAbsoluteUrl(value)) return value;
-  const normalizedPath = value.startsWith('/') ? value : `/${value}`;
-  return `${API_ORIGIN}${normalizedPath}`;
-};
-
-const normalizeUser = (user) => {
-  if (!user) return null;
-  if (!user.photo_url) return user;
-  const resolved = resolvePhotoUrl(user.photo_url);
-  if (resolved === user.photo_url) {
-    return user;
-  }
-  return { ...user, photo_url: resolved };
-};
 
 const safeParse = (value) => {
   if (!value) return null;
@@ -41,7 +21,7 @@ let cachedUser = null;
 const syncFromStorage = () => {
   if (!isBrowser) return;
   cachedTokens = safeParse(window.localStorage.getItem(TOKEN_KEY));
-  cachedUser = normalizeUser(safeParse(window.localStorage.getItem(USER_KEY)));
+  cachedUser = safeParse(window.localStorage.getItem(USER_KEY));
 };
 
 const ensureCache = () => {
@@ -80,7 +60,7 @@ export const authStorage = {
     return cachedUser;
   },
   setUser(user) {
-    cachedUser = normalizeUser(user);
+    cachedUser = user ?? null;
     persist(USER_KEY, cachedUser);
     authBus.emitUserUpdated(cachedUser);
   },
@@ -112,7 +92,7 @@ if (isBrowser) {
         cachedTokens = safeParse(event.newValue);
       }
       if (event.key === USER_KEY) {
-        cachedUser = normalizeUser(safeParse(event.newValue));
+        cachedUser = safeParse(event.newValue);
       }
     });
   } catch (error) {

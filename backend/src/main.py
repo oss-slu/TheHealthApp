@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, status, Depends, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -261,6 +262,9 @@ async def upload_profile_photo(
 
     return SuccessResponse(data=current_user)
 
-@app.get("/healthz", tags=["System"])
+class HealthResponse(BaseModel):
+    status: str
+
+@app.get("/healthz", response_model=SuccessResponse[HealthResponse], tags=["System"])
 def health_check():
-    return {"success": True, "data": {"status": "ok"}}
+    return SuccessResponse(data={"status": "ok"})

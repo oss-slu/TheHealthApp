@@ -16,5 +16,9 @@
   "phoneExists": "This phone number is already in use.",
   "passwordMismatch": "Passwords do not match.",
   "invalidImageType": "Please select a supported image file (jpg, png, webp).",
-  "imageTooLarge": "Image is too large. Maximum size is 5 MB."
+  "imageTooLarge": "Image is too large. Maximum size is 5 MB.",
+  "boundaryTitle": "Something went wrong",
+  "boundaryDescription": "We encountered an unexpected error. Please try again.",
+  "retry": "Try Again",
+  "goHome": "Go Home"
 }

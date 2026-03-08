@@ -11,5 +11,8 @@
 "viewHistory": "इतिहास देखें",
 "setReminder": "अनुस्मारक सेट करें",
 "noReminders": "कोई अनुस्मारक नहीं।",
-"viewDetails": "विवरण देखें"
+"viewDetails": "विवरण देखें",
+"healthQuestionnaire": "स्वास्थ्य प्रश्नावली",
+"questionnaireDescription": "व्यक्तिगत सिफारिशें और बेहतर देखभाल के लिए अपनी स्वास्थ्य प्रोफ़ाइल पूर्ण करें।",
+"completeQuestionnaire": "अभी पूरा करें"
 }

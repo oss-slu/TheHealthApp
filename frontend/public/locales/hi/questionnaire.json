@@ -1,0 +1,107 @@
+{
+  "title": "स्वास्थ्य प्रश्नावली",
+  "submit": "प्रश्नावली जमा करें",
+  "selectPlaceholder": "एक विकल्प चुनें",
+  "stepper": {
+    "ariaLabel": "प्रश्नावली प्रगति"
+  },
+  "steps": {
+    "personal": "व्यक्तिगत जानकारी",
+    "medical": "चिकित्सा इतिहास",
+    "lifestyle": "जीवनशैली",
+    "review": "समीक्षा और जमा करें"
+  },
+  "fields": {
+    "firstName": "पहला नाम",
+    "lastName": "उपनाम",
+    "dateOfBirth": "जन्म तिथि",
+    "gender": "लिंग",
+    "email": "ईमेल पता",
+    "phone": "फोन नंबर",
+    "existingConditions": "मौजूदा चिकित्सा स्थितियां",
+    "allergies": "एलर्जी",
+    "currentMedications": "वर्तमान दवाइयां",
+    "familyHistory": "पारिवारिक चिकित्सा इतिहास",
+    "exerciseFrequency": "व्यायाम आवृत्ति",
+    "dietType": "आहार प्रकार",
+    "smokingStatus": "धूम्रपान स्थिति",
+    "alcoholConsumption": "शराब का सेवन",
+    "sleepHours": "औसत नींद के घंटे",
+    "stressLevel": "तनाव स्तर"
+  },
+  "placeholders": {
+    "allergies": "कोई भी ज्ञात एलर्जी सूचीबद्ध करें",
+    "medications": "वर्तमान दवाइयां और खुराक सूचीबद्ध करें",
+    "familyHistory": "महत्वपूर्ण पारिवारिक चिकित्सा इतिहास का वर्णन करें"
+  },
+  "options": {
+    "gender": {
+      "male": "पुरुष",
+      "female": "महिला",
+      "other": "अन्य",
+      "preferNotToSay": "बताना नहीं चाहता"
+    },
+    "conditions": {
+      "diabetes": "मधुमेह",
+      "hypertension": "उच्च रक्तचाप",
+      "heartDisease": "हृदय रोग",
+      "asthma": "दमा",
+      "arthritis": "गठिया",
+      "thyroid": "थायराइड विकार",
+      "none": "इनमें से कोई नहीं"
+    },
+    "exercise": {
+      "none": "कोई नियमित व्यायाम नहीं",
+      "rarely": "महीने में 1-2 बार",
+      "weekly": "सप्ताह में 1-3 बार",
+      "daily": "दैनिक"
+    },
+    "diet": {
+      "omnivore": "सर्वाहारी",
+      "vegetarian": "शाकाहारी",
+      "vegan": "वीगन",
+      "pescatarian": "मछली शाकाहारी",
+      "other": "अन्य"
+    },
+    "smoking": {
+      "never": "कभी नहीं",
+      "former": "पूर्व धूम्रपानकर्ता",
+      "current": "वर्तमान धूम्रपानकर्ता"
+    },
+    "alcohol": {
+      "none": "कोई नहीं",
+      "occasional": "कभी-कभी",
+      "moderate": "मध्यम",
+      "heavy": "अधिक"
+    },
+    "sleep": {
+      "lessThan5": "5 घंटे से कम",
+      "5to6": "5-6 घंटे",
+      "7to8": "7-8 घंटे",
+      "moreThan8": "8 घंटे से अधिक"
+    },
+    "stress": {
+      "low": "कम",
+      "moderate": "मध्यम",
+      "high": "उच्च",
+      "veryHigh": "बहुत उच्च"
+    }
+  },
+  "errors": {
+    "firstNameRequired": "पहला नाम आवश्यक है",
+    "lastNameRequired": "उपनाम आवश्यक है",
+    "dobRequired": "जन्म तिथि आवश्यक है",
+    "genderRequired": "कृपया अपना लिंग चुनें",
+    "emailRequired": "ईमेल पता आवश्यक है",
+    "emailInvalid": "कृपया एक वैध ईमेल दर्ज करें",
+    "exerciseRequired": "कृपया अपनी व्यायाम आवृत्ति चुनें",
+    "dietRequired": "कृपया अपना आहार प्रकार चुनें",
+    "smokingRequired": "कृपया अपनी धूम्रपान स्थिति चुनें",
+    "alcoholRequired": "कृपया अपना शराब सेवन चुनें",
+    "incompleteForm": "कृपया जमा करने से पहले सभी आवश्यक फ़ील्ड पूर्ण करें"
+  },
+  "success": {
+    "title": "प्रश्नावली सफलतापूर्वक जमा!",
+    "message": "स्वास्थ्य प्रश्नावली पूर्ण करने के लिए धन्यवाद।"
+  }
+}

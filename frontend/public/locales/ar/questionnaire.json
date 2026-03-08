@@ -1,0 +1,107 @@
+{
+  "title": "استبيان الصحة",
+  "submit": "إرسال الاستبيان",
+  "selectPlaceholder": "اختر خياراً",
+  "stepper": {
+    "ariaLabel": "تقدم الاستبيان"
+  },
+  "steps": {
+    "personal": "المعلومات الشخصية",
+    "medical": "التاريخ الطبي",
+    "lifestyle": "نمط الحياة",
+    "review": "المراجعة والإرسال"
+  },
+  "fields": {
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "dateOfBirth": "تاريخ الميلاد",
+    "gender": "الجنس",
+    "email": "البريد الإلكتروني",
+    "phone": "رقم الهاتف",
+    "existingConditions": "الحالات الطبية الحالية",
+    "allergies": "الحساسية",
+    "currentMedications": "الأدوية الحالية",
+    "familyHistory": "التاريخ الطبي العائلي",
+    "exerciseFrequency": "معدل التمارين",
+    "dietType": "نوع النظام الغذائي",
+    "smokingStatus": "حالة التدخين",
+    "alcoholConsumption": "استهلاك الكحول",
+    "sleepHours": "متوسط ساعات النوم",
+    "stressLevel": "مستوى التوتر"
+  },
+  "placeholders": {
+    "allergies": "اذكر أي حساسية معروفة",
+    "medications": "اذكر الأدوية الحالية والجرعات",
+    "familyHistory": "صف أي تاريخ طبي عائلي مهم"
+  },
+  "options": {
+    "gender": {
+      "male": "ذكر",
+      "female": "أنثى",
+      "other": "آخر",
+      "preferNotToSay": "أفضل عدم القول"
+    },
+    "conditions": {
+      "diabetes": "السكري",
+      "hypertension": "ارتفاع ضغط الدم",
+      "heartDisease": "أمراض القلب",
+      "asthma": "الربو",
+      "arthritis": "التهاب المفاصل",
+      "thyroid": "اضطراب الغدة الدرقية",
+      "none": "لا شيء مما سبق"
+    },
+    "exercise": {
+      "none": "لا تمارين منتظمة",
+      "rarely": "1-2 مرات شهرياً",
+      "weekly": "1-3 مرات أسبوعياً",
+      "daily": "يومياً"
+    },
+    "diet": {
+      "omnivore": "آكل كل شيء",
+      "vegetarian": "نباتي",
+      "vegan": "نباتي صرف",
+      "pescatarian": "آكل الأسماك",
+      "other": "آخر"
+    },
+    "smoking": {
+      "never": "لم أدخن أبداً",
+      "former": "مدخن سابق",
+      "current": "مدخن حالي"
+    },
+    "alcohol": {
+      "none": "لا شيء",
+      "occasional": "أحياناً",
+      "moderate": "معتدل",
+      "heavy": "كثير"
+    },
+    "sleep": {
+      "lessThan5": "أقل من 5 ساعات",
+      "5to6": "5-6 ساعات",
+      "7to8": "7-8 ساعات",
+      "moreThan8": "أكثر من 8 ساعات"
+    },
+    "stress": {
+      "low": "منخفض",
+      "moderate": "معتدل",
+      "high": "عالي",
+      "veryHigh": "عالي جداً"
+    }
+  },
+  "errors": {
+    "firstNameRequired": "الاسم الأول مطلوب",
+    "lastNameRequired": "اسم العائلة مطلوب",
+    "dobRequired": "تاريخ الميلاد مطلوب",
+    "genderRequired": "الرجاء اختيار الجنس",
+    "emailRequired": "البريد الإلكتروني مطلوب",
+    "emailInvalid": "الرجاء إدخال بريد إلكتروني صحيح",
+    "exerciseRequired": "الرجاء اختيار معدل التمارين",
+    "dietRequired": "الرجاء اختيار نوع النظام الغذائي",
+    "smokingRequired": "الرجاء اختيار حالة التدخين",
+    "alcoholRequired": "الرجاء اختيار استهلاك الكحول",
+    "incompleteForm": "الرجاء إكمال جميع الحقول المطلوبة"
+  },
+  "success": {
+    "title": "تم إرسال الاستبيان بنجاح!",
+    "message": "شكراً لإكمال استبيان الصحة."
+  }
+}

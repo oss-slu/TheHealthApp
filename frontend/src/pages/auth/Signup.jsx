@@ -99,7 +99,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
 
       const user = await signup(payload);
       onAuthSuccess(user);
-      navigate('/dashboard', { replace: true });
+      navigate('/questionnaire', { replace: true, state: { isNewUser: true } });
     } catch (err) {
       const messageKey = err.messageKey || 'errors.generic';
       setError(t(messageKey, err.message || t('errors.generic')));

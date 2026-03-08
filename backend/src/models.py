@@ -24,6 +24,14 @@ class User(Document):
     class Settings:
         name = "users"
 
+
+class RevokedToken(Document):
+    """Stores JWT IDs (jti) of revoked tokens until expiry. Used for logout / token blacklist."""
+    jti: Annotated[str, Indexed(unique=True)]
+    exp_at: datetime
+    class Settings:
+        name = "revoked_tokens"
+
 # --- API Schemas ---
 class UserCreate(BaseModel):
     username: Annotated[str, StringConstraints(min_length=2, max_length=50)]
@@ -49,6 +57,11 @@ class UserLogin(BaseModel):
 
 class TokenRefresh(BaseModel):
     refresh_token: str
+
+
+class LogoutRequest(BaseModel):
+    refresh_token: str
+    access_token: Optional[str] = None
 
 class ForgotPasswordRequest(BaseModel):
     phoneOrEmail: str

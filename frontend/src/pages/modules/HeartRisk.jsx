@@ -21,8 +21,8 @@ const HeartRisk = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  // ML API endpoint - adjust this URL based on where your ML backend is running
-  const ML_API_URL = import.meta.env.VITE_ML_API_URL || 'http://localhost:8001/predict';
+  // ML API endpoint — set VITE_ML_API_URL in .env (see frontend/.env.example).
+  const ML_API_URL = import.meta.env.VITE_ML_API_URL;
 
   const handleChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -38,6 +38,10 @@ const HeartRisk = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!ML_API_URL) {
+      setError('VITE_ML_API_URL is not set. Copy frontend/.env.example to .env and set the ML API URL. See README.');
+      return;
+    }
     setIsSubmitting(true);
     setError(null);
     setResult(null);

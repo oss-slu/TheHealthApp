@@ -1,5 +1,8 @@
 version: '3.8'
 
+# MongoDB credentials must be set via environment (e.g. in .env or CI).
+# Example: MONGO_INITDB_ROOT_USERNAME=userh MONGO_INITDB_ROOT_PASSWORD=your-secret docker-compose up
+
 services:
   # MongoDB Service
   db:
@@ -7,8 +10,8 @@ services:
     container_name: healthapp_mongo_db
     restart: always
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=userh
-      - MONGO_INITDB_ROOT_PASSWORD=Password123
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:-userh}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:?Set MONGO_INITDB_ROOT_PASSWORD in .env or environment}
     ports:
       - "27018:27017"
     volumes:
@@ -23,6 +26,8 @@ services:
       - "8000:8000"
     depends_on:
       - db
+    env_file:
+      - ./backend/.env
 
 volumes:
   mongo_data:

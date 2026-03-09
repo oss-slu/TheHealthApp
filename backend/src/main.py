@@ -50,8 +50,9 @@ MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 # --- 2. MODELS & SCHEMAS ---
 from .models import (
     User, UserCreate, UserLogin, SignupResponse, 
-    TokenRefresh, TokenResponse, ForgotPasswordRequest, ForgotPasswordResponse,
-    UserResponse, UserUpdate, ErrorDetail, ErrorResponse, SuccessResponse
+    TokenRefresh, TokenResponse, LogoutRequest, ForgotPasswordRequest, ForgotPasswordResponse,
+    UserResponse, UserUpdate, ErrorDetail, ErrorResponse, SuccessResponse,
+    RevokedToken,
 )
 
 limiter = Limiter(key_func=get_remote_address,default_limits=["100 per 15 minutes"])
@@ -60,39 +61,51 @@ security = HTTPBearer()
 
 def create_access_token(user_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode = {"exp": expire, "sub": user_id}
+    jti = str(uuid.uuid4())
+    to_encode = {"exp": expire, "sub": user_id, "jti": jti}
     return jwt.encode(to_encode, settings.JWT_ACCESS_SECRET, algorithm="HS256")
 
 def create_refresh_token(user_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode = {"exp": expire, "sub": user_id}
+    jti = str(uuid.uuid4())
+    to_encode = {"exp": expire, "sub": user_id, "jti": jti}
     return jwt.encode(to_encode, settings.JWT_REFRESH_SECRET, algorithm="HS256")
 
-def verify_access_token(token: str) -> str:
+def verify_access_token(token: str) -> tuple[str, str]:
     try:
         payload = jwt.decode(token, settings.JWT_ACCESS_SECRET, algorithms=["HS256"])
         user_id = payload.get("sub")
+        jti = payload.get("jti") or ""
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
-        return user_id
+        return user_id, jti
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired access token")
 
-def verify_refresh_token(token: str) -> str:
+def verify_refresh_token(token: str) -> tuple[str, str]:
     try:
         payload = jwt.decode(token, settings.JWT_REFRESH_SECRET, algorithms=["HS256"])
         user_id = payload.get("sub")
+        jti = payload.get("jti") or ""
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        return user_id
+        return user_id, jti
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+async def is_token_revoked(jti: str) -> bool:
+    if not jti:
+        return False
+    doc = await RevokedToken.find_one(RevokedToken.jti == jti)
+    return doc is not None
 
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
 ) -> User:
     token = credentials.credentials
-    user_id = verify_access_token(token)
+    user_id, jti = verify_access_token(token)
+    if await is_token_revoked(jti):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked")
     user = await User.get(uuid.UUID(user_id))
     if not user:
        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -102,7 +115,7 @@ async def get_current_user(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGO_URL)
-    await init_beanie(database=client[settings.MONGO_DB_NAME], document_models=[User])
+    await init_beanie(database=client[settings.MONGO_DB_NAME], document_models=[User, RevokedToken])
     print("Database connection established.")
     yield
 
@@ -195,7 +208,9 @@ async def login_user(request: Request, payload: UserLogin):
 @app.post("/api/v1/auth/refresh", response_model=SuccessResponse[TokenResponse], tags=["Authentication"])
 @limiter.limit("10/minute")
 async def refresh_access_token(request: Request, payload: TokenRefresh):
-    user_id = verify_refresh_token(payload.refresh_token)
+    user_id, jti = verify_refresh_token(payload.refresh_token)
+    if await is_token_revoked(jti):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked")
     return SuccessResponse(data={
         "access_token": create_access_token(user_id),
         "refresh_token": payload.refresh_token,
@@ -203,7 +218,25 @@ async def refresh_access_token(request: Request, payload: TokenRefresh):
     })
 
 @app.post("/api/v1/auth/logout", status_code=204, tags=["Authentication"])
-async def logout_user():
+async def logout_user(payload: LogoutRequest):
+    from datetime import datetime as dt
+    try:
+        _, jti_refresh = verify_refresh_token(payload.refresh_token)
+        if jti_refresh:
+            exp = jwt.get_unverified_claims(payload.refresh_token).get("exp")
+            exp_at = dt.fromtimestamp(exp, tz=timezone.utc) if exp else datetime.now(timezone.utc) + timedelta(days=7)
+            await RevokedToken(jti=jti_refresh, exp_at=exp_at).insert()
+    except (JWTError, HTTPException):
+        pass
+    if payload.access_token:
+        try:
+            _, jti_access = verify_access_token(payload.access_token)
+            if jti_access:
+                exp = jwt.get_unverified_claims(payload.access_token).get("exp")
+                exp_at = dt.fromtimestamp(exp, tz=timezone.utc) if exp else datetime.now(timezone.utc) + timedelta(minutes=15)
+                await RevokedToken(jti=jti_access, exp_at=exp_at).insert()
+        except (JWTError, HTTPException):
+            pass
     return None
 
 @app.post("/api/v1/auth/forgot-password", response_model=SuccessResponse[ForgotPasswordResponse], tags=["Authentication"])

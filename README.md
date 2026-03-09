@@ -68,26 +68,32 @@ docker run --name tha-mongo -p 27017:27017 -d mongo:7
 
 ### 3️⃣ Backend Setup
 
+Environment variables are the **single source of truth** for backend configuration. Copy the example file and set real values:
+
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate   
+cp .env.example .env
+# Edit .env with your MongoDB URL, JWT secrets, and CORS origins.
+```
+
+**Required variables** (see `backend/.env.example`):
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `MONGO_URL` | MongoDB connection string | `mongodb://localhost:27017` |
+| `MONGO_DB_NAME` | Database name | `healthapp` |
+| `JWT_ACCESS_SECRET` | Secret for access tokens | (generate a strong random value) |
+| `JWT_REFRESH_SECRET` | Secret for refresh tokens | (generate a different strong value) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token TTL | `15` |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | Refresh token TTL | `7` |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins | `http://localhost:5173` |
+| `ALLOWED_ORIGIN_REGEX` | Optional CORS regex | (leave empty or set as needed) |
+
+Then install and run:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   
-```
-
-**Sample `.env`**
-
-```bash
-MONGO_URL=mongodb://localhost:27017
-MONGO_DB_NAME=db_Name
-JWT_ACCESS_SECRET=your_access_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-ALLOWED_ORIGINS=http://localhost:5173
-```
-
-Run API:
-
-```bash
 PYTHONPATH=$(pwd) uvicorn src.main:app --reload --port 8000
 ```
 
@@ -97,13 +103,22 @@ Open: **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**
 
 ### 4️⃣ Frontend Setup
 
+The **API base URL** is configured via environment variables (single source of truth). Copy the example file and set values:
+
 ```bash
-cd ../frontend
+cd frontend
 cp .env.example .env
-VITE_API_URL=http://localhost:8000
+# Edit .env: set VITE_API_BASE_URL to your backend API base (e.g. http://localhost:8000/api/v1).
 npm install
 npm run dev
 ```
+
+**Key variables** (see `frontend/.env.example`):
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `VITE_API_BASE_URL` | Backend API base URL (no trailing slash) | `http://localhost:8000/api/v1` |
+| `VITE_ML_API_URL` | ML prediction service URL (for Heart Risk module) | `http://localhost:8001/predict` |
 
 Visit: **[http://localhost:5173](http://localhost:5173)**
 
@@ -119,10 +134,11 @@ TBA
 
 ## 🔌 Integration Variables
 
-| Service    | Variable       | Example                 |
-| ---------- | -------------- | ----------------------- |
-| Backend    | `ML_API_BASE`  | `http://localhost:8500` |
-| Frontend   | `VITE_API_URL` | `http://localhost:8000` |
+| Service    | Variable           | Purpose                    | Example                        |
+| ---------- | ------------------ | -------------------------- | ------------------------------ |
+| Frontend   | `VITE_API_BASE_URL`| Backend API base URL       | `http://localhost:8000/api/v1` |
+| Frontend   | `VITE_ML_API_URL`  | ML prediction endpoint     | `http://localhost:8001/predict` |
+| Backend    | `ALLOWED_ORIGINS`  | CORS allowed frontend URLs | `http://localhost:5173`        |
 
 ---
 

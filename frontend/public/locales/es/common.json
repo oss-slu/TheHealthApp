@@ -19,5 +19,7 @@
   "saveChanges": "Guardar cambios",
   "profileInformation": "Información del Perfil",
   "others": "Otros",
-  "pleaseWait": "Por favor espera..."
+  "pleaseWait": "Por favor espera...",
+  "next": "Siguiente",
+  "back": "Atrás"
 }

@@ -11,5 +11,8 @@
 "viewHistory": "عرض السجل",
 "setReminder": "تعيين تذكير",
 "noReminders": "لا توجد تذكيرات",
-"viewDetails": "عرض التفاصيل"
+"viewDetails": "عرض التفاصيل",
+"healthQuestionnaire": "استبيان الصحة",
+"questionnaireDescription": "أكمل ملفك الصحي للحصول على توصيات مخصصة ورعاية أفضل.",
+"completeQuestionnaire": "أكمل الآن"
 }

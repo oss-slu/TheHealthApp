@@ -1,0 +1,107 @@
+{
+  "title": "健康问卷",
+  "submit": "提交问卷",
+  "selectPlaceholder": "请选择",
+  "stepper": {
+    "ariaLabel": "问卷进度"
+  },
+  "steps": {
+    "personal": "个人信息",
+    "medical": "病史",
+    "lifestyle": "生活方式",
+    "review": "审核并提交"
+  },
+  "fields": {
+    "firstName": "名",
+    "lastName": "姓",
+    "dateOfBirth": "出生日期",
+    "gender": "性别",
+    "email": "电子邮箱",
+    "phone": "电话号码",
+    "existingConditions": "现有疾病",
+    "allergies": "过敏史",
+    "currentMedications": "当前用药",
+    "familyHistory": "家族病史",
+    "exerciseFrequency": "运动频率",
+    "dietType": "饮食类型",
+    "smokingStatus": "吸烟状况",
+    "alcoholConsumption": "饮酒情况",
+    "sleepHours": "平均睡眠时长",
+    "stressLevel": "压力水平"
+  },
+  "placeholders": {
+    "allergies": "列出任何已知过敏",
+    "medications": "列出当前药物和剂量",
+    "familyHistory": "描述重要的家族病史"
+  },
+  "options": {
+    "gender": {
+      "male": "男",
+      "female": "女",
+      "other": "其他",
+      "preferNotToSay": "不愿透露"
+    },
+    "conditions": {
+      "diabetes": "糖尿病",
+      "hypertension": "高血压",
+      "heartDisease": "心脏病",
+      "asthma": "哮喘",
+      "arthritis": "关节炎",
+      "thyroid": "甲状腺疾病",
+      "none": "以上都没有"
+    },
+    "exercise": {
+      "none": "不规律运动",
+      "rarely": "每月1-2次",
+      "weekly": "每周1-3次",
+      "daily": "每天"
+    },
+    "diet": {
+      "omnivore": "杂食",
+      "vegetarian": "素食",
+      "vegan": "纯素",
+      "pescatarian": "鱼素",
+      "other": "其他"
+    },
+    "smoking": {
+      "never": "从不吸烟",
+      "former": "已戒烟",
+      "current": "目前吸烟"
+    },
+    "alcohol": {
+      "none": "不饮酒",
+      "occasional": "偶尔",
+      "moderate": "适度",
+      "heavy": "大量"
+    },
+    "sleep": {
+      "lessThan5": "少于5小时",
+      "5to6": "5-6小时",
+      "7to8": "7-8小时",
+      "moreThan8": "超过8小时"
+    },
+    "stress": {
+      "low": "低",
+      "moderate": "中等",
+      "high": "高",
+      "veryHigh": "非常高"
+    }
+  },
+  "errors": {
+    "firstNameRequired": "名是必填项",
+    "lastNameRequired": "姓是必填项",
+    "dobRequired": "出生日期是必填项",
+    "genderRequired": "请选择性别",
+    "emailRequired": "电子邮箱是必填项",
+    "emailInvalid": "请输入有效的电子邮箱",
+    "exerciseRequired": "请选择运动频率",
+    "dietRequired": "请选择饮食类型",
+    "smokingRequired": "请选择吸烟状况",
+    "alcoholRequired": "请选择饮酒情况",
+    "incompleteForm": "请在提交前完成所有必填项"
+  },
+  "success": {
+    "title": "问卷提交成功！",
+    "message": "感谢您完成健康问卷。"
+  }
+}

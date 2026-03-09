@@ -1,0 +1,107 @@
+{
+  "title": "Cuestionario de Salud",
+  "submit": "Enviar Cuestionario",
+  "selectPlaceholder": "Seleccione una opción",
+  "stepper": {
+    "ariaLabel": "Progreso del cuestionario"
+  },
+  "steps": {
+    "personal": "Información Personal",
+    "medical": "Historial Médico",
+    "lifestyle": "Estilo de Vida",
+    "review": "Revisar y Enviar"
+  },
+  "fields": {
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "dateOfBirth": "Fecha de Nacimiento",
+    "gender": "Género",
+    "email": "Correo Electrónico",
+    "phone": "Teléfono",
+    "existingConditions": "Condiciones Médicas Existentes",
+    "allergies": "Alergias",
+    "currentMedications": "Medicamentos Actuales",
+    "familyHistory": "Historial Médico Familiar",
+    "exerciseFrequency": "Frecuencia de Ejercicio",
+    "dietType": "Tipo de Dieta",
+    "smokingStatus": "Estado de Fumador",
+    "alcoholConsumption": "Consumo de Alcohol",
+    "sleepHours": "Horas de Sueño Promedio",
+    "stressLevel": "Nivel de Estrés"
+  },
+  "placeholders": {
+    "allergies": "Liste cualquier alergia conocida",
+    "medications": "Liste medicamentos actuales y dosis",
+    "familyHistory": "Describa cualquier historial médico familiar significativo"
+  },
+  "options": {
+    "gender": {
+      "male": "Masculino",
+      "female": "Femenino",
+      "other": "Otro",
+      "preferNotToSay": "Prefiero no decir"
+    },
+    "conditions": {
+      "diabetes": "Diabetes",
+      "hypertension": "Hipertensión",
+      "heartDisease": "Enfermedad Cardíaca",
+      "asthma": "Asma",
+      "arthritis": "Artritis",
+      "thyroid": "Trastorno de Tiroides",
+      "none": "Ninguna de las anteriores"
+    },
+    "exercise": {
+      "none": "Sin ejercicio regular",
+      "rarely": "1-2 veces al mes",
+      "weekly": "1-3 veces por semana",
+      "daily": "Diariamente"
+    },
+    "diet": {
+      "omnivore": "Omnívoro",
+      "vegetarian": "Vegetariano",
+      "vegan": "Vegano",
+      "pescatarian": "Pescatariano",
+      "other": "Otro"
+    },
+    "smoking": {
+      "never": "Nunca fumó",
+      "former": "Ex fumador",
+      "current": "Fumador actual"
+    },
+    "alcohol": {
+      "none": "Ninguno",
+      "occasional": "Ocasional",
+      "moderate": "Moderado",
+      "heavy": "Alto"
+    },
+    "sleep": {
+      "lessThan5": "Menos de 5 horas",
+      "5to6": "5-6 horas",
+      "7to8": "7-8 horas",
+      "moreThan8": "Más de 8 horas"
+    },
+    "stress": {
+      "low": "Bajo",
+      "moderate": "Moderado",
+      "high": "Alto",
+      "veryHigh": "Muy Alto"
+    }
+  },
+  "errors": {
+    "firstNameRequired": "El nombre es obligatorio",
+    "lastNameRequired": "El apellido es obligatorio",
+    "dobRequired": "La fecha de nacimiento es obligatoria",
+    "genderRequired": "Por favor seleccione su género",
+    "emailRequired": "El correo electrónico es obligatorio",
+    "emailInvalid": "Por favor ingrese un correo válido",
+    "exerciseRequired": "Por favor seleccione su frecuencia de ejercicio",
+    "dietRequired": "Por favor seleccione su tipo de dieta",
+    "smokingRequired": "Por favor seleccione su estado de fumador",
+    "alcoholRequired": "Por favor seleccione su consumo de alcohol",
+    "incompleteForm": "Por favor complete todos los campos obligatorios"
+  },
+  "success": {
+    "title": "¡Cuestionario enviado exitosamente!",
+    "message": "Gracias por completar el cuestionario de salud."
+  }
+}

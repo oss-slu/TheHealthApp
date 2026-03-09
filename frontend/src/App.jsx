@@ -15,6 +15,7 @@ import Account from './pages/settings/Account';
 import HeartRisk from './pages/modules/HeartRisk';
 import Prescription from './pages/modules/Prescription';
 import TBA from './pages/modules/TBA';
+import Questionnaire from './pages/Questionnaire';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
           <Route path="/modules/heart-risk" element={<HeartRisk />} />
           <Route path="/modules/prescription" element={<Prescription />} />
           <Route path="/modules/tba" element={<TBA />} />
+          <Route path="/questionnaire" element={<Questionnaire />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

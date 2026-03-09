@@ -11,5 +11,8 @@
 "viewHistory": "查看历史记录",
 "setReminder": "设置提醒",
 "noReminders": "无提醒。",
-"viewDetails": "查看详情"
+"viewDetails": "查看详情",
+"healthQuestionnaire": "健康问卷",
+"questionnaireDescription": "完成您的健康档案以获得个性化建议和更好的护理。",
+"completeQuestionnaire": "立即完成"
 }

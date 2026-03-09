@@ -1,0 +1,107 @@
+{
+  "title": "Health Questionnaire",
+  "submit": "Submit Questionnaire",
+  "selectPlaceholder": "Select an option",
+  "stepper": {
+    "ariaLabel": "Questionnaire progress"
+  },
+  "steps": {
+    "personal": "Personal Information",
+    "medical": "Medical History",
+    "lifestyle": "Lifestyle",
+    "review": "Review & Submit"
+  },
+  "fields": {
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "dateOfBirth": "Date of Birth",
+    "gender": "Gender",
+    "email": "Email Address",
+    "phone": "Phone Number",
+    "existingConditions": "Existing Medical Conditions",
+    "allergies": "Allergies",
+    "currentMedications": "Current Medications",
+    "familyHistory": "Family Medical History",
+    "exerciseFrequency": "Exercise Frequency",
+    "dietType": "Diet Type",
+    "smokingStatus": "Smoking Status",
+    "alcoholConsumption": "Alcohol Consumption",
+    "sleepHours": "Average Sleep Hours",
+    "stressLevel": "Stress Level"
+  },
+  "placeholders": {
+    "allergies": "List any known allergies (food, medication, environmental)",
+    "medications": "List current medications and dosages",
+    "familyHistory": "Describe any significant family medical history"
+  },
+  "options": {
+    "gender": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other",
+      "preferNotToSay": "Prefer not to say"
+    },
+    "conditions": {
+      "diabetes": "Diabetes",
+      "hypertension": "Hypertension (High Blood Pressure)",
+      "heartDisease": "Heart Disease",
+      "asthma": "Asthma",
+      "arthritis": "Arthritis",
+      "thyroid": "Thyroid Disorder",
+      "none": "None of the above"
+    },
+    "exercise": {
+      "none": "No regular exercise",
+      "rarely": "1-2 times per month",
+      "weekly": "1-3 times per week",
+      "daily": "Daily or almost daily"
+    },
+    "diet": {
+      "omnivore": "Omnivore (all foods)",
+      "vegetarian": "Vegetarian",
+      "vegan": "Vegan",
+      "pescatarian": "Pescatarian",
+      "other": "Other"
+    },
+    "smoking": {
+      "never": "Never smoked",
+      "former": "Former smoker",
+      "current": "Current smoker"
+    },
+    "alcohol": {
+      "none": "None",
+      "occasional": "Occasional (1-2 drinks/week)",
+      "moderate": "Moderate (3-7 drinks/week)",
+      "heavy": "Heavy (more than 7 drinks/week)"
+    },
+    "sleep": {
+      "lessThan5": "Less than 5 hours",
+      "5to6": "5-6 hours",
+      "7to8": "7-8 hours",
+      "moreThan8": "More than 8 hours"
+    },
+    "stress": {
+      "low": "Low",
+      "moderate": "Moderate",
+      "high": "High",
+      "veryHigh": "Very High"
+    }
+  },
+  "errors": {
+    "firstNameRequired": "First name is required",
+    "lastNameRequired": "Last name is required",
+    "dobRequired": "Date of birth is required",
+    "genderRequired": "Please select your gender",
+    "emailRequired": "Email address is required",
+    "emailInvalid": "Please enter a valid email address",
+    "exerciseRequired": "Please select your exercise frequency",
+    "dietRequired": "Please select your diet type",
+    "smokingRequired": "Please select your smoking status",
+    "alcoholRequired": "Please select your alcohol consumption",
+    "incompleteForm": "Please complete all required fields before submitting"
+  },
+  "success": {
+    "title": "Questionnaire submitted successfully!",
+    "message": "Thank you for completing the health questionnaire. Your responses have been recorded."
+  }
+}

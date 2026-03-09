@@ -13,5 +13,7 @@
   "male": "Male",
   "female": "Female",
   "others": "Others",
-  "pleaseWait": "Please wait..."
+  "pleaseWait": "Please wait...",
+  "next": "Next",
+  "back": "Back"
 }

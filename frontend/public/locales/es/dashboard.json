@@ -11,5 +11,8 @@
   "viewHistory": "Ver historial",
   "setReminder": "Establecer recordatorio",
   "noReminders": "No hay recordatorios.",
-  "viewDetails": "Ver Detalles"
+  "viewDetails": "Ver Detalles",
+  "healthQuestionnaire": "Cuestionario de Salud",
+  "questionnaireDescription": "Complete su perfil de salud para obtener recomendaciones personalizadas y mejor atención.",
+  "completeQuestionnaire": "Completar Ahora"
 }

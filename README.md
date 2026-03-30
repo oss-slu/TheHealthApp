@@ -112,73 +112,100 @@ ML Service (Planned)
 
 ## Getting Started
 
-### 1. Clone Repository
+### Prerequisites
+
+- **Node.js** 18+ and npm
+- **Python** 3.11+
+- **Docker** (for MongoDB) or MongoDB 7+ installed locally
+
+### Quick Start (One-Time Setup)
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/oss-slu/TheHealthApp.git
 cd TheHealthApp
-```
 
-### 2. Start Database (Docker)
-
-```bash
+# 2. Start MongoDB (Docker - recommended)
 docker run --name tha-mongo -p 27017:27017 -d mongo:7
+
+# 3. Setup Backend
+cd backend
+cp .env.example .env       # .env is pre-configured for local dev
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# 4. Setup Frontend (in a new terminal)
+cd frontend
+cp .env.example .env       # .env is pre-configured for local dev
+npm install
 ```
 
-### 3. Backend Setup
+### Running the Application
+
+**Terminal 1 - Backend (from `backend/` directory):**
 
 ```bash
-cd backend
-cp .env.example .env
+source .venv/bin/activate
+PYTHONPATH=$(pwd) uvicorn src.main:app --reload --port 8000
 ```
 
-Configure environment variables:
+**Terminal 2 - Frontend (from `frontend/` directory):**
 
-| Variable | Description | Example |
+```bash
+npm run dev
+```
+
+### Access Points
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Frontend | [http://localhost:5173](http://localhost:5173) | React application |
+| Backend API | [http://localhost:8000/api/v1](http://localhost:8000/api/v1) | FastAPI REST API |
+| API Docs | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI |
+| Health Check | [http://localhost:8000/healthz](http://localhost:8000/healthz) | Backend health status |
+
+### Environment Variables
+
+#### Backend (`backend/.env`)
+
+| Variable | Description | Default |
 |----------|-------------|---------|
 | `MONGO_URL` | MongoDB connection string | `mongodb://localhost:27017` |
 | `MONGO_DB_NAME` | Database name | `healthapp` |
-| `JWT_ACCESS_SECRET` | Access token secret | (set a strong random value) |
-| `JWT_REFRESH_SECRET` | Refresh token secret | (set a different strong random value) |
+| `JWT_ACCESS_SECRET` | Access token secret | `dev-access-secret-...` |
+| `JWT_REFRESH_SECRET` | Refresh token secret | `dev-refresh-secret-...` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token TTL | `15` |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | Refresh token TTL | `7` |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:5173` |
 
-Run backend:
+#### Frontend (`frontend/.env`)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_API_BASE_URL` | Backend API base URL | `http://localhost:8000/api/v1` |
+| `VITE_ML_API_URL` | ML service URL (optional) | `http://localhost:8001/predict` |
+
+### Docker Compose (Alternative)
+
+For running MongoDB with authentication:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-PYTHONPATH=$(pwd) uvicorn src.main:app --reload --port 8000
+# Set MongoDB password and start services
+MONGO_INITDB_ROOT_PASSWORD=your-secret-password docker-compose up -d db
+
+# Update backend/.env to use authenticated connection:
+# MONGO_URL=mongodb://userh:your-secret-password@localhost:27017
 ```
 
-API docs:
-[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+### Troubleshooting
 
-### 4. Frontend Setup
-
-```bash
-cd frontend
-cp .env.example .env
-```
-
-Set:
-
-| Variable | Example |
-|----------|---------|
-| `VITE_API_BASE_URL` | `http://localhost:8000/api/v1` |
-| `VITE_ML_API_URL` | `http://localhost:8001/predict` |
-
-Run:
-
-```bash
-npm install
-npm run dev
-```
-
-Open:
-[http://localhost:5173](http://localhost:5173)
+| Issue | Solution |
+|-------|----------|
+| MongoDB connection refused | Ensure Docker container is running: `docker ps` |
+| CORS errors in browser | Verify `ALLOWED_ORIGINS` in backend `.env` matches frontend URL |
+| Module not found (Python) | Ensure `PYTHONPATH=$(pwd)` is set when running uvicorn |
+| Frontend can't reach backend | Check `VITE_API_BASE_URL` in frontend `.env` |
 
 ---
 

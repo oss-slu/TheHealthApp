@@ -53,7 +53,9 @@ from .models import (
     TokenRefresh, TokenResponse, LogoutRequest, ForgotPasswordRequest, ForgotPasswordResponse,
     UserResponse, UserUpdate, ErrorDetail, ErrorResponse, SuccessResponse,
     RevokedToken,
+    HealthRiskInput, HealthRiskOutput,
 )
+from .risk_calculator import calculate_health_risk
 
 limiter = Limiter(key_func=get_remote_address,default_limits=["100 per 15 minutes"])
 security = HTTPBearer()
@@ -293,6 +295,94 @@ async def upload_profile_photo(
     await current_user.save()
 
     return SuccessResponse(data=current_user)
+
+@app.post(
+    "/api/v1/health/risk-assessment",
+    response_model=SuccessResponse[HealthRiskOutput],
+    tags=["Health Assessment"],
+    summary="Calculate cardiovascular health risk",
+    description="""
+    Calculate 10-year cardiovascular disease risk using a simplified Framingham Risk Score model.
+    
+    This endpoint processes questionnaire inputs and generates a health risk assessment including:
+    - Risk score (0-100 percentage)
+    - Risk category (low, moderate, high, very_high)
+    - Factor breakdown showing contribution of each risk factor
+    - Personalized recommendations based on inputs
+    
+    **Input Requirements:**
+    - Age: 20-120 years
+    - Gender: male or female (required for risk calculation)
+    - Total Cholesterol: 100-500 mg/dL
+    - HDL Cholesterol: 10-150 mg/dL (must be less than total cholesterol)
+    - Systolic Blood Pressure: 70-250 mmHg
+    - Blood Pressure Treatment: yes/no
+    - Smoking Status: current/former/never
+    - Diabetes Status: yes/no/prediabetes
+    """
+)
+@limiter.limit("30 per minute")
+async def calculate_risk_assessment(
+    request: Request,
+    payload: HealthRiskInput,
+    current_user: Annotated[User, Depends(get_current_user)]
+):
+    """
+    Process health questionnaire data and return cardiovascular risk assessment.
+    
+    Requires authentication. Rate limited to 30 requests per minute.
+    """
+    try:
+        result = calculate_health_risk(payload)
+        return SuccessResponse(data=result)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while calculating risk assessment"
+        )
+
+
+@app.post(
+    "/api/v1/health/risk-assessment/anonymous",
+    response_model=SuccessResponse[HealthRiskOutput],
+    tags=["Health Assessment"],
+    summary="Calculate cardiovascular health risk (no auth required)",
+    description="""
+    Same as /api/v1/health/risk-assessment but does not require authentication.
+    Useful for public health awareness tools and quick assessments.
+    
+    Rate limited more strictly to prevent abuse.
+    """
+)
+@limiter.limit("10 per minute")
+async def calculate_risk_assessment_anonymous(
+    request: Request,
+    payload: HealthRiskInput
+):
+    """
+    Process health questionnaire data and return cardiovascular risk assessment.
+    
+    No authentication required. Rate limited to 10 requests per minute.
+    """
+    try:
+        result = calculate_health_risk(payload)
+        return SuccessResponse(data=result)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while calculating risk assessment"
+        )
+
 
 @app.get("/healthz", tags=["System"])
 def health_check():

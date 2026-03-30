@@ -96,3 +96,131 @@ class SuccessResponse(BaseModel, Generic[T]):
    
     success: bool = True
     data: T
+
+
+# --- Health Risk Assessment Schemas ---
+class BloodPressureTreatmentEnum(str, Enum):
+    yes = "yes"
+    no = "no"
+
+
+class SmokingStatusEnum(str, Enum):
+    current = "current"
+    former = "former"
+    never = "never"
+
+
+class DiabetesStatusEnum(str, Enum):
+    yes = "yes"
+    no = "no"
+    prediabetes = "prediabetes"
+
+
+class RiskCategoryEnum(str, Enum):
+    low = "low"
+    moderate = "moderate"
+    high = "high"
+    very_high = "very_high"
+
+
+class HealthRiskInput(BaseModel):
+    """Input schema for health risk calculation based on simplified Framingham model."""
+    
+    age: int = Field(
+        ..., 
+        ge=20, 
+        le=120,
+        description="Age in years (20-120)"
+    )
+    gender: GenderEnum = Field(
+        ...,
+        description="Biological sex for risk calculation"
+    )
+    total_cholesterol: float = Field(
+        ..., 
+        ge=100, 
+        le=500,
+        description="Total cholesterol in mg/dL (100-500)"
+    )
+    hdl_cholesterol: float = Field(
+        ..., 
+        ge=10, 
+        le=150,
+        description="HDL cholesterol in mg/dL (10-150)"
+    )
+    systolic_blood_pressure: int = Field(
+        ..., 
+        ge=70, 
+        le=250,
+        description="Systolic blood pressure in mmHg (70-250)"
+    )
+    blood_pressure_treatment: BloodPressureTreatmentEnum = Field(
+        ...,
+        description="Whether currently on blood pressure medication"
+    )
+    smoking_status: SmokingStatusEnum = Field(
+        ...,
+        description="Current smoking status"
+    )
+    diabetes_status: DiabetesStatusEnum = Field(
+        ...,
+        description="Diabetes status"
+    )
+
+    @field_validator('gender', mode='after')
+    def validate_gender_for_risk(cls, v: GenderEnum) -> GenderEnum:
+        if v in (GenderEnum.other, GenderEnum.na):
+            raise ValueError(
+                "Risk calculation requires biological sex (male or female). "
+                "For 'other' or 'na', please select the closest biological match for accurate risk assessment."
+            )
+        return v
+
+    @field_validator('hdl_cholesterol', mode='after')
+    def validate_hdl_vs_total(cls, v: float, info) -> float:
+        total = info.data.get('total_cholesterol')
+        if total is not None and v >= total:
+            raise ValueError("HDL cholesterol must be less than total cholesterol")
+        return v
+
+
+class RiskFactorBreakdown(BaseModel):
+    """Breakdown of individual risk factor contributions."""
+    
+    age_factor: float = Field(..., description="Risk contribution from age")
+    cholesterol_factor: float = Field(..., description="Risk contribution from cholesterol ratio")
+    blood_pressure_factor: float = Field(..., description="Risk contribution from blood pressure")
+    smoking_factor: float = Field(..., description="Risk contribution from smoking status")
+    diabetes_factor: float = Field(..., description="Risk contribution from diabetes status")
+
+
+class HealthRiskOutput(BaseModel):
+    """Output schema for health risk calculation results."""
+    
+    risk_score: float = Field(
+        ..., 
+        ge=0, 
+        le=100,
+        description="10-year cardiovascular risk percentage (0-100)"
+    )
+    risk_category: RiskCategoryEnum = Field(
+        ...,
+        description="Risk category classification"
+    )
+    risk_category_description: str = Field(
+        ...,
+        description="Human-readable description of the risk category"
+    )
+    factor_breakdown: RiskFactorBreakdown = Field(
+        ...,
+        description="Breakdown of individual risk factor contributions"
+    )
+    recommendations: list[str] = Field(
+        ...,
+        description="Personalized health recommendations based on risk factors"
+    )
+    disclaimer: str = Field(
+        default="This is an estimated risk score for educational purposes only. "
+                "Please consult a healthcare professional for medical advice.",
+        description="Medical disclaimer"
+    )

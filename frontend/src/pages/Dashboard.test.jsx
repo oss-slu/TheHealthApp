@@ -44,11 +44,24 @@ describe('Dashboard', () => {
       renderDashboard();
 
       const viewDetailsLinks = screen.getAllByText(/view details/i);
-      expect(viewDetailsLinks.length).toBeGreaterThanOrEqual(3);
+      expect(viewDetailsLinks.length).toBeGreaterThanOrEqual(4);
+    });
+
+    it('renders Framingham assessment card', () => {
+      renderDashboard();
+
+      expect(screen.getByText('Framingham Risk Assessment')).toBeInTheDocument();
     });
   });
 
   describe('Module Navigation', () => {
+    it('framingham link points to correct path', () => {
+      renderDashboard();
+
+      const framinghamLink = screen.getByRole('link', { name: /framingham/i });
+      expect(framinghamLink).toHaveAttribute('href', '/modules/framingham-risk');
+    });
+
     it('heart risk link points to correct path', () => {
       renderDashboard();
 
@@ -132,7 +145,7 @@ describe('Dashboard', () => {
       renderDashboard();
 
       const moduleLinks = screen.getAllByRole('link');
-      expect(moduleLinks.length).toBeGreaterThanOrEqual(3);
+      expect(moduleLinks.length).toBeGreaterThanOrEqual(5);
     });
   });
 });

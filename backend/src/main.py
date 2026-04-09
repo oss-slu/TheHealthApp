@@ -15,7 +15,6 @@ from dotenv import load_dotenv
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-import motor.motor_asyncio
 from beanie import init_beanie
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -49,11 +48,26 @@ MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 # --- 2. MODELS & SCHEMAS ---
 from .models import (
-    User, UserCreate, UserLogin, SignupResponse, 
-    TokenRefresh, TokenResponse, LogoutRequest, ForgotPasswordRequest, ForgotPasswordResponse,
-    UserResponse, UserUpdate, ErrorDetail, ErrorResponse, SuccessResponse,
+    User,
+    UserCreate,
+    UserLogin,
+    SignupResponse,
+    TokenRefresh,
+    TokenResponse,
+    LogoutRequest,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    UserResponse,
+    UserUpdate,
+    ErrorDetail,
+    ErrorResponse,
+    SuccessResponse,
     RevokedToken,
-    HealthRiskInput, HealthRiskOutput,
+    HealthRiskInput,
+    HealthRiskOutput,
+    ConsentSubmit,
+    ConsentStatusData,
+    user_has_valid_consent,
 )
 from .risk_calculator import calculate_health_risk
 
@@ -113,11 +127,31 @@ async def get_current_user(
        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
 
+
+async def require_health_consent(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    if not user_has_valid_consent(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Health features require completed consent for the current policy version",
+        )
+    return current_user
+
+
 # --- 4. DATABASE LIFESPAN ---
+def _mongo_connection_string() -> str:
+    """Beanie 2.x uses PyMongo AsyncMongoClient; URI must include the database name."""
+    base = settings.MONGO_URL.rstrip("/")
+    return f"{base}/{settings.MONGO_DB_NAME}"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGO_URL)
-    await init_beanie(database=client[settings.MONGO_DB_NAME], document_models=[User, RevokedToken])
+    await init_beanie(
+        connection_string=_mongo_connection_string(),
+        document_models=[User, RevokedToken],
+    )
     print("Database connection established.")
     yield
 
@@ -251,6 +285,34 @@ async def forgot_password(payload: ForgotPasswordRequest):
 async def get_own_profile(current_user: Annotated[User, Depends(get_current_user)]):
     return SuccessResponse(data=current_user)
 
+
+@app.post("/api/v1/consent", response_model=SuccessResponse[UserResponse], tags=["Consent"])
+@limiter.limit("10/minute")
+async def submit_consent(
+    request: Request,
+    payload: ConsentSubmit,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    current_user.consent_given = True
+    current_user.data_usage = payload.data_usage
+    current_user.marketing = payload.marketing
+    current_user.consent_version = payload.version
+    current_user.consent_timestamp = datetime.now(timezone.utc)
+    current_user.updated_at = datetime.utcnow()
+    await current_user.save()
+    return SuccessResponse(data=current_user)
+
+
+@app.get("/api/v1/consent/status", response_model=SuccessResponse[ConsentStatusData], tags=["Consent"])
+async def consent_status(current_user: Annotated[User, Depends(get_current_user)]):
+    return SuccessResponse(
+        data=ConsentStatusData(
+            consent_given=user_has_valid_consent(current_user),
+            version=current_user.consent_version or "",
+        )
+    )
+
+
 @app.post("/api/v1/users/me/photo", response_model=SuccessResponse[UserResponse], tags=["User"])
 async def upload_profile_photo(
     file: UploadFile = File(...),
@@ -325,7 +387,7 @@ async def upload_profile_photo(
 async def calculate_risk_assessment(
     request: Request,
     payload: HealthRiskInput,
-    current_user: Annotated[User, Depends(get_current_user)]
+    current_user: Annotated[User, Depends(require_health_consent)],
 ):
     """
     Process health questionnaire data and return cardiovascular risk assessment.

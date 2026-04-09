@@ -14,5 +14,7 @@
   "viewDetails": "Ver Detalles",
   "healthQuestionnaire": "Cuestionario de Salud",
   "questionnaireDescription": "Complete su perfil de salud para obtener recomendaciones personalizadas y mejor atención.",
-  "completeQuestionnaire": "Completar Ahora"
+  "completeQuestionnaire": "Completar Ahora",
+  "framinghamCardTitle": "Evaluación de riesgo Framingham",
+  "framinghamCardDesc": "Riesgo cardiovascular a 10 años con colesterol, presión, tabaquismo y diabetes; resultado en el servidor."
 }

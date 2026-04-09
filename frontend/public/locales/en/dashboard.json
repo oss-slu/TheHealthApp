@@ -10,5 +10,7 @@
   "viewDetails": "View Details",
   "healthQuestionnaire": "Health Questionnaire",
   "questionnaireDescription": "Complete your health profile to get personalized recommendations and better care.",
-  "completeQuestionnaire": "Complete Now"
+  "completeQuestionnaire": "Complete Now",
+  "framinghamCardTitle": "Framingham Risk Assessment",
+  "framinghamCardDesc": "Clinical-style 10-year cardiovascular risk. Enter lab and vitals; your results are computed on the server."
 }

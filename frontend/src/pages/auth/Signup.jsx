@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import PageShell from '../../components/PageShell';
 import { useAuth } from '../../hooks/useAuth';
+import { userHasValidHealthConsent } from '../../lib/consentConstants';
 import { showErrorToast } from '../../lib/toast';
 import {
   normalizeUsername,
@@ -99,7 +100,11 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
 
       const user = await signup(payload);
       onAuthSuccess(user);
-      navigate('/questionnaire', { replace: true, state: { isNewUser: true } });
+      if (userHasValidHealthConsent(user)) {
+        navigate('/questionnaire', { replace: true, state: { isNewUser: true } });
+      } else {
+        navigate('/consent', { replace: true, state: { from: '/questionnaire' } });
+      }
     } catch (err) {
       const messageKey = err.messageKey || 'errors.generic';
       setError(t(messageKey, err.message || t('errors.generic')));

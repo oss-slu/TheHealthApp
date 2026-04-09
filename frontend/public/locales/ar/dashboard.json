@@ -14,5 +14,7 @@
 "viewDetails": "عرض التفاصيل",
 "healthQuestionnaire": "استبيان الصحة",
 "questionnaireDescription": "أكمل ملفك الصحي للحصول على توصيات مخصصة ورعاية أفضل.",
-"completeQuestionnaire": "أكمل الآن"
+"completeQuestionnaire": "أكمل الآن",
+"framinghamCardTitle": "تقييم مخاطر فرمنغهام",
+"framinghamCardDesc": "مخاطر القلب والأوعية لمدة 10 سنوات من الكوليسترول والضغط والتدخين والسكري—يُحسب على الخادم."
 }

@@ -321,7 +321,11 @@ git push origin feat/your-feature
 ---
 
 ## License
-- TBD
+
+This project is licensed under the [MIT License](LICENSE).
+
+Copyright (c) 2026 OSS SLU – TheHealthApp Team.
+
 ---
 
 ## Contact

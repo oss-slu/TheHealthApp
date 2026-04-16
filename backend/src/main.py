@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, status, Depends, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
+from pydantic import Field
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -23,6 +24,16 @@ from fastapi.staticfiles import StaticFiles
 
 # --- 1. CONFIGURATION ---
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+_DEFAULT_ALLOWED_ORIGINS = (
+    "http://localhost:5173,"
+    "http://127.0.0.1:5173,"
+    "http://localhost:5174,"
+    "http://127.0.0.1:5174,"
+    "http://localhost:3000,"
+    "http://127.0.0.1:3000"
+)
+
+
 class Settings(BaseSettings):
     MONGO_URL: str
     MONGO_DB_NAME: str
@@ -30,8 +41,11 @@ class Settings(BaseSettings):
     JWT_REFRESH_SECRET: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
-    ALLOWED_ORIGINS: str
-    ALLOWED_ORIGIN_REGEX: str | None = None
+    ALLOWED_ORIGINS: str = Field(
+        default=_DEFAULT_ALLOWED_ORIGINS,
+        description="Comma-separated browser origins permitted for CORS (Vite :5173/5174, Dockerized UI :3000).",
+    )
+    ALLOWED_ORIGIN_REGEX: str | None = Field(default=None)
 
 settings = Settings()
 
@@ -159,7 +173,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Simple Health App API (MongoDB)", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-allowed_origins = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(',') if origin.strip()]
+allowed_origins = [
+    origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,

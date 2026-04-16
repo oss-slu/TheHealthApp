@@ -34,6 +34,7 @@
   "recommendationsTitle": "Recomendaciones",
   "disclaimerTitle": "Aviso legal",
   "errorNotAuthenticated": "Inicie sesión para usar esta evaluación.",
+  "errorInvalidResponse": "El servidor devolvió un resultado de riesgo incompleto. Inténtelo de nuevo o contacte con soporte.",
   "errorValidation": "Revise los campos marcados.",
   "cat_low": "Bajo",
   "cat_moderate": "Moderado",

@@ -34,6 +34,7 @@
   "recommendationsTitle": "التوصيات",
   "disclaimerTitle": "إخلاء مسؤولية",
   "errorNotAuthenticated": "يرجى تسجيل الدخول.",
+  "errorInvalidResponse": "أعاد الخادم نتيجة خطر غير كاملة. أعد المحاولة أو اتصل بالدعم.",
   "errorValidation": "تحقق من الحقول المميزة.",
   "cat_low": "منخفض",
   "cat_moderate": "متوسط",

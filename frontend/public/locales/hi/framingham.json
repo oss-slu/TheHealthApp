@@ -34,6 +34,7 @@
   "recommendationsTitle": "सिफारिशें",
   "disclaimerTitle": "अस्वीकरण",
   "errorNotAuthenticated": "कृपया साइन इन करें।",
+  "errorInvalidResponse": "सर्वर ने अधूरा जोखिम परिणाम लौटाया। पुनः प्रयास करें या सहायता से संपर्क करें।",
   "errorValidation": "चिह्नित फ़ील्ड जाँचें।",
   "cat_low": "कम",
   "cat_moderate": "मध्यम",

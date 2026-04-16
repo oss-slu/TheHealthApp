@@ -35,6 +35,7 @@
   "recommendationsTitle": "Recommendations",
   "disclaimerTitle": "Disclaimer",
   "errorNotAuthenticated": "Please sign in to use this assessment.",
+  "errorInvalidResponse": "The server returned an incomplete risk result. Please try again or contact support if this continues.",
   "errorValidation": "Please check the highlighted fields.",
   "cat_low": "Low",
   "cat_moderate": "Moderate",

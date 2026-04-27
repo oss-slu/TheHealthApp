@@ -156,8 +156,11 @@ async def require_health_consent(
 # --- 4. DATABASE LIFESPAN ---
 def _mongo_connection_string() -> str:
     """Beanie 2.x uses PyMongo AsyncMongoClient; URI must include the database name."""
-    base = settings.MONGO_URL.rstrip("/")
-    return f"{base}/{settings.MONGO_DB_NAME}"
+    url = settings.MONGO_URL.rstrip("/")
+    if "?" in url:
+        base, qs = url.split("?", 1)
+        return f"{base}/{settings.MONGO_DB_NAME}?authSource=admin&{qs}"
+    return f"{url}/{settings.MONGO_DB_NAME}?authSource=admin"
 
 
 @asynccontextmanager

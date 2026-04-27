@@ -19,7 +19,9 @@ services:
 
   # FastAPI Backend Service
   backend:
-    image: dream1ance/thehealthapp-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: healthapp_fastapi_backend
     restart: always
     ports:

@@ -1,35 +1,18 @@
-import React, { useState, useEffect, startTransition } from 'react';
+import React, { useState, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n.js';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const PageShell = ({ children, title, showNav = true, variant = 'default' }) => {
   const { t } = useTranslation(['common','auth','dashboard','modules']);
   const [open, setOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => localStorage.getItem('auth.session') === 'true'
-  );
+  const { isAuthenticated, logout: authLogout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const handleAuthChange = () => {
-      setIsAuthenticated(localStorage.getItem('auth.session') === 'true');
-    };
-
-    window.addEventListener('storage', handleAuthChange);
-    window.addEventListener('auth-change', handleAuthChange);
-
-    return () => {
-      window.removeEventListener('storage', handleAuthChange);
-      window.removeEventListener('auth-change', handleAuthChange);
-    };
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('auth.session');
-    setIsAuthenticated(false);
-    window.dispatchEvent(new Event('auth-change'));
+  const handleLogout = async () => {
+    await authLogout();
     navigate('/auth/login', { replace: true });
   };
   

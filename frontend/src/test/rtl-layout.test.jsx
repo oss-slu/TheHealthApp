@@ -224,7 +224,7 @@ describe('RTL (Right-to-Left) Layout Tests', () => {
 
       // Check for elements that should have RTL-aware classes
       // The language dropdown should have rtl:left-0 class
-      const dropdown = document.querySelector('[class*="rtl:"]');
+      const _dropdown = document.querySelector('[class*="rtl:"]');
       // May or may not be present depending on dropdown state
       expect(document.documentElement.dir).toBe('rtl');
     });

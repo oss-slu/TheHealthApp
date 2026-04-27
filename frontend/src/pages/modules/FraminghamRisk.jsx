@@ -2,7 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import PageShell from '../../components/PageShell';
-import apiClient from '../../api/client';
+import { showErrorToast } from '../../lib/toast';
+import { healthRiskService } from '../../services/healthRiskService';
+import { parseHealthRiskAssessment } from '../../utils/riskAssessmentResponse';
 
 const initialForm = {
   age: '',
@@ -110,19 +112,32 @@ const FraminghamRisk = () => {
     setResult(null);
 
     try {
-      const data = await apiClient.post('health/risk-assessment', payload, {
-        suppressToast: true,
-      });
-      setResult(data);
+      const data = await healthRiskService.calculateRisk(payload);
+      const parsed = parseHealthRiskAssessment(data);
+      if (!parsed) {
+        const msg = t('framingham:errorInvalidResponse');
+        setError(msg);
+        showErrorToast('framingham:errorInvalidResponse', msg);
+        return;
+      }
+      setResult(parsed);
     } catch (err) {
-      const data = err?.originalError?.response?.data;
-      const msg =
-        (typeof data?.error?.message === 'string' && data.error.message) ||
-        (typeof data?.detail === 'string' && data.detail) ||
-        (Array.isArray(data?.detail) && data.detail[0]?.msg) ||
-        err?.message ||
-        t('errors:generic');
-      setError(typeof msg === 'string' ? msg : t('errors:generic'));
+      setResult(null);
+      const messageKey = err?.messageKey || 'errors.generic';
+      const rawMessage =
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message
+          : t('errors:generic');
+      setError(t(messageKey, rawMessage));
+      const st = err?.status;
+      const shouldToast =
+        st === undefined ||
+        st >= 500 ||
+        messageKey === 'errors.network' ||
+        messageKey === 'errors.timeout';
+      if (shouldToast) {
+        showErrorToast(messageKey, rawMessage);
+      }
     } finally {
       setSubmitting(false);
     }

@@ -34,6 +34,7 @@
   "recommendationsTitle": "建议",
   "disclaimerTitle": "免责声明",
   "errorNotAuthenticated": "请先登录。",
+  "errorInvalidResponse": "服务器返回的风险结果不完整。请重试或联系支持。",
   "errorValidation": "请检查标出的字段。",
   "cat_low": "低",
   "cat_moderate": "中等",

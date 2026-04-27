@@ -5,6 +5,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
+import framinghamEn from '../../public/locales/en/framingham.json';
 
 // Create a test i18n instance with inline translations
 const testI18n = i18n.createInstance();
@@ -81,6 +82,9 @@ testI18n.use(initReactI18next).init({
         cardioRiskAssessmentDescription: 'Evaluate your cardiovascular health risk',
         medicalDescription: 'Manage your prescriptions',
         tbaDescription: 'Get personalized health support',
+        selectYourGender: 'Select gender',
+        male: 'Male',
+        female: 'Female',
       },
       errors: {
         generic: 'Something went wrong',
@@ -88,7 +92,11 @@ testI18n.use(initReactI18next).init({
         boundaryDescription: 'We encountered an unexpected error.',
         retry: 'Try Again',
         goHome: 'Go Home',
+        server: 'Server error',
+        network: 'Network error',
+        timeout: 'Request timed out',
       },
+      framingham: framinghamEn,
     },
     ar: {
       common: {

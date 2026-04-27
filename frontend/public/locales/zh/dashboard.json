@@ -14,5 +14,7 @@
 "viewDetails": "查看详情",
 "healthQuestionnaire": "健康问卷",
 "questionnaireDescription": "完成您的健康档案以获得个性化建议和更好的护理。",
-"completeQuestionnaire": "立即完成"
+"completeQuestionnaire": "立即完成",
+"framinghamCardTitle": "弗雷明汉心血管风险评估",
+"framinghamCardDesc": "基于胆固醇、血压、吸烟与糖尿病的10年心血管风险，由服务器计算。"
 }

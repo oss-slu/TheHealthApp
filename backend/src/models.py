@@ -1,9 +1,12 @@
 import uuid
 from beanie import Document, Indexed
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 from enum import Enum
 from datetime import datetime
 from typing import Optional, Annotated, Generic, TypeVar
+
+# --- Consent (must match frontend CURRENT_CONSENT_VERSION) ---
+CURRENT_CONSENT_VERSION = "v1.0"
 
 # --- Shared Enum ---
 class GenderEnum(str, Enum):
@@ -19,10 +22,24 @@ class User(Document):
     phone: Annotated[str, Indexed(unique=True)]
     password_hash: str
     photo_url: Optional[str] = None
+    consent_given: bool = False
+    consent_timestamp: Optional[datetime] = None
+    consent_version: Optional[str] = None
+    data_usage: Optional[bool] = None
+    marketing: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     class Settings:
         name = "users"
+
+
+def user_has_valid_consent(user: User) -> bool:
+    """True when user may access health features for the current policy version."""
+    return bool(
+        user.consent_given
+        and user.data_usage is True
+        and (user.consent_version or "") == CURRENT_CONSENT_VERSION
+    )
 
 
 class RevokedToken(Document):
@@ -70,9 +87,39 @@ class ForgotPasswordResponse(BaseModel):
     message: str
 
 class UserResponse(BaseModel):
-    id: uuid.UUID; username: str; name: str; age: int; gender: GenderEnum; phone: str; photo_url: Optional[str] = None
+    id: uuid.UUID
+    username: str
+    name: str
+    age: int
+    gender: GenderEnum
+    phone: str
+    photo_url: Optional[str] = None
+    consent_given: bool = False
+    consent_version: Optional[str] = None
+    data_usage: Optional[bool] = None
+    marketing: bool = False
     class Config:
         from_attributes = True
+
+
+class ConsentSubmit(BaseModel):
+    consent_given: bool
+    data_usage: bool
+    marketing: bool = False
+    version: str = CURRENT_CONSENT_VERSION
+
+    @model_validator(mode="after")
+    def validate_required_consents(self):
+        if self.version != CURRENT_CONSENT_VERSION:
+            raise ValueError(f"Consent version must be {CURRENT_CONSENT_VERSION}")
+        if not self.consent_given or not self.data_usage:
+            raise ValueError("Terms and data usage consent are required")
+        return self
+
+
+class ConsentStatusData(BaseModel):
+    consent_given: bool
+    version: str
 
 class TokenResponse(BaseModel):
     access_token: str; refresh_token: str; token_type: str = "bearer"

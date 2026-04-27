@@ -3,11 +3,15 @@ import { AuthContext } from './AuthContext';
 import { authStorage } from '../lib/authStorage';
 import { authBus } from '../lib/authBus';
 import { authService } from '../services/authService';
+import { consentService } from '../services/consentService';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => authStorage.getUser());
   const [tokens, setTokens] = useState(() => authStorage.getTokens());
   const [initializing, setInitializing] = useState(true);
+  const [consentStatus, setConsentStatus] = useState(null);
+  const [consentReady, setConsentReady] = useState(false);
+  const [consentLoadError, setConsentLoadError] = useState(false);
 
   const setSession = useCallback((session) => {
     authStorage.setSession(session);
@@ -19,19 +23,53 @@ export const AuthProvider = ({ children }) => {
     authStorage.clear();
     setTokens(null);
     setUser(null);
+    setConsentStatus(null);
+    setConsentLoadError(false);
+    setConsentReady(true);
   }, []);
 
   const refreshUser = useCallback(async () => {
     const current = await authService.getCurrentUser({ suppressToast: true });
     authStorage.setUser(current);
     setUser(current);
+    try {
+      const st = await consentService.getStatus({ suppressToast: true });
+      setConsentStatus(st);
+      setConsentLoadError(false);
+    } catch {
+      setConsentLoadError(true);
+    }
     return current;
   }, []);
+
+  const retryConsentLoad = useCallback(async () => {
+    const accessToken = authStorage.getAccessToken();
+    if (!accessToken) {
+      setConsentReady(true);
+      return;
+    }
+    setConsentLoadError(false);
+    try {
+      await refreshUser();
+    } catch {
+      setConsentLoadError(true);
+    }
+  }, [refreshUser]);
 
   const login = useCallback(
     async (credentials) => {
       const response = await authService.login(credentials);
       setSession(response);
+      setConsentReady(false);
+      try {
+        const st = await consentService.getStatus({ suppressToast: true });
+        setConsentStatus(st);
+        setConsentLoadError(false);
+      } catch {
+        setConsentLoadError(true);
+      } finally {
+        setConsentReady(true);
+      }
       return response.user;
     },
     [setSession],
@@ -41,6 +79,16 @@ export const AuthProvider = ({ children }) => {
     async (payload) => {
       const response = await authService.signup(payload);
       setSession(response);
+      setConsentReady(false);
+      try {
+        const st = await consentService.getStatus({ suppressToast: true });
+        setConsentStatus(st);
+        setConsentLoadError(false);
+      } catch {
+        setConsentLoadError(true);
+      } finally {
+        setConsentReady(true);
+      }
       return response.user;
     },
     [setSession],
@@ -89,15 +137,27 @@ export const AuthProvider = ({ children }) => {
   }, [clearSession]);
 
   useEffect(() => {
+    if (!tokens?.access_token) {
+      setConsentStatus(null);
+      setConsentLoadError(false);
+      setConsentReady(true);
+    }
+  }, [tokens]);
+
+  useEffect(() => {
     let cancelled = false;
 
     const bootstrap = async () => {
       const accessToken = authStorage.getAccessToken();
       if (!accessToken) {
-        if (!cancelled) setInitializing(false);
+        if (!cancelled) {
+          setInitializing(false);
+          setConsentReady(true);
+        }
         return;
       }
 
+      setConsentReady(false);
       try {
         await refreshUser();
       } catch (error) {
@@ -106,7 +166,10 @@ export const AuthProvider = ({ children }) => {
           clearSession();
         }
       } finally {
-        if (!cancelled) setInitializing(false);
+        if (!cancelled) {
+          setConsentReady(true);
+          setInitializing(false);
+        }
       }
     };
 
@@ -123,6 +186,10 @@ export const AuthProvider = ({ children }) => {
       tokens,
       initializing,
       isAuthenticated: Boolean(tokens?.access_token),
+      consentStatus,
+      consentReady,
+      consentLoadError,
+      retryConsentLoad,
       login,
       signup,
       logout,
@@ -130,7 +197,21 @@ export const AuthProvider = ({ children }) => {
       updateProfile,
       uploadProfilePhoto,
     }),
-    [initializing, login, logout, refreshUser, signup, tokens, updateProfile, uploadProfilePhoto, user],
+    [
+      initializing,
+      login,
+      logout,
+      refreshUser,
+      signup,
+      tokens,
+      updateProfile,
+      uploadProfilePhoto,
+      user,
+      consentStatus,
+      consentReady,
+      consentLoadError,
+      retryConsentLoad,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

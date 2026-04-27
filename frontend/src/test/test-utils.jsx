@@ -11,7 +11,7 @@ const testI18n = i18n.createInstance();
 testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'auth', 'dashboard', 'modules', 'errors'],
+  ns: ['common', 'auth', 'dashboard', 'modules', 'errors', 'framingham', 'questionnaire'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
   resources: {
@@ -68,6 +68,11 @@ testI18n.use(initReactI18next).init({
         noReminders: 'No reminders',
         viewDetails: 'View Details',
         cardioRiskAssessmentDescription: 'Evaluate your cardiovascular health risk',
+        healthQuestionnaire: 'Health Questionnaire',
+        questionnaireDescription: 'Complete your profile',
+        completeQuestionnaire: 'Complete Now',
+        framinghamCardTitle: 'Framingham Risk Assessment',
+        framinghamCardDesc: '10-year cardiovascular risk from the backend model.',
       },
       modules: {
         heartRisk: 'Heart Risk Assessment',
@@ -122,6 +127,10 @@ const defaultAuthContext = {
   tokens: null,
   initializing: false,
   isAuthenticated: false,
+  consentStatus: { consent_given: true, version: 'v1.0' },
+  consentReady: true,
+  consentLoadError: false,
+  retryConsentLoad: vi.fn(),
   login: vi.fn(),
   signup: vi.fn(),
   logout: vi.fn(),
@@ -192,10 +201,20 @@ export function renderWithRTL(ui, options = {}) {
  */
 export function createAuthenticatedContext(overrides = {}) {
   return {
-    user: { username: 'testuser', name: 'Test User' },
+    user: {
+      username: 'testuser',
+      name: 'Test User',
+      consent_given: true,
+      data_usage: true,
+      consent_version: 'v1.0',
+    },
     tokens: { access_token: 'test-token' },
     initializing: false,
     isAuthenticated: true,
+    consentStatus: { consent_given: true, version: 'v1.0' },
+    consentReady: true,
+    consentLoadError: false,
+    retryConsentLoad: vi.fn(),
     login: vi.fn(),
     signup: vi.fn(),
     logout: vi.fn(),

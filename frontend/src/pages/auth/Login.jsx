@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import PageShell from '../../components/PageShell';
 import { useAuth } from '../../hooks/useAuth';
 import { showErrorToast } from '../../lib/toast';
+import { userHasValidHealthConsent } from '../../lib/consentConstants';
 import {
   normalizeUsername,
   validatePassword,
@@ -44,9 +45,7 @@ const Login = ({ onAuthSuccess = () => {} }) => {
   const onSubmit = async (e) => {
     e.preventDefault();
     setTouched({ username: true, password: true });
-    if (!isFormValid) {
-      return;
-    }
+    if (!isFormValid) return;
 
     setIsSubmitting(true);
     setError(null);
@@ -58,7 +57,11 @@ const Login = ({ onAuthSuccess = () => {} }) => {
         password: form.password,
       });
       onAuthSuccess(user);
-      navigate('/dashboard', { replace: true });
+      if (userHasValidHealthConsent(user)) {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate('/consent', { replace: true, state: { from: '/dashboard' } });
+      }
     } catch (err) {
       const messageKey = err.messageKey || 'errors.generic';
       setError(t(messageKey, err.message || t('errors.generic')));

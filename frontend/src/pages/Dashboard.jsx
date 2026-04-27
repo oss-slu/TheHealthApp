@@ -48,6 +48,21 @@ const Dashboard = () => {
           <p className="text-gray-600">{t('dashboard:noReminders')}</p>
         </div>
         <Link
+          to="/modules/framingham-risk"
+          className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer text-white"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">{t('dashboard:framinghamCardTitle')}</h3>
+            <svg className="w-8 h-8 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <p className="text-indigo-100 mb-4">{t('dashboard:framinghamCardDesc')}</p>
+          <span className="text-white font-medium flex items-center">
+            {t('dashboard:viewDetails')} →
+          </span>
+        </Link>
+        <Link
           to="/modules/heart-risk"
           className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
         >

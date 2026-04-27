@@ -14,5 +14,7 @@
 "viewDetails": "विवरण देखें",
 "healthQuestionnaire": "स्वास्थ्य प्रश्नावली",
 "questionnaireDescription": "व्यक्तिगत सिफारिशें और बेहतर देखभाल के लिए अपनी स्वास्थ्य प्रोफ़ाइल पूर्ण करें।",
-"completeQuestionnaire": "अभी पूरा करें"
+"completeQuestionnaire": "अभी पूरा करें",
+"framinghamCardTitle": "फ्रेमिंगहम जोखिम मूल्यांकन",
+"framinghamCardDesc": "कोलेस्ट्रॉल, बीपी, धूम्रपान और मधुमेह से 10-वर्ष हृदय जोखिम—सर्वर पर गणना।"
 }

@@ -1,6 +1,6 @@
 # TheHealthApp
 
-## Enterprise-Grade Multilingual Preventive Health Platform
+## Multilingual Preventive Health Platform
 
 TheHealthApp is a scalable, modular, multilingual preventive health platform designed to improve accessibility to health risk awareness across diverse populations. The system enables users to perform structured self-assessments and receive interpretable insights through a technology-driven interface.
 

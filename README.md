@@ -177,7 +177,7 @@ npm run dev
 | `JWT_REFRESH_SECRET` | Refresh token secret | `dev-refresh-secret-...` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token TTL | `15` |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | Refresh token TTL | `7` |
-| `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:5173` |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated); see `backend/.env.example` | Vite `:5173`/`:5174`, `127.0.0.1`, Docker UI `:3000` |
 
 #### Frontend (`frontend/.env`)
 

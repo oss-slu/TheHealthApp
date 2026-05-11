@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import PageShell from '../../components/PageShell';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import { showErrorToast } from '../../lib/toast';
+import { parseMlHeartRiskResponse } from '../../utils/mlHeartRiskResponse';
 
 const HeartRisk = () => {
-  const { t } = useTranslation(['modules']);
+  const { t } = useTranslation(['modules', 'errors']);
   const [formData, setFormData] = useState({
     Age: '',
     Gender: '',
@@ -66,9 +69,35 @@ const HeartRisk = () => {
         timeout: 10000,
       });
 
-      setResult(response.data);
+      const parsed = parseMlHeartRiskResponse(response.data);
+      if (!parsed) {
+        const msg = t('modules:heartRiskMlEmpty');
+        setError(msg);
+        showErrorToast('errors:generic', msg);
+        return;
+      }
+      setResult(parsed);
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Failed to get prediction. Please ensure the ML backend is running.');
+      const detail = err.response?.data?.detail;
+      const fromServer =
+        typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((d) => d?.msg || d?.message).filter(Boolean).join(' ')
+            : '';
+      const msg =
+        fromServer ||
+        (err.code === 'ECONNABORTED'
+          ? t('errors:timeout')
+          : err.response
+            ? t('modules:heartRiskMlInvalid')
+            : t('modules:heartRiskNetworkError'));
+      setError(msg);
+      if (!err.response || err.code === 'ECONNABORTED') {
+        showErrorToast(err.code === 'ECONNABORTED' ? 'errors:timeout' : 'errors:network', msg);
+      } else if (err.response.status >= 500) {
+        showErrorToast('errors:server', msg);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -191,9 +220,16 @@ const HeartRisk = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || !formData.Age || !formData.Gender}
-                className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center gap-2 px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? t('common:pleaseWait', 'Please wait...') : t('modules:completeAssessment', 'Complete Assessment')}
+                {isSubmitting ? (
+                  <>
+                    <LoadingSpinner className="h-5 w-5 text-white" label={t('modules:submittingAssessment')} />
+                    <span>{t('modules:submittingAssessment')}</span>
+                  </>
+                ) : (
+                  t('modules:completeAssessment', 'Complete Assessment')
+                )}
               </button>
             </div>
           </form>

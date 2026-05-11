@@ -4,6 +4,7 @@ const STATUS_KEY_MAP = {
   403: 'errors.forbidden',
   404: 'errors.notFound',
   409: 'errors.conflict',
+  413: 'errors.payloadTooLarge',
   422: 'errors.validation',
   429: 'errors.rateLimited',
   500: 'errors.server',

@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import ScreenLoader from './ScreenLoader';
 
 /**
  * Blocks health-related routes until consent status is loaded and valid.
@@ -13,11 +14,7 @@ const RequireHealthConsent = () => {
   const { t } = useTranslation(['common']);
 
   if (initializing || !consentReady) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-gray-600">
-        {t('common:loading', 'Loading...')}
-      </div>
-    );
+    return <ScreenLoader />;
   }
 
   if (consentLoadError) {

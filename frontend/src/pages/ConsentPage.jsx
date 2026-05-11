@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import PageShell from '../components/PageShell';
+import ScreenLoader from '../components/ScreenLoader';
 import { useAuth } from '../hooks/useAuth';
 import { consentService } from '../services/consentService';
 import { CURRENT_CONSENT_VERSION } from '../lib/consentConstants';
@@ -50,19 +51,11 @@ const ConsentPage = () => {
   }, [consentReady, consentLoadError, consentStatus, fromPath, navigate]);
 
   if (initializing || !isAuthenticated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-gray-600">
-        {t('common:loading', 'Loading...')}
-      </div>
-    );
+    return <ScreenLoader />;
   }
 
   if (!consentReady) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-gray-600">
-        {t('common:loading', 'Loading...')}
-      </div>
-    );
+    return <ScreenLoader />;
   }
 
   if (consentLoadError) {

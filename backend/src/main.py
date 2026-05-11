@@ -213,6 +213,22 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content={"success": False, "error": error_detail.model_dump()})
 
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Return a consistent JSON error for unexpected failures (never an empty body)."""
+    import traceback
+
+    print(traceback.format_exc())
+    error_detail = ErrorDetail(
+        code="INTERNAL_ERROR",
+        message="An unexpected error occurred. Please try again later.",
+    )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"success": False, "error": error_detail.model_dump()},
+    )
+
+
 @app.post("/api/v1/auth/signup", response_model=SuccessResponse[SignupResponse], tags=["Authentication"])
 @limiter.limit("5 per minute")
 async def signup_user(request: Request, payload: UserCreate):

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import PageShell from '../../components/PageShell';
 import { useAuth } from '../../hooks/useAuth';
 import { userHasValidHealthConsent } from '../../lib/consentConstants';
@@ -121,6 +121,11 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
     <PageShell title="auth:signup" showNav={false}>
       <div className="max-w-2xl mx-auto">
         <div className="bg-white p-8 rounded-lg shadow-md">
+          <div className="mb-4">
+            <Link to="/" className="inline-flex items-center text-sm text-gray-600 hover:text-black font-medium transition-colors">
+              ← {t('common:backToHome', 'Back to Home')}
+            </Link>
+          </div>
           {error && (
             <div className="mb-4 rounded border border-red-300 bg-red-50 text-red-800 p-3">
               {error}

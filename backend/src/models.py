@@ -49,6 +49,38 @@ class RevokedToken(Document):
     class Settings:
         name = "revoked_tokens"
 
+
+class Questionnaire(Document):
+    """Stores a user's completed health questionnaire."""
+
+    user_id: uuid.UUID = Indexed()
+
+    first_name: str
+    last_name: str
+    date_of_birth: str
+    gender: GenderEnum
+    email: str
+    phone: Optional[str] = None
+
+    existing_conditions: list[str] = Field(default_factory=list)
+    allergies: str = ""
+    current_medications: str = ""
+    family_history: str = ""
+
+    exercise_frequency: str
+    diet_type: str
+    smoking_status: str
+    alcohol_consumption: str
+    sleep_hours: Optional[str] = None
+    stress_level: Optional[str] = None
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "questionnaires"
+
+
 # --- API Schemas ---
 class UserCreate(BaseModel):
     username: Annotated[str, StringConstraints(min_length=2, max_length=50)]
@@ -126,6 +158,28 @@ class TokenResponse(BaseModel):
 
 class SignupResponse(BaseModel):
     user: UserResponse; tokens: TokenResponse
+
+class QuestionnaireSubmit(BaseModel):
+    firstName: str = Field(..., min_length=1, max_length=100)
+    lastName: str = Field(..., min_length=1, max_length=100)
+    dateOfBirth: str = Field(..., min_length=1)
+    gender: GenderEnum
+    email: str = Field(..., min_length=1, max_length=255)
+    phone: Optional[str] = None
+
+    existingConditions: list[str] = Field(default_factory=list)
+    allergies: str = ""
+    currentMedications: str = ""
+    familyHistory: str = ""
+
+    exerciseFrequency: str = Field(..., min_length=1)
+    dietType: str = Field(..., min_length=1)
+    smokingStatus: str = Field(..., min_length=1)
+    alcoholConsumption: str = Field(..., min_length=1)
+    sleepHours: Optional[str] = None
+    stressLevel: Optional[str] = None
+    
+
 
 T = TypeVar('T')
 class ErrorDetail(BaseModel):

@@ -5,6 +5,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
+from pymongo.errors import DuplicateKeyError
 
 from fastapi import FastAPI, HTTPException, status, Depends, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -206,28 +207,87 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={"success": False, "error": error_detail.model_dump()}
     )
-
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    error_detail = ErrorDetail(code="HTTP_ERROR", message=str(exc.detail))
-    return JSONResponse(status_code=exc.status_code, content={"success": False, "error": error_detail.model_dump()})
+    if isinstance(exc.detail, dict):
+        error_detail = ErrorDetail(
+            code=exc.detail.get("code", "HTTP_ERROR"),
+            message=exc.detail.get("message", str(exc.detail)),
+            details=exc.detail.get("details"),
+        )
+    else:
+        error_detail = ErrorDetail(
+            code="HTTP_ERROR",
+            message=str(exc.detail),
+        )
 
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "error": error_detail.model_dump(),
+        },
+    )
 
 @app.post("/api/v1/auth/signup", response_model=SuccessResponse[SignupResponse], tags=["Authentication"])
 @limiter.limit("5 per minute")
 async def signup_user(request: Request, payload: UserCreate):
     if await User.find_one(User.username == payload.username):
         raise HTTPException(status_code=409, detail="Username already exists")
-    hashed_password = bcrypt.hashpw(payload.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    new_user = User(**payload.model_dump(exclude={"password"}), password_hash=hashed_password)
-    await new_user.insert()
-    return SuccessResponse(data={
-        "user": new_user,
-        "tokens": {
-            "access_token": create_access_token(str(new_user.id)),
-            "refresh_token": create_refresh_token(str(new_user.id))
+
+    if await User.find_one(User.phone == payload.phone):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "DUPLICATE_PHONE",
+                "message": "Phone number is already in use",
+            },
+        )
+
+    hashed_password = bcrypt.hashpw(
+        payload.password.encode("utf-8"),
+        bcrypt.gensalt(),
+    ).decode("utf-8")
+
+    new_user = User(
+        **payload.model_dump(exclude={"password"}),
+        password_hash=hashed_password,
+    )
+
+    try:
+        await new_user.insert()
+    except DuplicateKeyError as exc:
+        key_pattern = (exc.details or {}).get("keyPattern", {})
+
+        if "phone" in key_pattern:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "DUPLICATE_PHONE",
+                    "message": "Phone number is already in use",
+                },
+            ) from exc
+
+        if "username" in key_pattern:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "DUPLICATE_USERNAME",
+                    "message": "Username already exists",
+                },
+            ) from exc
+
+        raise
+
+    return SuccessResponse(
+        data={
+            "user": new_user,
+            "tokens": {
+                "access_token": create_access_token(str(new_user.id)),
+                "refresh_token": create_refresh_token(str(new_user.id)),
+            },
         }
-    })
+    )
 
 
 
@@ -237,7 +297,13 @@ async def update_own_profile(payload: UserUpdate, current_user: Annotated[User, 
     if not update_data: return current_user
     if "phone" in update_data and update_data["phone"] != current_user.phone:
         if await User.find_one(User.phone == update_data["phone"]):
-            raise HTTPException(status_code=409, detail="Phone number is already in use.")
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "DUPLICATE_PHONE",
+                    "message": "Phone number is already in use",
+                },
+            )
     for key, value in update_data.items():
         setattr(current_user, key, value)
     current_user.updated_at = datetime.utcnow()

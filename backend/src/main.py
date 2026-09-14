@@ -83,6 +83,9 @@ from .models import (
     ConsentSubmit,
     ConsentStatusData,
     user_has_valid_consent,
+    Questionnaire,
+    QuestionnaireSubmit,
+
 )
 from .risk_calculator import calculate_health_risk
 
@@ -168,7 +171,7 @@ def _mongo_connection_string() -> str:
 async def lifespan(app: FastAPI):
     await init_beanie(
         connection_string=_mongo_connection_string(),
-        document_models=[User, RevokedToken],
+        document_models=[User, RevokedToken, Questionnaire],
     )
     print("Database connection established.")
     yield
@@ -386,6 +389,46 @@ async def submit_consent(
     current_user.updated_at = datetime.utcnow()
     await current_user.save()
     return SuccessResponse(data=current_user)
+
+@app.post(
+        "/api/v1/questionnaire/submit",
+        response_model=SuccessResponse[dict],
+        tags=["Questionnaire"],
+        summary="Submit health questionnaire",
+)
+async def submit_questionnaire(
+    payload: QuestionnaireSubmit,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    questionnaire = Questionnaire(
+        user_id=current_user.id,
+        first_name=payload.firstName,
+        last_name=payload.lastName,
+        date_of_birth=payload.dateOfBirth,
+        gender=payload.gender,
+        email=payload.email,
+        phone=payload.phone,
+        existing_conditions=payload.existingConditions,
+        allergies=payload.allergies,
+        current_medications=payload.currentMedications,
+        family_history=payload.familyHistory,
+        exercise_frequency=payload.exerciseFrequency,
+        diet_type=payload.dietType,
+        smoking_status=payload.smokingStatus,
+        alcohol_consumption=payload.alcoholConsumption,
+        sleep_hours=payload.sleepHours,
+        stress_level=payload.stressLevel,
+    )
+
+    await questionnaire.insert()
+
+    return SuccessResponse(
+        data={
+            "message": "Questionnaire submitted successfully",
+            "questionnaire_id": str(questionnaire.id),
+        }
+    )
+
 
 
 @app.get("/api/v1/consent/status", response_model=SuccessResponse[ConsentStatusData], tags=["Consent"])

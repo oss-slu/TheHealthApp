@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import ScreenLoader from './ScreenLoader';
 
 /**
  * Requires a valid access token. Renders child routes via <Outlet />.
@@ -9,14 +9,9 @@ import { useAuth } from '../hooks/useAuth';
 const RequireAuth = () => {
   const { isAuthenticated, initializing } = useAuth();
   const location = useLocation();
-  const { t } = useTranslation(['common']);
 
   if (initializing) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-gray-600">
-        {t('common:loading', 'Loading...')}
-      </div>
-    );
+    return <ScreenLoader />;
   }
 
   if (!isAuthenticated) {

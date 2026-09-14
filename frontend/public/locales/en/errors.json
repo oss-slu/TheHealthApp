@@ -11,6 +11,7 @@
   "rateLimited": "Too many requests. Please wait and try again.",
   "server": "Server error. Please try again later.",
   "badRequest": "The request could not be processed.",
+  "payloadTooLarge": "The file or data you sent is too large. Try a smaller upload.",
   "invalidCredentials": "Incorrect username or password.",
   "usernameExists": "This username is already taken.",
   "phoneExists": "This phone number is already in use.",

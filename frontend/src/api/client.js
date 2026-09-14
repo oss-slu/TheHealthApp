@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { authStorage } from '../lib/authStorage';
 import { authBus } from '../lib/authBus';
+import { unwrapSuccessfulApiBody } from '../lib/apiResponse';
 import { mapApiError } from '../utils/errorMapper';
 import { showErrorToast } from '../lib/toast';
 
@@ -106,18 +107,7 @@ apiClient.interceptors.request.use((config) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => {
-    if (response?.data?.data !== undefined) {
-      return response.data.data;
-    }
-    if (response?.data !== undefined) {
-      return response.data;
-    }
-    if (response?.status === 204) {
-      return undefined;
-    }
-    return response;
-  },
+  (response) => unwrapSuccessfulApiBody(response),
   async (error) => {
     const originalRequest = error.config;
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
+import ScreenLoader from '../../components/ScreenLoader';
 import { useAuth } from '../../hooks/useAuth.js';
 import { showSuccessToast } from '../../lib/toast.js';
 
@@ -115,7 +116,7 @@ const Account = () => {
   if (initializing) {
     return (
       <PageShell title="common:accountSettings">
-        <div className="flex min-h-[50vh] items-center justify-center text-gray-600">{t('common:loading', 'Loading...')}</div>
+        <ScreenLoader variant="embedded" />
       </PageShell>
     );
   }

@@ -21,5 +21,9 @@
   "yes": "Yes",
   "no": "No",
   "iDontKnow": "I don't know",
-  "completeAssessment": "Complete Assessment"
+  "completeAssessment": "Complete Assessment",
+  "heartRiskMlEmpty": "The screening service returned no usable result. Please try again.",
+  "heartRiskMlInvalid": "We could not read the screening result. Please try again.",
+  "heartRiskNetworkError": "Could not reach the screening service. Check your connection and try again.",
+  "submittingAssessment": "Submitting…"
 }

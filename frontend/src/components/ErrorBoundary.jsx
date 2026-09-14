@@ -123,6 +123,40 @@ class ErrorBoundaryBase extends React.Component {
 // Wrap with withTranslation for i18n support in class component
 const ErrorBoundary = withTranslation(['errors', 'common'])(ErrorBoundaryBase);
 
+/** Shown when RouteErrorBoundary catches a render error (avoids blank screen when no custom fallback). */
+class RouteErrorFallbackViewBase extends React.Component {
+  render() {
+    const { t, onRetry } = this.props;
+    return (
+      <div
+        className="min-h-screen bg-gray-50 flex items-center justify-center p-4"
+        role="alert"
+        aria-live="assertive"
+      >
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <h1 className="text-xl font-bold text-gray-900 mb-2">
+            {t('errors:boundaryTitle', 'Something went wrong')}
+          </h1>
+          <p className="text-gray-600 mb-6">
+            {t('errors:boundaryDescription', 'We encountered an unexpected error. Please try again.')}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              type="button"
+              onClick={onRetry}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              {t('errors:retry', 'Try Again')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+const RouteErrorFallbackView = withTranslation(['errors', 'common'])(RouteErrorFallbackViewBase);
+
 /**
  * Route-level error boundary with automatic reset on navigation
  */
@@ -145,7 +179,12 @@ class RouteErrorBoundaryBase extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return <ErrorBoundary>{this.props.fallback || null}</ErrorBoundary>;
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+      return (
+        <RouteErrorFallbackView onRetry={() => this.setState({ hasError: false })} />
+      );
     }
     return this.props.children;
   }

@@ -162,10 +162,11 @@ const Questionnaire = () => {
       showSuccessToast(t('questionnaire:success.title'));
       navigate('/dashboard', { replace: true, state: { questionnaireComplete: true } });
     } catch (err) {
-      const messageKey = err.messageKey || 'errors:generic';
-      setSubmitError(t(messageKey, err.message || t('errors:generic')));
-      if (err.status >= 500) {
-        showErrorToast(messageKey, err.message);
+      const messageKey = err?.messageKey || 'errors:generic';
+      setSubmitError(t(messageKey, err?.message || t('errors:generic')));
+      const status = typeof err?.status === 'number' ? err.status : NaN;
+      if (status >= 500 || messageKey === 'errors.network' || messageKey === 'errors.timeout') {
+        showErrorToast(messageKey, err?.message);
       }
     } finally {
       setIsSubmitting(false);

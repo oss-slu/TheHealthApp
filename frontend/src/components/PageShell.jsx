@@ -36,19 +36,15 @@ const PageShell = ({ children, title, showNav = true, variant = 'default' }) => 
       <header className="health-header sticky top-0 z-30 border-b border-teal-100/60 bg-white/85 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto pl-2 sm:pl-4 lg:pl-6 pr-4 sm:pr-6 lg:pr-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <span
-                className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-500/25"
-                aria-hidden
-              >
+            <Link to="/" className="flex items-center gap-2 cursor-pointer">
+              <span className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-500/25" aria-hidden >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               </span>
-              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-teal-800 to-emerald-800 bg-clip-text text-transparent">
-                {t('common:appName')}
+              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-teal-800 to-emerald-800 bg-clip-text text-transparent"> {t('common:appName')}
               </h1>
-            </div>
+            </Link>
             <div className="hidden md:flex items-center space-x-8">
               {showNav &&
                 navigation.map((item) => (

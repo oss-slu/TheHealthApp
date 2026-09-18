@@ -41,6 +41,14 @@ describe('Login', () => {
       expect(screen.getByText(/forgot password/i)).toBeInTheDocument();
     });
 
+    it('renders back to home link', () => {
+      renderLogin();
+
+      const homeLink = screen.getByRole('link', { name: /back to home/i });
+      expect(homeLink).toBeInTheDocument();
+      expect(homeLink).toHaveAttribute('href', '/');
+    });
+
     it('has submit button disabled initially', () => {
       renderLogin();
 

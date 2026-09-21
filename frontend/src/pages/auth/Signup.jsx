@@ -106,9 +106,16 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
         navigate('/consent', { replace: true, state: { from: '/questionnaire' } });
       }
     } catch (err) {
-      const messageKey = err.messageKey || 'errors.generic';
-      setError(t(messageKey, err.message || t('errors.generic')));
+      const errCode = err.code || err.response?.data?.detail?.code;
+      if (errCode === 'DUPLICATE_USERNAME') {
+        setError(t('auth:errors.usernameInUse', 'Username is already in use'));
+      } else {
+        const messageKey = err.messageKey || 'errors.generic';
+        setError(t(messageKey, err.message || t('errors.generic')));
+      }
+
       if (err.status >= 500) {
+        const messageKey = err.messageKey || 'errors.generic';
         showErrorToast(messageKey, err.message);
       }
     } finally {

@@ -163,24 +163,30 @@ describe('Signup', () => {
       expect(screen.getByText(/please wait/i)).toBeInTheDocument();
     });
 
-    it('shows error message on signup failure', async () => {
-      const user = userEvent.setup();
-      mockSignup.mockRejectedValueOnce({
-        messageKey: 'errors.generic',
-        message: 'Username taken',
-        status: 400,
-      });
-      renderSignup();
-
-      await fillValidForm(user);
-      await user.click(screen.getByRole('button', { name: /sign up/i }));
-
-      await waitFor(() => {
-        // Error box appears with red styling
-        const errorBox = document.querySelector('.bg-red-50');
-        expect(errorBox).toBeInTheDocument();
-      });
+  it('shows duplicate username conflict error message', async () => {
+    const user = userEvent.setup();
+    mockSignup.mockRejectedValueOnce({
+      code: 'DUPLICATE_USERNAME',
+      message: 'Username is already in use',
     });
+    renderSignup();
+
+    await user.type(screen.getByLabelText(/username/i), 'existing_user');
+    await user.type(screen.getByPlaceholderText(/enter your full name/i), 'John Doe');
+    const ageInput = document.querySelector('input[name="age"]');
+    await user.type(ageInput, '25');
+    await user.selectOptions(screen.getByRole('combobox'), 'male');
+    await user.type(screen.getByPlaceholderText(/10-15 digit phone number/i), '1234567890');
+    await user.type(screen.getByPlaceholderText(/^enter password$/i), 'Password123!');
+    await user.type(screen.getByPlaceholderText(/^confirm password$/i), 'Password123!');
+    const submitButton = screen.getByRole('button', { name: /sign up|signup/i });
+    expect(submitButton).toBeEnabled();
+    await user.click(submitButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/username is already in use/i)).toBeInTheDocument();
+    });
+  });
 
     it('strips phone number of non-numeric characters', async () => {
       const user = userEvent.setup();

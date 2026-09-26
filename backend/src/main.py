@@ -363,6 +363,22 @@ async def submit_questionnaire(
         }
     )
 
+@app.get(
+    "/api/v1/questionnaire/status",
+    response_model=SuccessResponse[dict],
+)
+async def get_questionnaire_status(
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    questionnaire = await Questionnaire.find_one(
+        Questionnaire.user_id == current_user.id
+    )
+
+    return SuccessResponse(
+        data={
+            "completed": questionnaire is not None,
+        }
+    )
 
 
 @app.get("/api/v1/consent/status", response_model=SuccessResponse[ConsentStatusData], tags=["Consent"])

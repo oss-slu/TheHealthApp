@@ -325,3 +325,47 @@ class HealthRiskOutput(BaseModel):
                 "Please consult a healthcare professional for medical advice.",
         description="Medical disclaimer"
     )
+
+class Prescription(Document):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    medication_name: str
+    dosage: str
+    frequency: str
+    next_dose: Optional[datetime] = None
+    archived: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    archived_at: Optional[datetime] = None
+
+    class Settings:
+        name = "prescriptions"
+
+
+class PrescriptionCreate(BaseModel):
+    medication_name: str
+    dosage: str
+    frequency: str
+    next_dose: Optional[datetime] = None
+
+
+class PrescriptionUpdate(BaseModel):
+    medication_name: Optional[str] = None
+    dosage: Optional[str] = None
+    frequency: Optional[str] = None
+    next_dose: Optional[datetime] = None
+
+
+class PrescriptionResponse(BaseModel):
+    id: uuid.UUID
+    medication_name: str
+    dosage: str
+    frequency: str
+    next_dose: Optional[datetime] = None
+    archived: bool = False
+    created_at: datetime
+    updated_at: datetime
+    archived_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

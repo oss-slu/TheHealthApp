@@ -85,7 +85,10 @@ from .models import (
     user_has_valid_consent,
     Questionnaire,
     QuestionnaireSubmit,
-
+    Prescription,
+    PrescriptionCreate,
+    PrescriptionUpdate,
+    PrescriptionResponse,
 )
 from .risk_calculator import calculate_health_risk
 
@@ -171,7 +174,7 @@ def _mongo_connection_string() -> str:
 async def lifespan(app: FastAPI):
     await init_beanie(
         connection_string=_mongo_connection_string(),
-        document_models=[User, RevokedToken, Questionnaire],
+        document_models=[User, RevokedToken, Questionnaire, Prescription],
     )
     print("Database connection established.")
     yield
@@ -577,3 +580,86 @@ async def calculate_risk_assessment_anonymous(
 @app.get("/healthz", tags=["System"])
 def health_check():
     return {"success": True, "data": {"status": "ok"}}
+
+@app.get(
+    "/api/v1/prescriptions",
+    response_model=SuccessResponse[list[PrescriptionResponse]],
+)
+async def get_prescriptions(
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescriptions = await Prescription.find(
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    ).to_list()
+
+    return SuccessResponse(
+        data=[
+            PrescriptionResponse.model_validate(prescription)
+            for prescription in prescriptions
+        ]
+    )
+
+@app.put(
+    "/api/v1/prescriptions/{prescription_id}",
+    response_model=SuccessResponse[PrescriptionResponse],
+)
+async def update_prescription(
+    prescription_id: uuid.UUID,
+    prescription_data: PrescriptionUpdate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+    Prescription.id == prescription_id,
+    Prescription.user_id == current_user.id,
+    Prescription.archived == False,
+)
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    update_data = prescription_data.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(prescription, field, value)
+
+    prescription.updated_at = datetime.utcnow()
+
+    await prescription.save()
+
+    return SuccessResponse(
+        data=PrescriptionResponse.model_validate(prescription)
+    )
+
+@app.patch(
+    "/api/v1/prescriptions/{prescription_id}/archive",
+    response_model=SuccessResponse[PrescriptionResponse],
+)
+async def archive_prescription(
+    prescription_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+    Prescription.id == prescription_id,
+    Prescription.user_id == current_user.id,
+    Prescription.archived == False,
+)
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    prescription.archived = True
+    prescription.archived_at = datetime.utcnow()
+    prescription.updated_at = datetime.utcnow()
+
+    await prescription.save()
+
+    return SuccessResponse(
+        data=PrescriptionResponse.model_validate(prescription)
+    )

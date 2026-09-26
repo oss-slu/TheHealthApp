@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import PageShell from '../../components/PageShell';
+import { useAuth } from '../../hooks/useAuth';
 
 const HeartRisk = () => {
   const { t } = useTranslation(['modules']);
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
-    Age: '',
     Gender: '',
     High_BP: '',
     High_Cholesterol: '',
@@ -20,6 +21,9 @@ const HeartRisk = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const hasValidRiskAge = Boolean(
+    user?.date_of_birth && Number.isInteger(user.age) && user.age >= 18 && user.age <= 100
+  );
 
   // ML API endpoint — set VITE_ML_API_URL in .env (see frontend/.env.example).
   const ML_API_URL = import.meta.env.VITE_ML_API_URL;
@@ -38,6 +42,10 @@ const HeartRisk = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!hasValidRiskAge) {
+      setError('Add a valid date of birth to your profile before calculating risk.');
+      return;
+    }
     if (!ML_API_URL) {
       setError('VITE_ML_API_URL is not set. Copy frontend/.env.example to .env and set the ML API URL. See README.');
       return;
@@ -49,7 +57,7 @@ const HeartRisk = () => {
     try {
       // Prepare data for ML API (matching the expected format)
       const payload = {
-        Age: parseFloat(formData.Age) || 0,
+        Age: user.age,
         Gender: formData.Gender === 'male' ? 1 : 0,
         High_BP: mapValueToInt(formData.High_BP),
         High_Cholesterol: mapValueToInt(formData.High_Cholesterol),
@@ -106,16 +114,12 @@ const HeartRisk = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('modules:age', 'Age')} *
                 </label>
-                <input
-                  type="number"
-                  required
-                  min="18"
-                  max="100"
-                  value={formData.Age}
-                  onChange={(e) => handleChange('Age', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder={t('modules:enterYourAge', 'Enter your age')}
-                />
+                <p className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                  {user?.date_of_birth ? user.age : 'Add date of birth in Account settings'}
+                </p>
+                {user?.date_of_birth && !hasValidRiskAge && (
+                  <p className="mt-1 text-xs text-red-600">This assessment is for ages 18 to 100.</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -190,7 +194,7 @@ const HeartRisk = () => {
             <div className="flex justify-end">
               <button
                 type="submit"
-                disabled={isSubmitting || !formData.Age || !formData.Gender}
+                disabled={isSubmitting || !hasValidRiskAge || !formData.Gender}
                 className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? t('common:pleaseWait', 'Please wait...') : t('modules:completeAssessment', 'Complete Assessment')}

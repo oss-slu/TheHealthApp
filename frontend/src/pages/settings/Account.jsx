@@ -7,7 +7,7 @@ import { showSuccessToast } from '../../lib/toast.js';
 const Account = () => {
   const { t } = useTranslation(['common', 'auth', 'errors']);
   const { user, updateProfile, uploadProfilePhoto, initializing } = useAuth();
-  const [form, setForm] = useState({ name: '', age: '', phone: '' });
+  const [form, setForm] = useState({ name: '', date_of_birth: '', phone: '' });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const [photoError, setPhotoError] = useState(null);
@@ -17,7 +17,7 @@ const Account = () => {
     if (user) {
       setForm({
         name: user.name || '',
-        age: user.age || '',
+        date_of_birth: user.date_of_birth || '',
         phone: user.phone || '',
       });
     }
@@ -71,7 +71,7 @@ const Account = () => {
     try {
       await updateProfile({
         name: form.name.trim(),
-        age: Number(form.age),
+        date_of_birth: form.date_of_birth,
         phone: form.phone.trim(),
       });
       showSuccessToast('common:profileUpdated', t('common:profileUpdated', 'Profile updated.'));
@@ -167,20 +167,25 @@ const Account = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="age" className="block text-sm font-medium text-gray-700">
-                  {t('auth:age', 'Age')}
+                <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">
+                  {t('auth:dateOfBirth', 'Date of birth')}
                 </label>
                 <input
-                  type="number"
-                  id="age"
-                  name="age"
-                  value={form.age}
+                  type="date"
+                  id="date_of_birth"
+                  name="date_of_birth"
+                  value={form.date_of_birth}
                   onChange={onChange}
-                  min="13"
-                  max="120"
+                  max={new Date().toISOString().slice(0, 10)}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  {t('auth:age', 'Age')}
+                </label>
+                <p className="mt-1 px-3 py-2 text-gray-900">{user?.age ?? '-'}</p>
               </div>
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">

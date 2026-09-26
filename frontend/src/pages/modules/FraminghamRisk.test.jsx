@@ -37,11 +37,20 @@ describe('FraminghamRisk', () => {
 
   const renderPage = () =>
     renderWithProviders(<FraminghamRisk />, {
-      authContext: createAuthenticatedContext(),
+      authContext: createAuthenticatedContext({
+        user: {
+          username: 'testuser',
+          name: 'Test User',
+          date_of_birth: '1981-01-01',
+          age: 45,
+          consent_given: true,
+          data_usage: true,
+          consent_version: 'v1.0',
+        },
+      }),
     });
 
   const fillValidForm = async (user) => {
-    await user.type(screen.getByLabelText(/Age \(years\)/i), '45');
     await user.selectOptions(screen.getByLabelText(/Biological sex/i), 'male');
     await user.type(screen.getByLabelText(/Total cholesterol/i), '200');
     await user.type(screen.getByLabelText(/HDL cholesterol/i), '50');
@@ -72,7 +81,6 @@ describe('FraminghamRisk', () => {
 
     expect(healthRiskService.calculateRisk).toHaveBeenCalledWith(
       expect.objectContaining({
-        age: 45,
         gender: 'male',
         total_cholesterol: 200,
         hdl_cholesterol: 50,
@@ -82,6 +90,7 @@ describe('FraminghamRisk', () => {
         diabetes_status: 'no',
       }),
     );
+    expect(healthRiskService.calculateRisk.mock.calls[0][0]).not.toHaveProperty('age');
 
     expect(await screen.findByText('8.2%')).toBeInTheDocument();
     expect(screen.getByText('Low risk')).toBeInTheDocument();

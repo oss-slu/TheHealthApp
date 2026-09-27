@@ -147,6 +147,8 @@ it('opens and submits the edit prescription form', async () => {
   expect(prescriptionService.getAll).toHaveBeenCalledTimes(2);
 });
 
+});
+
 it('confirms and archives a prescription, then refreshes the list', async () => {
   const user = userEvent.setup();
 

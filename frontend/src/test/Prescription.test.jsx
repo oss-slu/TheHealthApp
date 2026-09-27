@@ -118,7 +118,7 @@ it('opens and submits the edit prescription form', async () => {
   renderWithProviders(<Prescription />);
 
   await screen.findByText('Lisinopril');
-  
+
   await user.click(
     screen.getByRole('button', { name: 'edit' })
   );
@@ -145,8 +145,6 @@ it('opens and submits the edit prescription form', async () => {
 
   await waitFor(() => {
   expect(prescriptionService.getAll).toHaveBeenCalledTimes(2);
-});
-
 });
 
 it('confirms and archives a prescription, then refreshes the list', async () => {

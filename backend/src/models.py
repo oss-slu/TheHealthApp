@@ -374,7 +374,7 @@ class PrescriptionUpdate(BaseModel):
             raise ValueError("This field cannot be blank")
         return value
 
-    
+
 class PrescriptionResponse(BaseModel):
     id: uuid.UUID
     medication_name: str

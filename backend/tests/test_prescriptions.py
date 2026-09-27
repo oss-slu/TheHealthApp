@@ -235,8 +235,6 @@ async def test_update_other_users_prescription_returns_404(
     )
 
     assert response.status_code == 404
-
-
 @pytest.mark.anyio
 async def test_archive_prescription(client, test_user):
     prescription = Prescription(

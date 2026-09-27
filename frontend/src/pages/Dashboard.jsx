@@ -1,12 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import PageShell from '../components/PageShell';
+import apiClient from '../api/client';
 
 const Dashboard = () => {
   const { t } = useTranslation(['dashboard', 'modules', 'questionnaire']);
   const location = useLocation();
-  const questionnaireComplete = location.state?.questionnaireComplete;
+
+  const [questionnaireComplete, setQuestionnaireComplete] = useState(
+    location.state?.questionnaireComplete || false
+  );
+
+  useEffect(() => {
+    const checkQuestionnaireStatus = async () => {
+      try {
+        const response = await apiClient.get('/questionnaire/status');
+        setQuestionnaireComplete(response.completed);
+      } catch (error) {
+        console.error('Failed to check questionnaire status:', error);
+      }
+    };
+
+    checkQuestionnaireStatus();
+  }, []);
 
   return (
     <PageShell title="dashboard:title">
@@ -31,7 +48,9 @@ const Dashboard = () => {
             {t('dashboard:questionnaireDescription')}
           </p>
           <span className="text-white font-medium flex items-center">
-            {t('dashboard:completeQuestionnaire')} →
+            {questionnaireComplete
+              ? 'Completed'
+              : t('dashboard:completeQuestionnaire')} →
           </span>
         </Link>
 

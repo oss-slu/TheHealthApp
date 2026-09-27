@@ -83,6 +83,7 @@ from .models import (
     ConsentSubmit,
     ConsentStatusData,
     user_has_valid_consent,
+    age_from_date_of_birth,
     Questionnaire,
     QuestionnaireSubmit,
 
@@ -309,6 +310,8 @@ async def update_own_profile(payload: UserUpdate, current_user: Annotated[User, 
             )
     for key, value in update_data.items():
         setattr(current_user, key, value)
+    if "date_of_birth" in update_data:
+        current_user.age = None
     current_user.updated_at = datetime.utcnow()
     await current_user.save()
     return SuccessResponse(data=current_user)
@@ -400,11 +403,16 @@ async def submit_questionnaire(
     payload: QuestionnaireSubmit,
     current_user: Annotated[User, Depends(require_health_consent)],
 ):
+    if current_user.date_of_birth != payload.dateOfBirth:
+        current_user.date_of_birth = payload.dateOfBirth
+        current_user.age = None
+        await current_user.save()
+
     questionnaire = Questionnaire(
         user_id=current_user.id,
         first_name=payload.firstName,
         last_name=payload.lastName,
-        date_of_birth=payload.dateOfBirth,
+        date_of_birth=current_user.date_of_birth.isoformat(),
         gender=payload.gender,
         email=payload.email,
         phone=payload.phone,
@@ -538,8 +546,19 @@ async def calculate_risk_assessment(
     
     Requires authentication. Rate limited to 30 requests per minute.
     """
+    if current_user.date_of_birth is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Add your date of birth to your profile before calculating risk",
+        )
+    age = age_from_date_of_birth(current_user.date_of_birth)
+    if age < 20:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Risk assessment requires an age of at least 20",
+        )
     try:
-        result = calculate_health_risk(payload)
+        result = calculate_health_risk(payload.model_copy(update={"age": age}))
         return SuccessResponse(data=result)
     except ValueError as e:
         raise HTTPException(
@@ -575,8 +594,19 @@ async def calculate_risk_assessment_anonymous(
     
     No authentication required. Rate limited to 10 requests per minute.
     """
+    if payload.date_of_birth is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Date of birth is required to calculate risk",
+        )
+    age = age_from_date_of_birth(payload.date_of_birth)
+    if age < 20:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Risk assessment requires an age of at least 20",
+        )
     try:
-        result = calculate_health_risk(payload)
+        result = calculate_health_risk(payload.model_copy(update={"age": age}))
         return SuccessResponse(data=result)
     except ValueError as e:
         raise HTTPException(

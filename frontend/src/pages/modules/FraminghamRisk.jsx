@@ -5,9 +5,9 @@ import PageShell from '../../components/PageShell';
 import { showErrorToast } from '../../lib/toast';
 import { healthRiskService } from '../../services/healthRiskService';
 import { parseHealthRiskAssessment } from '../../utils/riskAssessmentResponse';
+import { useAuth } from '../../hooks/useAuth';
 
 const initialForm = {
-  age: '',
   gender: '',
   total_cholesterol: '',
   hdl_cholesterol: '',
@@ -28,6 +28,7 @@ function categoryClass(cat) {
 
 const FraminghamRisk = () => {
   const { t } = useTranslation(['framingham', 'modules', 'common', 'errors', 'dashboard']);
+  const { user } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -36,8 +37,7 @@ const FraminghamRisk = () => {
 
   const validation = useMemo(() => {
     const e = {};
-    const age = parseInt(form.age, 10);
-    if (form.age === '' || Number.isNaN(age) || age < 20 || age > 120) {
+    if (!user?.date_of_birth || !Number.isInteger(user.age) || user.age < 20 || user.age > 120) {
       e.age = true;
     }
     if (!form.gender) e.gender = true;
@@ -60,7 +60,7 @@ const FraminghamRisk = () => {
     if (!form.smoking_status) e.smoking_status = true;
     if (!form.diabetes_status) e.diabetes_status = true;
     return e;
-  }, [form]);
+  }, [form, user?.age, user?.date_of_birth]);
 
   const isValid = Object.keys(validation).length === 0;
 
@@ -97,7 +97,6 @@ const FraminghamRisk = () => {
     }
 
     const payload = {
-      age: parseInt(form.age, 10),
       gender: form.gender,
       total_cholesterol: parseFloat(form.total_cholesterol),
       hdl_cholesterol: parseFloat(form.hdl_cholesterol),
@@ -186,17 +185,24 @@ const FraminghamRisk = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="age">
                 {t('framingham:fieldAge')} *
               </label>
-              <input
+              <p
                 id="age"
-                name="age"
-                type="number"
-                min={20}
-                max={120}
-                value={form.age}
-                onChange={onChange}
-                onBlur={onBlur}
                 className={`w-full border rounded px-3 py-2 ${showErr('age') ? 'border-red-500' : 'border-gray-300'}`}
-              />
+              >
+                {user?.age ?? '-'}
+              </p>
+              {!user?.date_of_birth && (
+                <p className="mt-1 text-sm text-red-600">
+                  <Link className="underline" to="/settings/account">
+                    {t('framingham:completeProfileDob', 'Add your date of birth in Account settings to continue.')}
+                  </Link>
+                </p>
+              )}
+              {showErr('age') && (
+                <p className="mt-1 text-sm text-red-600">
+                  {t('framingham:errorAgeFromProfile', 'A valid date of birth for age 20 or older is required in your profile.')}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="gender">

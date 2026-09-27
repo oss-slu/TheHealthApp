@@ -581,6 +581,28 @@ async def calculate_risk_assessment_anonymous(
 def health_check():
     return {"success": True, "data": {"status": "ok"}}
 
+@app.post(
+    "/api/v1/prescriptions",
+    response_model=SuccessResponse[PrescriptionResponse],
+)
+async def create_prescription(
+    prescription_data: PrescriptionCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = Prescription(
+        user_id=current_user.id,
+        medication_name=prescription_data.medication_name,
+        dosage=prescription_data.dosage,
+        frequency=prescription_data.frequency,
+        next_dose=prescription_data.next_dose,
+    )
+
+    await prescription.insert()
+
+    return SuccessResponse(
+        data=PrescriptionResponse.model_validate(prescription)
+    )
+
 @app.get(
     "/api/v1/prescriptions",
     response_model=SuccessResponse[list[PrescriptionResponse]],

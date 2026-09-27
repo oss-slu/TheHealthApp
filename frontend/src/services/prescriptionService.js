@@ -5,6 +5,10 @@ export const prescriptionService = {
     return apiClient.get('/prescriptions');
   },
 
+  async create(payload) {
+    return apiClient.post('/prescriptions', payload);
+  },
+
   async update(id, payload) {
     return apiClient.put(`/prescriptions/${id}`, payload);
   },

@@ -348,6 +348,14 @@ class PrescriptionCreate(BaseModel):
     frequency: str
     next_dose: Optional[datetime] = None
 
+    @field_validator("medication_name", "dosage", "frequency")
+    @classmethod
+    def validate_required_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("This field cannot be blank")
+        return value
+
 
 class PrescriptionUpdate(BaseModel):
     medication_name: Optional[str] = None
@@ -355,7 +363,18 @@ class PrescriptionUpdate(BaseModel):
     frequency: Optional[str] = None
     next_dose: Optional[datetime] = None
 
+    @field_validator("medication_name", "dosage", "frequency")
+    @classmethod
+    def validate_optional_text(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
 
+        value = value.strip()
+        if not value:
+            raise ValueError("This field cannot be blank")
+        return value
+
+    
 class PrescriptionResponse(BaseModel):
     id: uuid.UUID
     medication_name: str

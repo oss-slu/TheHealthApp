@@ -33,5 +33,23 @@
   "videoCall": "Soporte por Videollamada",
   "startChat": "Iniciar Chat",
   "getSupport": "Obtener Soporte",
-  "tba": "Próximamente"
+  "tba": "Próximamente",
+  "medicationName": "Nombre del medicamento",
+"dosage": "Dosis",
+"frequency": "Frecuencia",
+"nextDose": "Próxima dosis",
+"savePrescription": "Guardar receta",
+"saving": "Guardando...",
+"cancel": "Cancelar",
+"edit": "Editar",
+"archive": "Archivar",
+"loadingPrescriptions": "Cargando recetas...",
+"noActivePrescriptions": "No se encontraron recetas activas.",
+"prescriptionUpdated": "Receta actualizada correctamente.",
+"prescriptionArchived": "Receta archivada correctamente.",
+"prescriptionCreated": "Receta agregada correctamente.",
+"prescriptionError": "Algo salió mal. Inténtalo de nuevo.",
+"retry": "Reintentar",
+"confirmArchive": "¿Está seguro de que desea archivar esta receta?"
+  
 }

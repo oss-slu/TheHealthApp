@@ -33,5 +33,22 @@
   "videoCall": "دعم مكالمات الفيديو",
   "startChat": "ابدأ المحادثة",
   "getSupport": "احصل على الدعم",
-  "tba": "قريبًا"
+  "tba": "قريبًا",
+  "medicationName": "اسم الدواء",
+  "dosage": "الجرعة",
+  "frequency": "التكرار",
+  "nextDose": "الجرعة التالية",
+  "savePrescription": "حفظ الوصفة الطبية",
+  "saving": "جارٍ الحفظ...",
+  "cancel": "إلغاء",
+  "edit": "تعديل",
+  "archive": "أرشفة",
+  "loadingPrescriptions": "جارٍ تحميل الوصفات الطبية...",
+  "noActivePrescriptions": "لا توجد وصفات طبية نشطة.",
+  "prescriptionUpdated": "تم تحديث الوصفة الطبية بنجاح.",
+  "prescriptionArchived": "تمت أرشفة الوصفة الطبية بنجاح.",
+  "prescriptionCreated": "تمت إضافة الوصفة الطبية بنجاح.",
+  "prescriptionError": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+  "retry": "إعادة المحاولة",
+  "confirmArchive": "هل أنت متأكد من أنك تريد أرشفة هذه الوصفة الطبية؟"
 }

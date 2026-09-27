@@ -191,6 +191,13 @@ const FraminghamRisk = () => {
               >
                 {user?.age ?? '-'}
               </p>
+              {!user?.date_of_birth && (
+                <p className="mt-1 text-sm text-red-600">
+                  <Link className="underline" to="/settings/account">
+                    {t('framingham:completeProfileDob', 'Add your date of birth in Account settings to continue.')}
+                  </Link>
+                </p>
+              )}
               {showErr('age') && (
                 <p className="mt-1 text-sm text-red-600">
                   {t('framingham:errorAgeFromProfile', 'A valid date of birth for age 20 or older is required in your profile.')}

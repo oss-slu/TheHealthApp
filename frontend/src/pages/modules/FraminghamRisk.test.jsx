@@ -71,6 +71,17 @@ describe('FraminghamRisk', () => {
     expect(healthRiskService.calculateRisk).not.toHaveBeenCalled();
   });
 
+  it('prompts legacy users without a date of birth to complete their profile', () => {
+    renderWithProviders(<FraminghamRisk />, {
+      authContext: createAuthenticatedContext({
+        user: { username: 'legacyuser', name: 'Legacy User', age: 45 },
+      }),
+    });
+
+    expect(screen.getByRole('link', { name: /add your date of birth in account settings/i }))
+      .toHaveAttribute('href', '/settings/account');
+  });
+
   it('displays API risk results when the backend returns a valid payload', async () => {
     vi.mocked(healthRiskService.calculateRisk).mockResolvedValueOnce(validApiResponse);
     const user = userEvent.setup();

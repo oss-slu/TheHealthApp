@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import PageShell from '../../components/PageShell';
 import { useAuth } from '../../hooks/useAuth';
+
+function ageFromDateOfBirth(dateOfBirth, today = new Date()) {
+  if (!dateOfBirth) return null;
+
+  const [birthYear, birthMonth, birthDay] = dateOfBirth.split('-').map(Number);
+  if (!birthYear || !birthMonth || !birthDay) return null;
+
+  return today.getFullYear() - birthYear - (
+    today.getMonth() + 1 < birthMonth ||
+    (today.getMonth() + 1 === birthMonth && today.getDate() < birthDay)
+  );
+}
 
 const HeartRisk = () => {
   const { t } = useTranslation(['modules']);
@@ -21,9 +34,8 @@ const HeartRisk = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const hasValidRiskAge = Boolean(
-    user?.date_of_birth && Number.isInteger(user.age) && user.age >= 18 && user.age <= 100
-  );
+  const age = ageFromDateOfBirth(user?.date_of_birth);
+  const hasValidRiskAge = Number.isInteger(age) && age >= 18 && age <= 100;
 
   // ML API endpoint — set VITE_ML_API_URL in .env (see frontend/.env.example).
   const ML_API_URL = import.meta.env.VITE_ML_API_URL;
@@ -42,7 +54,8 @@ const HeartRisk = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!hasValidRiskAge) {
+    const currentAge = ageFromDateOfBirth(user?.date_of_birth);
+    if (!Number.isInteger(currentAge) || currentAge < 18 || currentAge > 100) {
       setError('Add a valid date of birth to your profile before calculating risk.');
       return;
     }
@@ -57,7 +70,7 @@ const HeartRisk = () => {
     try {
       // Prepare data for ML API (matching the expected format)
       const payload = {
-        Age: user.age,
+        Age: currentAge,
         Gender: formData.Gender === 'male' ? 1 : 0,
         High_BP: mapValueToInt(formData.High_BP),
         High_Cholesterol: mapValueToInt(formData.High_Cholesterol),
@@ -115,8 +128,15 @@ const HeartRisk = () => {
                   {t('modules:age', 'Age')} *
                 </label>
                 <p className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
-                  {user?.date_of_birth ? user.age : 'Add date of birth in Account settings'}
+                  {user?.date_of_birth ? age : '-'}
                 </p>
+                {!user?.date_of_birth && (
+                  <p className="mt-1 text-sm text-red-600">
+                    <Link className="underline" to="/settings/account">
+                      Add your date of birth in Account settings to continue.
+                    </Link>
+                  </p>
+                )}
                 {user?.date_of_birth && !hasValidRiskAge && (
                   <p className="mt-1 text-xs text-red-600">This assessment is for ages 18 to 100.</p>
                 )}
@@ -194,7 +214,7 @@ const HeartRisk = () => {
             <div className="flex justify-end">
               <button
                 type="submit"
-                disabled={isSubmitting || !hasValidRiskAge || !formData.Gender}
+                disabled={isSubmitting || !user?.date_of_birth || !formData.Gender}
                 className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? t('common:pleaseWait', 'Please wait...') : t('modules:completeAssessment', 'Complete Assessment')}

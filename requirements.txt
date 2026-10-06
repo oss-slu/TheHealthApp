@@ -19,7 +19,7 @@ pydantic-settings==2.6.1
 # ------------------------
 # Authentication & Security
 # ------------------------
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.5.0
 bcrypt==4.2.0
 passlib[bcrypt]==1.7.4
 
@@ -32,15 +32,15 @@ limits==4.2
 # ------------------------
 # Environment & Utilities
 # ------------------------
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 email-validator==2.2.0
-requests==2.32.4
+requests==2.33.0
 loguru==0.7.2
 
 # ------------------------
 # Optional: Testing & Formatting
 # ------------------------
-pytest==8.3.2
+pytest==9.0.3
 httpx==0.27.2
-black==24.8.0
+black==26.3.1
 flake8==7.1.1

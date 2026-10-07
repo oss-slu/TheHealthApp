@@ -102,4 +102,11 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pip install pytest httpx python-multipart
 
-      - run: PYTHONPATH=$(pwd) pytest tests/test_prescriptions.py -v
+      - run: |
+          export MONGO_URL="mongodb://localhost:27017"
+          export MONGO_DB_NAME="healthapp_test"
+          export JWT_ACCESS_SECRET="test-access-secret"
+          export JWT_REFRESH_SECRET="test-refresh-secret"
+          export ACCESS_TOKEN_EXPIRE_MINUTES="30"
+          export REFRESH_TOKEN_EXPIRE_DAYS="7"
+          PYTHONPATH=$(pwd) pytest tests/test_prescriptions.py -v

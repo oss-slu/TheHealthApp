@@ -1,0 +1,164 @@
+/* Design tokens — consumed via CSS variables and Tailwind @theme */
+
+@theme {
+  /* Typography */
+  --font-display: "Fraunces", "Georgia", serif;
+  --font-sans: "Nunito Sans", "Segoe UI", sans-serif;
+
+  /* Brand */
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-500: #0d9488;
+  --color-brand-600: #0f766e;
+  --color-brand-700: #115e59;
+  --color-brand-800: #134e4a;
+  --color-brand-900: #042f2e;
+
+  /* Neutrals */
+  --color-ink-50: #f8fafc;
+  --color-ink-100: #f1f5f9;
+  --color-ink-200: #e2e8f0;
+  --color-ink-400: #94a3b8;
+  --color-ink-500: #64748b;
+  --color-ink-600: #475569;
+  --color-ink-700: #334155;
+  --color-ink-800: #1e293b;
+  --color-ink-900: #0f172a;
+
+  /* Health status (WCAG-minded pairs with light surfaces) */
+  --color-status-ok: #047857;
+  --color-status-ok-bg: #ecfdf5;
+  --color-status-warn: #b45309;
+  --color-status-warn-bg: #fffbeb;
+  --color-status-risk: #c2410c;
+  --color-status-risk-bg: #fff7ed;
+  --color-status-critical: #b91c1c;
+  --color-status-critical-bg: #fef2f2;
+  --color-status-info: #1d4ed8;
+  --color-status-info-bg: #eff6ff;
+
+  /* Spacing scale */
+  --spacing-section: 2rem;
+  --spacing-panel: 1.5rem;
+
+  /* Radius / elevation */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --shadow-surface: 0 1px 2px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.06);
+}
+
+:root,
+[data-theme="calm"] {
+  --surface-canvas: linear-gradient(180deg, #f8fafc 0%, #f0fdfa 40%, #ecfeff 100%);
+  --surface-elevated: #ffffff;
+  --surface-muted: #f1f5f9;
+  --surface-border: rgb(15 118 110 / 0.18);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-inverse: #f8fafc;
+  --focus-ring: #0d9488;
+  --header-bg: rgb(255 255 255 / 0.88);
+  --footer-bg: rgb(255 255 255 / 0.92);
+}
+
+[data-theme="clinical"] {
+  --surface-canvas: linear-gradient(180deg, #f8fafc 0%, #eef2ff 45%, #e2e8f0 100%);
+  --surface-elevated: #ffffff;
+  --surface-muted: #e2e8f0;
+  --surface-border: rgb(51 65 85 / 0.2);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-inverse: #f8fafc;
+  --focus-ring: #1d4ed8;
+  --header-bg: rgb(248 250 252 / 0.92);
+  --footer-bg: rgb(248 250 252 / 0.95);
+}
+
+[data-theme="grove"] {
+  --surface-canvas: linear-gradient(165deg, #f7fee7 0%, #ecfdf5 42%, #f0fdfa 100%);
+  --surface-elevated: #ffffff;
+  --surface-muted: #f0fdf4;
+  --surface-border: rgb(22 101 52 / 0.18);
+  --text-primary: #14532d;
+  --text-secondary: #3f6212;
+  --text-inverse: #f7fee7;
+  --focus-ring: #15803d;
+  --header-bg: rgb(255 255 255 / 0.9);
+  --footer-bg: rgb(255 255 255 / 0.94);
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--surface-canvas);
+}
+
+.health-app-shell {
+  background: var(--surface-canvas);
+  color: var(--text-primary);
+}
+
+.health-header {
+  background: var(--header-bg);
+  border-color: var(--surface-border);
+}
+
+.health-footer {
+  background: var(--footer-bg);
+  border-color: var(--surface-border);
+}
+
+.health-header a:focus-visible,
+.health-header button:focus-visible,
+.health-skip-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.surface-elevated {
+  background: var(--surface-elevated);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-surface);
+}
+
+.surface-muted {
+  background: var(--surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.status-ok {
+  color: var(--color-status-ok);
+  background: var(--color-status-ok-bg);
+}
+
+.status-warn {
+  color: var(--color-status-warn);
+  background: var(--color-status-warn-bg);
+}
+
+.status-risk {
+  color: var(--color-status-risk);
+  background: var(--color-status-risk-bg);
+}
+
+.status-critical {
+  color: var(--color-status-critical);
+  background: var(--color-status-critical-bg);
+}
+
+.status-info {
+  color: var(--color-status-info);
+  background: var(--color-status-info-bg);
+}
+
+.health-landing {
+  isolation: isolate;
+}

@@ -2,121 +2,189 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import PageShell from '../components/PageShell';
+import { EmptyState, Metric } from '../components/ui';
 import apiClient from '../api/client';
 
+const TOOLS = [
+  {
+    path: '/modules/framingham-risk',
+    titleKey: 'dashboard:framinghamCardTitle',
+    descKey: 'dashboard:framinghamCardDesc',
+    ns: 'dashboard',
+  },
+  {
+    path: '/modules/heart-risk',
+    titleKey: 'modules:heartRisk',
+    descKey: 'modules:cardioRiskAssessmentDescription',
+    ns: 'modules',
+  },
+  {
+    path: '/modules/prescription',
+    titleKey: 'modules:prescription',
+    descKey: 'modules:medicalDescription',
+    ns: 'modules',
+  },
+  {
+    path: '/modules/tba',
+    titleKey: 'modules:tba',
+    descKey: 'modules:tbaDescription',
+    ns: 'modules',
+  },
+];
+
 const Dashboard = () => {
-  const { t } = useTranslation(['dashboard', 'modules', 'questionnaire']);
+  const { t } = useTranslation(['dashboard', 'modules', 'questionnaire', 'common']);
   const location = useLocation();
+  const [loadingStatus, setLoadingStatus] = useState(true);
 
   const [questionnaireComplete, setQuestionnaireComplete] = useState(
-    location.state?.questionnaireComplete || false
+    Boolean(location.state?.questionnaireComplete)
   );
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkQuestionnaireStatus = async () => {
       try {
         const response = await apiClient.get('/questionnaire/status');
-        setQuestionnaireComplete(response.completed);
+        if (!cancelled) {
+          setQuestionnaireComplete(Boolean(response.completed));
+        }
       } catch (error) {
         console.error('Failed to check questionnaire status:', error);
+      } finally {
+        if (!cancelled) setLoadingStatus(false);
       }
     };
 
     checkQuestionnaireStatus();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const primaryHref = questionnaireComplete ? '/modules/framingham-risk' : '/questionnaire';
+  const primaryTitle = questionnaireComplete
+    ? t('dashboard:primaryActionCompleteTitle')
+    : t('dashboard:healthQuestionnaire');
+  const primaryDescription = questionnaireComplete
+    ? t('dashboard:primaryActionCompleteDesc')
+    : t('dashboard:questionnaireDescription');
+  const primaryCta = questionnaireComplete
+    ? t('dashboard:startFramingham')
+    : t('dashboard:completeQuestionnaire');
 
   return (
     <PageShell title="dashboard:title">
-      {questionnaireComplete && (
-        <div className="mb-6 rounded border border-green-300 bg-green-50 text-green-800 p-4">
-          {t('questionnaire:success.message')}
-        </div>
-      )}
+      <div className="space-y-10" data-testid="dashboard-root">
+        <section aria-labelledby="dashboard-primary-heading" data-testid="dashboard-primary">
+          <Link
+            to={primaryHref}
+            className="group relative block overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-brand-700)] px-6 py-8 text-[var(--text-inverse)] shadow-[var(--shadow-surface)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-100/90">
+              {t('dashboard:primaryActionLabel')}
+            </p>
+            <h2
+              id="dashboard-primary-heading"
+              className="mt-2 font-display text-2xl font-bold sm:text-3xl"
+            >
+              {primaryTitle}
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm text-teal-50/90 sm:text-base">
+              {primaryDescription}
+            </p>
+            <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold">
+              {primaryCta}
+              <span aria-hidden className="transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5">
+                →
+              </span>
+            </span>
+          </Link>
+        </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Link
-          to="/questionnaire"
-          className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer text-white"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">{t('dashboard:healthQuestionnaire')}</h3>
-            <svg className="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+        <section aria-labelledby="dashboard-status-heading">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <h2 id="dashboard-status-heading" className="font-display text-xl font-semibold">
+              {t('dashboard:healthStatus')}
+            </h2>
           </div>
-          <p className="text-blue-100 mb-4">
-            {t('dashboard:questionnaireDescription')}
-          </p>
-          <span className="text-white font-medium flex items-center">
-            {questionnaireComplete
-              ? 'Completed'
-              : t('dashboard:completeQuestionnaire')} →
-          </span>
-        </Link>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Metric
+              label={t('dashboard:profileMetricLabel')}
+              value={
+                loadingStatus
+                  ? t('common:pleaseWait')
+                  : questionnaireComplete
+                    ? t('dashboard:profileComplete')
+                    : t('dashboard:profileIncomplete')
+              }
+              status={questionnaireComplete ? 'ok' : 'warn'}
+              hint={
+                questionnaireComplete
+                  ? t('dashboard:profileCompleteHint')
+                  : t('dashboard:promptAssess')
+              }
+            />
+            <Metric
+              label={t('dashboard:nextStepLabel')}
+              value={
+                questionnaireComplete
+                  ? t('dashboard:nextStepAssess')
+                  : t('dashboard:nextStepQuestionnaire')
+              }
+              status="info"
+              hint={t('dashboard:nextStepHint')}
+            />
+          </div>
+        </section>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard:recentAssessments')}</h3>
-          <p className="text-gray-600">{t('dashboard:noRecent')}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard:healthStatus')}</h3>
-          <p className="text-gray-600">{t('dashboard:promptAssess')}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard:reminders')}</h3>
-          <p className="text-gray-600">{t('dashboard:noReminders')}</p>
-        </div>
-        <Link
-          to="/modules/framingham-risk"
-          className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer text-white"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">{t('dashboard:framinghamCardTitle')}</h3>
-            <svg className="w-8 h-8 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+        <section aria-labelledby="dashboard-tools-heading">
+          <div className="mb-4">
+            <h2 id="dashboard-tools-heading" className="font-display text-xl font-semibold">
+              {t('dashboard:toolsHeading')}
+            </h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">{t('dashboard:toolsSubtitle')}</p>
           </div>
-          <p className="text-indigo-100 mb-4">{t('dashboard:framinghamCardDesc')}</p>
-          <span className="text-white font-medium flex items-center">
-            {t('dashboard:viewDetails')} →
-          </span>
-        </Link>
-        <Link
-          to="/modules/heart-risk"
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('modules:heartRisk')}</h3>
-          <p className="text-gray-600 mb-4">
-            {t('modules:cardioRiskAssessmentDescription', 'This assessment helps evaluate your risk for heart disease and other cardiovascular conditions.')}
-          </p>
-          <span className="text-blue-600 hover:text-blue-700 font-medium">
-            {t('dashboard:viewDetails', 'View Details')} →
-          </span>
-        </Link>
-        <Link
-          to="/modules/prescription"
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('modules:prescription')}</h3>
-          <p className="text-gray-600 mb-4">
-            {t('modules:medicalDescription', 'Manage and view your medical prescriptions here.')}
-          </p>
-          <span className="text-blue-600 hover:text-blue-700 font-medium">
-            {t('dashboard:viewDetails', 'View Details')} →
-          </span>
-        </Link>
-        <Link
-          to="/modules/tba"
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('modules:tba')}</h3>
-          <p className="text-gray-600 mb-4">
-            {t('modules:tbaDescription', 'Connect with healthcare professionals and get personalized support for your health needs.')}
-          </p>
-          <span className="text-blue-600 hover:text-blue-700 font-medium">
-            {t('dashboard:viewDetails', 'View Details')} →
-          </span>
-        </Link>
+          <ul className="grid grid-cols-1 gap-4 md:grid-cols-2" data-testid="dashboard-tools">
+            {TOOLS.map((tool) => (
+              <li key={tool.path}>
+                <Link
+                  to={tool.path}
+                  className="surface-elevated flex h-full flex-col p-5 transition-colors hover:border-[var(--color-brand-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                >
+                  <h3 className="font-display text-lg font-semibold text-[var(--text-primary)]">
+                    {t(tool.titleKey)}
+                  </h3>
+                  <p className="mt-2 flex-1 text-sm text-[var(--text-secondary)]">{t(tool.descKey)}</p>
+                  <span className="mt-4 text-sm font-semibold text-[var(--color-brand-700)]">
+                    {t('dashboard:viewDetails')} →
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section aria-labelledby="dashboard-activity-heading">
+          <h2 id="dashboard-activity-heading" className="mb-4 font-display text-xl font-semibold">
+            {t('dashboard:recentAssessments')}
+          </h2>
+          <EmptyState
+            title={t('dashboard:noRecent')}
+            description={t('dashboard:activityEmptyDesc')}
+            action={
+              <Link
+                to={questionnaireComplete ? '/modules/framingham-risk' : '/questionnaire'}
+                className="rounded-[var(--radius-md)] bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white"
+              >
+                {questionnaireComplete
+                  ? t('dashboard:startFramingham')
+                  : t('dashboard:completeQuestionnaire')}
+              </Link>
+            }
+          />
+        </section>
       </div>
     </PageShell>
   );

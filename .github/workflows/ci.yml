@@ -76,3 +76,37 @@ jobs:
           name: build-output
           path: frontend/dist
           retention-days: 7
+
+  backend-test:
+    name: Backend Prescription Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt
+      - run: pip install pytest httpx python-multipart
+
+      - run: |
+          export MONGO_URL="mongodb://localhost:27017"
+          export MONGO_DB_NAME="healthapp_test"
+          export JWT_ACCESS_SECRET="test-access-secret"
+          export JWT_REFRESH_SECRET="test-refresh-secret"
+          export ACCESS_TOKEN_EXPIRE_MINUTES="30"
+          export REFRESH_TOKEN_EXPIRE_DAYS="7"
+          PYTHONPATH=$(pwd) pytest tests/test_prescriptions.py -v

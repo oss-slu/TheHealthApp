@@ -18,16 +18,17 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   const [form, setForm] = useState({
     username: '',
     name: '',
-    age: '',
+    dateOfBirth: '',
     gender: '',
     phone: '',
     password: '',
     confirm: '',
   });
+
   const [touched, setTouched] = useState({
     username: false,
     name: false,
-    age: false,
+    dateOfBirth: false,
     gender: false,
     phone: false,
     password: false,
@@ -37,20 +38,27 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   const [error, setError] = useState(null);
 
   const usernameValid = useMemo(
-    () => validateUsername(form.username),
-    [form.username]
-  );
+      () => validateUsername(form.username),
+     [form.username]
+   );
+
   const nameValid = form.name.trim().length >= 2;
-  const ageValid = form.age !== '' && parseInt(form.age, 10) > 12 && parseInt(form.age, 10) < 121;
+  
+  const dobValid = useMemo(() => {
+    if (!form.dateOfBirth) return false;
+    const dob = new Date(form.dateOfBirth);
+    const ageDate = new Date(Date.now() - dob.getTime());
+    const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970);
+    return calculatedAge > 12 && calculatedAge < 121;
+  }, [form.dateOfBirth]);
+
   const genderValid = ['male', 'female', 'other', 'na'].includes(form.gender);
   const phoneValid = /^\+?[0-9]{10,15}$/.test(form.phone);
-  const passwordValid = useMemo(
-    () => validatePassword(form.password),
-    [form.password]
-  );
+
+  const passwordValid = useMemo(() => validatePassword(form.password), [form.password]);
   const confirmValid = form.confirm.length > 0 && form.confirm === form.password;
 
-  const isFormValid = usernameValid && nameValid && ageValid && genderValid && phoneValid && passwordValid && confirmValid;
+  const isFormValid = usernameValid && nameValid && dobValid && genderValid && phoneValid && passwordValid && confirmValid;
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -74,15 +82,14 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
     setTouched({
       username: true,
       name: true,
-      age: true,
+      dateOfBirth: true,
       gender: true,
       phone: true,
       password: true,
       confirm: true,
     });
-    if (!isFormValid) {
-      return;
-    }
+
+    if (!isFormValid) return;
 
     setIsSubmitting(true);
     setError(null);
@@ -92,7 +99,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
       const payload = {
         username: normalizedUsername,
         name: form.name.trim(),
-        age: parseInt(form.age, 10),
+        date_of_birth: form.dateOfBirth,
         gender: form.gender,
         phone: form.phone,
         password: form.password,
@@ -178,24 +185,28 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">{t('auth:age', 'Age')} *</label>
+                <label className="block text-sm font-medium mb-1" htmlFor="dateOfBirth">
+                  {t('auth:dob', 'Date of Birth')} *
+                </label>
                 <input
-                  type="number"
+                  id="dateOfBirth"
+                  type="date"
                   className={`w-full border rounded px-3 py-2 ${
-                    touched.age && !ageValid ? 'border-red-500' : 'border-gray-300'
+                    touched.dateOfBirth && !dobValid ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  name="age"
-                  value={form.age}
+                  name="dateOfBirth"
+                  value={form.dateOfBirth}
                   onChange={onChange}
                   onBlur={onBlur}
-                  placeholder={t('auth:age', 'Age')}
-                  min="13"
-                  max="120"
+                  max={new Date().toISOString().split("T")[0]}
                 />
-                {touched.age && !ageValid && (
-                  <p className="text-xs text-red-600 mt-1">{t('auth:errors.ageInvalid', 'Age must be between 13 and 120')}</p>
+                {touched.dateOfBirth && !dobValid && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {t('auth:errors.dobInvalid', 'You must be between 13 and 120 years old')}
+                  </p>
                 )}
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">{t('auth:gender')} *</label>
                 <select
@@ -214,7 +225,9 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
                   <option value="na">{t('common:preferNotToSay', 'Prefer not to say')}</option>
                 </select>
                 {touched.gender && !genderValid && (
-                  <p className="text-xs text-red-600 mt-1">{t('auth:errors.genderRequired', 'Please select a gender')}</p>
+                  <p className="text-xs text-red-600 mt-1">
+                    {t('auth:errors.genderRequired', 'Please select a gender')}
+                  </p>
                 )}
               </div>
             </div>

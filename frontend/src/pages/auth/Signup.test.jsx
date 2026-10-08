@@ -4,6 +4,7 @@ import {
   screen,
   userEvent,
   waitFor,
+  fireEvent
 } from '../../test/test-utils';
 import Signup from './Signup';
 
@@ -75,15 +76,15 @@ describe('Signup', () => {
       expect(screen.getByText(/name must be at least 2 characters/i)).toBeInTheDocument();
     });
 
-    it('shows error for invalid age', async () => {
+    it('shows error for invalid date of birth', async () => {
       const user = userEvent.setup();
       renderSignup();
 
-      const ageInput = screen.getByPlaceholderText(/age/i);
-      await user.type(ageInput, '10');
+      const dobInput = screen.getByLabelText(/date of birth/i);
+      await user.type(dobInput, '2015-01-01');
       await user.tab();
 
-      expect(screen.getByText(/age must be between 13 and 120/i)).toBeInTheDocument();
+      expect(screen.getByText(/you must be between 13 and 120 years old/i)).toBeInTheDocument();
     });
 
     it('shows error for mismatched passwords', async () => {
@@ -111,14 +112,15 @@ describe('Signup', () => {
 
   describe('Form Submission', () => {
     const fillValidForm = async (user) => {
-      await user.type(screen.getByLabelText(/username/i), 'john_doe');
-      await user.type(screen.getByLabelText(/full name/i), 'John Doe');
-      await user.type(screen.getByPlaceholderText(/age/i), '25');
-      await user.selectOptions(screen.getByRole('combobox'), 'male');
-      await user.type(screen.getByPlaceholderText(/phone number/i), '1234567890');
-      await user.type(screen.getByLabelText(/^password$/i), 'Password123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'Password123');
-    };
+    await user.type(screen.getByLabelText(/username/i), 'john_doe');
+    await user.type(screen.getByLabelText(/full name/i), 'John Doe');
+    fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
+    
+    await user.selectOptions(screen.getByRole('combobox'), 'male');
+    await user.type(screen.getByPlaceholderText(/phone number/i), '1234567890');
+    await user.type(screen.getByLabelText(/^password$/i), 'Password123');
+    await user.type(screen.getByLabelText(/confirm password/i), 'Password123');
+  };
 
     it('enables submit button when form is valid', async () => {
       const user = userEvent.setup();
@@ -142,7 +144,7 @@ describe('Signup', () => {
         expect(mockSignup).toHaveBeenCalledWith({
           username: 'john_doe',
           name: 'John Doe',
-          age: 25,
+          date_of_birth: '2000-01-01',
           gender: 'male',
           phone: '1234567890',
           password: 'Password123',
@@ -189,7 +191,7 @@ describe('Signup', () => {
 
       await user.type(screen.getByLabelText(/username/i), 'john_doe');
       await user.type(screen.getByLabelText(/full name/i), 'John Doe');
-      await user.type(screen.getByPlaceholderText(/age/i), '25');
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
       await user.selectOptions(screen.getByRole('combobox'), 'male');
       
       // Try to type letters - they should be stripped

@@ -1,4 +1,5 @@
 import uuid
+import re
 from beanie import Document, Indexed
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 from enum import Enum
@@ -17,7 +18,9 @@ class User(Document):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     username: Annotated[str, Indexed(unique=True)]
     name: str = Field(min_length=2, max_length=50)
-    age: int = Field(gt=12, lt=121)
+    age: Optional[int] = Field(default=None, gt=12, lt=121)
+    date_of_birth: Optional[str] = None
+    
     gender: GenderEnum
     phone: Annotated[str, Indexed(unique=True)]
     password_hash: str
@@ -85,10 +88,20 @@ class Questionnaire(Document):
 class UserCreate(BaseModel):
     username: Annotated[str, StringConstraints(min_length=2, max_length=50)]
     name: Annotated[str, StringConstraints(min_length=2, max_length=50)]
-    age: int = Field(..., gt=12, lt=121)
+    
+    age: Optional[int] = Field(default=None, gt=12, lt=121)
+    date_of_birth: Optional[str] = None
+    
     gender: GenderEnum
     phone: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]
     password: str
+
+    @field_validator('phone', mode='after')
+    def normalize_phone(cls, v: str) -> str:
+        if v:
+            return re.sub(r'(?!^\+)[^\d]', '', v)
+        return v
+
     @field_validator('password', mode='after')
     def password_complexity(cls, v: str) -> str:
         if len(v) < 8: raise ValueError('Password must be at least 8 characters long')
@@ -122,7 +135,10 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     username: str
     name: str
-    age: int
+    
+    age: Optional[int] = None
+    date_of_birth: Optional[str] = None
+    
     gender: GenderEnum
     phone: str
     photo_url: Optional[str] = None

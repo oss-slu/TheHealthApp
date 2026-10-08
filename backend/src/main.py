@@ -276,7 +276,7 @@ async def signup_user(request: Request, payload: UserCreate):
                 status_code=409,
                 detail={
                     "code": "DUPLICATE_USERNAME",
-                    "message": "Username already exists",
+                    "message": "Username is already in use",
                 },
             ) from exc
 

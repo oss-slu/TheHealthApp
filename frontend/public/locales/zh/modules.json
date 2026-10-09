@@ -50,5 +50,7 @@
 "prescriptionCreated": "处方添加成功。",
 "prescriptionError": "出了点问题。请再试一次。",
 "retry": "重试",
-"confirmArchive": "您确定要归档此处方吗？"
+"confirmArchive": "您确定要归档此处方吗？",
+"prescriptionRequiredFields": "请填写所有必填字段。",
+"prescriptionValidationError": "请检查您填写的内容并更正无效字段。"
 }

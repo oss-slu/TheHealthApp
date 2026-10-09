@@ -53,8 +53,12 @@ const [errorMessage, setErrorMessage] = useState('');
     !addForm.dosage.trim() ||
     !addForm.frequency.trim()
   ) {
+    setErrorMessage(t('modules:prescriptionRequiredFields'));
+    setMessage('');
     return;
   }
+
+  setErrorMessage('');
 
   try {
     setSaving(true);
@@ -77,7 +81,9 @@ const [errorMessage, setErrorMessage] = useState('');
   } catch (error) {
     console.error('Failed to create prescription:', error);
     setErrorMessage(
-      error?.message || t('modules:prescriptionError')
+      error?.status === 422
+        ? t('modules:prescriptionValidationError')
+        : error?.message || t('modules:prescriptionError')
     );
     setMessage('');
   } finally {
@@ -96,10 +102,26 @@ const [errorMessage, setErrorMessage] = useState('');
   };
 
   const handleSave = async (id) => {
-  try {
+    if (
+      !editForm.medication_name.trim() ||
+      !editForm.dosage.trim() ||
+      !editForm.frequency.trim()
+    ) {
+      setErrorMessage(t('modules:prescriptionRequiredFields'));
+      setMessage('');
+      return;
+    }
+
+    setErrorMessage('');
+    try {
     setEditingSaving(true);
 
-    await prescriptionService.update(id, editForm);
+    await prescriptionService.update(id, {
+      medication_name: editForm.medication_name.trim(),
+      dosage: editForm.dosage.trim(),
+      frequency: editForm.frequency.trim(),
+    });
+
     setMessage(t('modules:prescriptionUpdated'));
     setErrorMessage('');
     setEditingId(null);
@@ -107,7 +129,9 @@ const [errorMessage, setErrorMessage] = useState('');
   } catch (error) {
     console.error('Failed to update prescription:', error);
     setErrorMessage(
-    error?.message || t('modules:prescriptionError')
+      error?.status === 422
+      ? t('modules:prescriptionValidationError')
+      : error?.message || t('modules:prescriptionError')
   );
   setMessage('');
   } finally {
@@ -164,7 +188,9 @@ const [errorMessage, setErrorMessage] = useState('');
         )}
 
         {errorMessage && (
-          <div className="border border-red-300 bg-red-50 rounded-lg p-4 mb-6">
+          <div
+            role="alert"
+            className="border border-red-300 bg-red-50 rounded-lg p-4 mb-6">
             <p className="text-red-700">{errorMessage}</p>
           </div>
         )}

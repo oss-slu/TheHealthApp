@@ -416,15 +416,16 @@ class PrescriptionUpdate(BaseModel):
     frequency: Optional[str] = None
     next_dose: Optional[datetime] = None
 
-    @field_validator("medication_name", "dosage", "frequency")
+    @field_validator("medication_name", "dosage", "frequency", mode="before")
     @classmethod
     def validate_optional_text(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
-            return value
-
-        value = value.strip()
-        if not value:
             raise ValueError("This field cannot be blank")
+
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                raise ValueError("This field cannot be blank")
         return value
 
 

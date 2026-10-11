@@ -33,5 +33,22 @@
 "videoCall": "वीडियो कॉल सहायता",
 "startChat": "चैट शुरू करें",
 "tba": "जल्द आ रहा है",
-"getSupport": "सहायता प्राप्त करें"
+"getSupport": "सहायता प्राप्त करें",
+"medicationName": "दवा का नाम",
+"dosage": "खुराक",
+"frequency": "आवृत्ति",
+"nextDose": "अगली खुराक",
+"savePrescription": "नुस्खा सहेजें",
+"saving": "सहेजा जा रहा है...",
+"cancel": "रद्द करें",
+"edit": "संपादित करें",
+"archive": "संग्रहित करें",
+"loadingPrescriptions": "नुस्खे लोड हो रहे हैं...",
+"noActivePrescriptions": "कोई सक्रिय नुस्खा नहीं मिला।",
+"prescriptionUpdated": "नुस्खा सफलतापूर्वक अपडेट किया गया।",
+"prescriptionArchived": "नुस्खा सफलतापूर्वक संग्रहित किया गया।",
+"prescriptionCreated": "नुस्खा सफलतापूर्वक जोड़ा गया।",
+"prescriptionError": "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
+"retry": "पुनः प्रयास करें",
+"confirmArchive": "क्या आप वाकई इस नुस्खे को संग्रहित करना चाहते हैं?"
 }

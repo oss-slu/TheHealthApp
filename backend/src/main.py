@@ -83,9 +83,13 @@ from .models import (
     ConsentSubmit,
     ConsentStatusData,
     user_has_valid_consent,
+    age_from_date_of_birth,
     Questionnaire,
     QuestionnaireSubmit,
-
+    Prescription,
+    PrescriptionCreate,
+    PrescriptionUpdate,
+    PrescriptionResponse,
 )
 from .risk_calculator import calculate_health_risk
 
@@ -171,7 +175,7 @@ def _mongo_connection_string() -> str:
 async def lifespan(app: FastAPI):
     await init_beanie(
         connection_string=_mongo_connection_string(),
-        document_models=[User, RevokedToken, Questionnaire],
+        document_models=[User, RevokedToken, Questionnaire, Prescription],
     )
     print("Database connection established.")
     yield
@@ -309,6 +313,8 @@ async def update_own_profile(payload: UserUpdate, current_user: Annotated[User, 
             )
     for key, value in update_data.items():
         setattr(current_user, key, value)
+    if "date_of_birth" in update_data:
+        current_user.age = None
     current_user.updated_at = datetime.utcnow()
     await current_user.save()
     return SuccessResponse(data=current_user)
@@ -400,11 +406,16 @@ async def submit_questionnaire(
     payload: QuestionnaireSubmit,
     current_user: Annotated[User, Depends(require_health_consent)],
 ):
+    if current_user.date_of_birth != payload.dateOfBirth:
+        current_user.date_of_birth = payload.dateOfBirth
+        current_user.age = None
+        await current_user.save()
+
     questionnaire = Questionnaire(
         user_id=current_user.id,
         first_name=payload.firstName,
         last_name=payload.lastName,
-        date_of_birth=payload.dateOfBirth,
+        date_of_birth=current_user.date_of_birth.isoformat(),
         gender=payload.gender,
         email=payload.email,
         phone=payload.phone,
@@ -429,6 +440,22 @@ async def submit_questionnaire(
         }
     )
 
+@app.get(
+    "/api/v1/questionnaire/status",
+    response_model=SuccessResponse[dict],
+)
+async def get_questionnaire_status(
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    questionnaire = await Questionnaire.find_one(
+        Questionnaire.user_id == current_user.id
+    )
+
+    return SuccessResponse(
+        data={
+            "completed": questionnaire is not None,
+        }
+    )
 
 
 @app.get("/api/v1/consent/status", response_model=SuccessResponse[ConsentStatusData], tags=["Consent"])
@@ -522,8 +549,19 @@ async def calculate_risk_assessment(
     
     Requires authentication. Rate limited to 30 requests per minute.
     """
+    if current_user.date_of_birth is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Add your date of birth to your profile before calculating risk",
+        )
+    age = age_from_date_of_birth(current_user.date_of_birth)
+    if age < 20:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Risk assessment requires an age of at least 20",
+        )
     try:
-        result = calculate_health_risk(payload)
+        result = calculate_health_risk(payload.model_copy(update={"age": age}))
         return SuccessResponse(data=result)
     except ValueError as e:
         raise HTTPException(
@@ -559,8 +597,19 @@ async def calculate_risk_assessment_anonymous(
     
     No authentication required. Rate limited to 10 requests per minute.
     """
+    if payload.date_of_birth is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Date of birth is required to calculate risk",
+        )
+    age = age_from_date_of_birth(payload.date_of_birth)
+    if age < 20:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Risk assessment requires an age of at least 20",
+        )
     try:
-        result = calculate_health_risk(payload)
+        result = calculate_health_risk(payload.model_copy(update={"age": age}))
         return SuccessResponse(data=result)
     except ValueError as e:
         raise HTTPException(
@@ -577,3 +626,108 @@ async def calculate_risk_assessment_anonymous(
 @app.get("/healthz", tags=["System"])
 def health_check():
     return {"success": True, "data": {"status": "ok"}}
+
+@app.post(
+    "/api/v1/prescriptions",
+    response_model=SuccessResponse[PrescriptionResponse],
+)
+async def create_prescription(
+    prescription_data: PrescriptionCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = Prescription(
+        user_id=current_user.id,
+        medication_name=prescription_data.medication_name,
+        dosage=prescription_data.dosage,
+        frequency=prescription_data.frequency,
+        next_dose=prescription_data.next_dose,
+    )
+
+    await prescription.insert()
+
+    return SuccessResponse(
+        data=PrescriptionResponse.model_validate(prescription)
+    )
+
+@app.get(
+    "/api/v1/prescriptions",
+    response_model=SuccessResponse[list[PrescriptionResponse]],
+)
+async def get_prescriptions(
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescriptions = await Prescription.find(
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    ).to_list()
+
+    return SuccessResponse(
+        data=[
+            PrescriptionResponse.model_validate(prescription)
+            for prescription in prescriptions
+        ]
+    )
+
+@app.put(
+    "/api/v1/prescriptions/{prescription_id}",
+    response_model=SuccessResponse[PrescriptionResponse],
+)
+async def update_prescription(
+    prescription_id: uuid.UUID,
+    prescription_data: PrescriptionUpdate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+    Prescription.id == prescription_id,
+    Prescription.user_id == current_user.id,
+    Prescription.archived == False,
+)
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    update_data = prescription_data.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(prescription, field, value)
+
+    prescription.updated_at = datetime.utcnow()
+
+    await prescription.save()
+
+    return SuccessResponse(
+        data=PrescriptionResponse.model_validate(prescription)
+    )
+
+@app.patch(
+    "/api/v1/prescriptions/{prescription_id}/archive",
+    response_model=SuccessResponse[PrescriptionResponse],
+)
+async def archive_prescription(
+    prescription_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+    Prescription.id == prescription_id,
+    Prescription.user_id == current_user.id,
+    Prescription.archived == False,
+)
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    prescription.archived = True
+    prescription.archived_at = datetime.utcnow()
+    prescription.updated_at = datetime.utcnow()
+
+    await prescription.save()
+
+    return SuccessResponse(
+        data=PrescriptionResponse.model_validate(prescription)
+    )

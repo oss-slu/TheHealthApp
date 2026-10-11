@@ -33,5 +33,22 @@
 "chatSupport": "与支持人员聊天",
 "videoCall": "视频通话支持",
 "startChat": "开始聊天",
-"tba": "即将推出"
+"tba": "即将推出",
+"medicationName": "药物名称",
+"dosage": "剂量",
+"frequency": "频率",
+"nextDose": "下一次服药",
+"savePrescription": "保存处方",
+"saving": "保存中...",
+"cancel": "取消",
+"edit": "编辑",
+"archive": "归档",
+"loadingPrescriptions": "正在加载处方...",
+"noActivePrescriptions": "没有找到有效的处方。",
+"prescriptionUpdated": "处方更新成功。",
+"prescriptionArchived": "处方归档成功。",
+"prescriptionCreated": "处方添加成功。",
+"prescriptionError": "出了点问题。请再试一次。",
+"retry": "重试",
+"confirmArchive": "您确定要归档此处方吗？"
 }

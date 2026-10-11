@@ -4,18 +4,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import PageShell from '../../components/PageShell';
 import { useAuth } from '../../hooks/useAuth';
-
-function ageFromDateOfBirth(dateOfBirth, today = new Date()) {
-  if (!dateOfBirth) return null;
-
-  const [birthYear, birthMonth, birthDay] = dateOfBirth.split('-').map(Number);
-  if (!birthYear || !birthMonth || !birthDay) return null;
-
-  return today.getFullYear() - birthYear - (
-    today.getMonth() + 1 < birthMonth ||
-    (today.getMonth() + 1 === birthMonth && today.getDate() < birthDay)
-  );
-}
+import { ageFromDateOfBirth } from '../../utils/dateOfBirth';
 
 const HeartRisk = () => {
   const { t } = useTranslation(['modules']);

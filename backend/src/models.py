@@ -177,6 +177,8 @@ class UserResponse(BaseModel):
 
         date_of_birth = data.get('date_of_birth')
         if date_of_birth is not None:
+            if isinstance(date_of_birth, str):
+                date_of_birth = date.fromisoformat(date_of_birth)
             data['age'] = age_from_date_of_birth(date_of_birth)
         return data
 

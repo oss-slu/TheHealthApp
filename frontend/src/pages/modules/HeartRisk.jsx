@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import PageShell from '../../components/PageShell';
 import { useAuth } from '../../hooks/useAuth';
+import { getHealthStatusClasses } from '../../utils/healthStatusClasses';
 
 function ageFromDateOfBirth(dateOfBirth, today = new Date()) {
   if (!dateOfBirth) return null;
@@ -96,12 +97,12 @@ const HeartRisk = () => {
   };
 
   const getRiskColorClass = (riskLevel) => {
-    if (!riskLevel) return '';
+    if (!riskLevel) return getHealthStatusClasses('neutral');
     const level = riskLevel.toLowerCase();
-    if (level.includes('low')) return 'bg-green-100 border-green-500 text-green-800';
-    if (level.includes('medium')) return 'bg-yellow-100 border-yellow-500 text-yellow-800';
-    if (level.includes('high')) return 'bg-red-100 border-red-500 text-red-800';
-    return 'bg-gray-100 border-gray-500 text-gray-800';
+    if (level.includes('low')) return getHealthStatusClasses('good');
+    if (level.includes('medium')) return getHealthStatusClasses('warning');
+    if (level.includes('high')) return getHealthStatusClasses('critical');
+    return getHealthStatusClasses('neutral');
   };
 
   return (

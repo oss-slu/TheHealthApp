@@ -266,9 +266,14 @@ it('shows an error when creating a prescription fails', async () => {
     screen.getByRole('button', { name: /savePrescription/i })
   );
 
+  const createAlerts = await screen.findAllByRole('alert');
   expect(
-    await screen.findByText('Failed to create prescription')
-  ).toBeInTheDocument();
+    createAlerts.map((alert) => alert.textContent ?? '')
+  ).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('Failed to create prescription'),
+    ])
+  );
 
   expect(prescriptionService.create).toHaveBeenCalledWith({
     medication_name: 'Aspirin',
@@ -302,9 +307,14 @@ it('shows an error when updating a prescription fails', async () => {
     screen.getByRole('button', { name: /savePrescription/i })
   );
 
+  const updateAlerts = await screen.findAllByRole('alert');
   expect(
-    await screen.findByText('Failed to update prescription')
-  ).toBeInTheDocument();
+    updateAlerts.map((alert) => alert.textContent ?? '')
+  ).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('Failed to update prescription'),
+    ])
+  );
 
   expect(prescriptionService.update).toHaveBeenCalledWith(
     'prescription-1',
@@ -334,9 +344,14 @@ it('shows an error when archiving a prescription fails', async () => {
     screen.getByRole('button', { name: 'archive' })
   );
 
+  const archiveAlerts = await screen.findAllByRole('alert');
   expect(
-    await screen.findByText('Failed to archive prescription')
-  ).toBeInTheDocument();
+    archiveAlerts.map((alert) => alert.textContent ?? '')
+  ).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('Failed to archive prescription'),
+    ])
+  );
 
   expect(prescriptionService.archive).toHaveBeenCalledWith(
     'prescription-1'
@@ -510,4 +525,3 @@ it('disables the edit save button when a required field is blank', async () => {
 });
 
 });
-

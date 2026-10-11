@@ -194,6 +194,26 @@ const [errorMessage, setErrorMessage] = useState('');
             <p className="text-red-700">{errorMessage}</p>
           </div>
         )}
+{message && (
+  <div
+    role="status"
+    aria-live="polite"
+    className="border border-green-300 bg-green-50 rounded-lg p-4 mb-6"
+  >
+    <p className="text-green-700">{message}</p>
+  </div>
+)}
+
+{errorMessage && (
+  <div
+    role="alert"
+    aria-live="assertive"
+    className="border border-red-300 bg-red-50 rounded-lg p-4 mb-6"
+  >
+    <p className="text-red-700">{errorMessage}</p>
+  </div>
+)}
+
 
 <button
   onClick={() => setShowAddForm(!showAddForm)}

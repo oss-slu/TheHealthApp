@@ -5,6 +5,7 @@ import PageShell from '../../components/PageShell';
 import { showErrorToast } from '../../lib/toast';
 import { healthRiskService } from '../../services/healthRiskService';
 import { parseHealthRiskAssessment } from '../../utils/riskAssessmentResponse';
+import { getHealthStatusClasses } from '../../utils/healthStatusClasses';
 import { useAuth } from '../../hooks/useAuth';
 import { ageFromDateOfBirth } from '../../utils/dateOfBirth';
 
@@ -19,12 +20,12 @@ const initialForm = {
 };
 
 function categoryClass(cat) {
-  if (!cat) return 'bg-gray-100 border-gray-400 text-gray-800';
+  if (!cat) return getHealthStatusClasses('neutral');
   const c = String(cat).toLowerCase();
-  if (c.includes('very_high') || c === 'very high') return 'bg-red-100 border-red-500 text-red-900';
-  if (c.includes('high')) return 'bg-orange-100 border-orange-500 text-orange-900';
-  if (c.includes('moderate')) return 'bg-yellow-100 border-yellow-600 text-yellow-900';
-  return 'bg-green-100 border-green-500 text-green-900';
+  if (c.includes('very_high') || c === 'very high') return getHealthStatusClasses('critical');
+  if (c.includes('high')) return getHealthStatusClasses('critical');
+  if (c.includes('moderate')) return getHealthStatusClasses('warning');
+  return getHealthStatusClasses('good');
 }
 
 const FraminghamRisk = () => {

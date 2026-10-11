@@ -268,10 +268,12 @@ it('shows an error when creating a prescription fails', async () => {
 
   const createAlerts = await screen.findAllByRole('alert');
   expect(
-    createAlerts.some((alert) =>
-      alert.textContent?.includes('Failed to create prescription')
-    )
-  ).toBe(true);
+    createAlerts.map((alert) => alert.textContent ?? '')
+  ).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('Failed to create prescription'),
+    ])
+  );
 
   expect(prescriptionService.create).toHaveBeenCalledWith({
     medication_name: 'Aspirin',
@@ -307,10 +309,12 @@ it('shows an error when updating a prescription fails', async () => {
 
   const updateAlerts = await screen.findAllByRole('alert');
   expect(
-    updateAlerts.some((alert) =>
-      alert.textContent?.includes('Failed to update prescription')
-    )
-  ).toBe(true);
+    updateAlerts.map((alert) => alert.textContent ?? '')
+  ).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('Failed to update prescription'),
+    ])
+  );
 
   expect(prescriptionService.update).toHaveBeenCalledWith(
     'prescription-1',
@@ -342,10 +346,12 @@ it('shows an error when archiving a prescription fails', async () => {
 
   const archiveAlerts = await screen.findAllByRole('alert');
   expect(
-    archiveAlerts.some((alert) =>
-      alert.textContent?.includes('Failed to archive prescription')
-    )
-  ).toBe(true);
+    archiveAlerts.map((alert) => alert.textContent ?? '')
+  ).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('Failed to archive prescription'),
+    ])
+  );
 
   expect(prescriptionService.archive).toHaveBeenCalledWith(
     'prescription-1'

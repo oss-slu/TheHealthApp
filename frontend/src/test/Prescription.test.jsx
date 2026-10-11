@@ -282,6 +282,50 @@ it('shows an error when creating a prescription fails', async () => {
   });
 });
 
+it('shows a validation message when the backend rejects a prescription', async () => {
+  const user = userEvent.setup();
+
+  prescriptionService.getAll.mockResolvedValue([]);
+  prescriptionService.create.mockRejectedValue({
+    status: 422,
+    message: 'Validation failed',
+  });
+
+  renderWithProviders(<Prescription />);
+
+  await user.click(
+    screen.getByRole('button', { name: 'addNewPrescription' })
+  );
+
+  await user.type(
+    screen.getByPlaceholderText('medicationName'),
+    'Aspirin'
+  );
+
+  await user.type(
+    screen.getByPlaceholderText('dosage'),
+    '81 mg'
+  );
+
+  await user.type(
+    screen.getByPlaceholderText('frequency'),
+    'Once daily'
+  );
+
+  await user.click(
+    screen.getByRole('button', { name: /savePrescription/i })
+  );
+
+  const validationAlerts = await screen.findAllByRole('alert');
+  expect(
+    validationAlerts.map((alert) => alert.textContent ?? '')
+  ).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('Validation failed'),
+    ])
+  );
+});
+
 it('shows an error when updating a prescription fails', async () => {
   const user = userEvent.setup();
 
@@ -323,6 +367,41 @@ it('shows an error when updating a prescription fails', async () => {
       dosage: '20 mg',
       frequency: 'Once daily',
     }
+  );
+});
+
+it('shows a validation message when the backend rejects a prescription update', async () => {
+  const user = userEvent.setup();
+
+  prescriptionService.getAll.mockResolvedValue([activePrescription]);
+  prescriptionService.update.mockRejectedValue({
+    status: 422,
+    message: 'Validation failed',
+  });
+
+  renderWithProviders(<Prescription />);
+
+  await screen.findByText('Lisinopril');
+
+  await user.click(
+    screen.getByRole('button', { name: 'edit' })
+  );
+
+  const dosageInput = screen.getByDisplayValue('10 mg');
+  await user.clear(dosageInput);
+  await user.type(dosageInput, '20 mg');
+
+  await user.click(
+    screen.getByRole('button', { name: /savePrescription/i })
+  );
+
+  const updateValidationAlerts = await screen.findAllByRole('alert');
+  expect(
+    updateValidationAlerts.map((alert) => alert.textContent ?? '')
+  ).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('Validation failed'),
+    ])
   );
 });
 

@@ -266,10 +266,12 @@ it('shows an error when creating a prescription fails', async () => {
     screen.getByRole('button', { name: /savePrescription/i })
   );
 
-  const createErrors = await screen.findAllByText(
-    'Failed to create prescription'
-  );
-  expect(createErrors.length).toBeGreaterThan(0);
+  const createAlerts = await screen.findAllByRole('alert');
+  expect(
+    createAlerts.some((alert) =>
+      alert.textContent?.includes('Failed to create prescription')
+    )
+  ).toBe(true);
 
   expect(prescriptionService.create).toHaveBeenCalledWith({
     medication_name: 'Aspirin',
@@ -303,10 +305,12 @@ it('shows an error when updating a prescription fails', async () => {
     screen.getByRole('button', { name: /savePrescription/i })
   );
 
-  const updateErrors = await screen.findAllByText(
-    'Failed to update prescription'
-  );
-  expect(updateErrors.length).toBeGreaterThan(0);
+  const updateAlerts = await screen.findAllByRole('alert');
+  expect(
+    updateAlerts.some((alert) =>
+      alert.textContent?.includes('Failed to update prescription')
+    )
+  ).toBe(true);
 
   expect(prescriptionService.update).toHaveBeenCalledWith(
     'prescription-1',
@@ -336,10 +340,12 @@ it('shows an error when archiving a prescription fails', async () => {
     screen.getByRole('button', { name: 'archive' })
   );
 
-  const archiveErrors = await screen.findAllByText(
-    'Failed to archive prescription'
-  );
-  expect(archiveErrors.length).toBeGreaterThan(0);
+  const archiveAlerts = await screen.findAllByRole('alert');
+  expect(
+    archiveAlerts.some((alert) =>
+      alert.textContent?.includes('Failed to archive prescription')
+    )
+  ).toBe(true);
 
   expect(prescriptionService.archive).toHaveBeenCalledWith(
     'prescription-1'

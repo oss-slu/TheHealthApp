@@ -188,7 +188,14 @@ const [errorMessage, setErrorMessage] = useState('');
 {showAddForm && (
   <div className="border rounded-lg p-4 mb-6">
     <div className="space-y-3">
+      <label
+        htmlFor="add-medication-name"
+        className="block text-sm font-medium text-gray-700"
+        > 
+        {t('modules:medicationName')}
+        </label>
       <input
+        id="add-medication-name"
         type="text"
         value={addForm.medication_name}
         onChange={(e) =>
@@ -201,7 +208,15 @@ const [errorMessage, setErrorMessage] = useState('');
         placeholder={t('modules:medicationName')}
       />
 
+      <label
+        htmlFor="add-dosage"
+        className="block text-sm font-medium text-gray-700"
+        >
+        {t('modules:dosage')}
+        </label>
+
       <input
+        id="add-dosage"
         type="text"
         value={addForm.dosage}
         onChange={(e) =>
@@ -214,7 +229,15 @@ const [errorMessage, setErrorMessage] = useState('');
         placeholder={t('modules:dosage')}
       />
 
+      <label
+        htmlFor="add-frequency"
+        className="block text-sm font-medium text-gray-700"
+      >
+        {t('modules:frequency')}
+      </label>
+
       <input
+        id="add-frequency"
         type="text"
         value={addForm.frequency}
         onChange={(e) =>
@@ -287,7 +310,15 @@ const [errorMessage, setErrorMessage] = useState('');
                 >
                   {editingId === prescription.id ? (
                     <div className="space-y-3">
+                      <label
+                        htmlFor="edit-medication-name"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        {t('modules:medicationName')}
+                      </label>
+
                       <input
+                        id="edit-medication-name"
                         type="text"
                         value={editForm.medication_name}
                         onChange={(e) =>
@@ -300,7 +331,15 @@ const [errorMessage, setErrorMessage] = useState('');
                         placeholder={t('modules:medicationName')}
                       />
 
+                      <label
+                        htmlFor="edit-dosage"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        {t('modules:dosage')}
+                      </label>
+
                       <input
+                        id="edit-dosage"
                         type="text"
                         value={editForm.dosage}
                         onChange={(e) =>
@@ -313,7 +352,15 @@ const [errorMessage, setErrorMessage] = useState('');
                         placeholder={t('modules:dosage')}
                       />
 
+                      <label
+                        htmlFor="edit-frequency"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        {t('modules:frequency')}
+                      </label>
+
                       <input
+                        id="edit-frequency"
                         type="text"
                         value={editForm.frequency}
                         onChange={(e) =>

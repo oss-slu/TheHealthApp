@@ -4,18 +4,8 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import PageShell from '../../components/PageShell';
 import { useAuth } from '../../hooks/useAuth';
-
-function ageFromDateOfBirth(dateOfBirth, today = new Date()) {
-  if (!dateOfBirth) return null;
-
-  const [birthYear, birthMonth, birthDay] = dateOfBirth.split('-').map(Number);
-  if (!birthYear || !birthMonth || !birthDay) return null;
-
-  return today.getFullYear() - birthYear - (
-    today.getMonth() + 1 < birthMonth ||
-    (today.getMonth() + 1 === birthMonth && today.getDate() < birthDay)
-  );
-}
+import { getHealthStatusClasses } from '../../utils/healthStatusClasses';
+import { ageFromDateOfBirth } from '../../utils/dateOfBirth';
 
 const HeartRisk = () => {
   const { t } = useTranslation(['modules']);
@@ -96,12 +86,12 @@ const HeartRisk = () => {
   };
 
   const getRiskColorClass = (riskLevel) => {
-    if (!riskLevel) return '';
+    if (!riskLevel) return getHealthStatusClasses('neutral');
     const level = riskLevel.toLowerCase();
-    if (level.includes('low')) return 'bg-green-100 border-green-500 text-green-800';
-    if (level.includes('medium')) return 'bg-yellow-100 border-yellow-500 text-yellow-800';
-    if (level.includes('high')) return 'bg-red-100 border-red-500 text-red-800';
-    return 'bg-gray-100 border-gray-500 text-gray-800';
+    if (level.includes('low')) return getHealthStatusClasses('good');
+    if (level.includes('medium')) return getHealthStatusClasses('warning');
+    if (level.includes('high')) return getHealthStatusClasses('critical');
+    return getHealthStatusClasses('neutral');
   };
 
   return (

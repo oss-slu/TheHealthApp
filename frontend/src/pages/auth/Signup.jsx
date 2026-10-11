@@ -10,6 +10,7 @@ import {
   validatePassword,
   validateUsername,
 } from '../../utils/validation';
+import { formatDateForInput, isValidDateOfBirth } from '../../utils/dateOfBirth';
 
 const Signup = ({ onAuthSuccess = () => {} }) => {
   const { t } = useTranslation(['auth', 'common', 'errors']);
@@ -41,7 +42,10 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
     [form.username]
   );
   const nameValid = form.name.trim().length >= 2;
-  const dateOfBirthValid = /^\d{4}-\d{2}-\d{2}$/.test(form.dateOfBirth);
+  const dateOfBirthValid = useMemo(
+    () => isValidDateOfBirth(form.dateOfBirth),
+    [form.dateOfBirth],
+  );
   const genderValid = ['male', 'female', 'other', 'na'].includes(form.gender);
   const phoneValid = /^\+?[0-9]{10,15}$/.test(form.phone);
   const passwordValid = useMemo(
@@ -198,11 +202,15 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
                   value={form.dateOfBirth}
                   onChange={onChange}
                   onBlur={onBlur}
-                  max={new Date().toISOString().slice(0, 10)}
+                  max={formatDateForInput()}
                   autoComplete="bday"
                 />
                 {touched.dateOfBirth && !dateOfBirthValid && (
-                  <p className="text-xs text-red-600 mt-1">{t('auth:errors.dateOfBirthRequired', 'Date of birth is required')}</p>
+                  <p className="text-xs text-red-600 mt-1">
+                    {form.dateOfBirth
+                      ? t('auth:errors.dateOfBirthInvalid', 'Date of birth must correspond to an age between 13 and 120')
+                      : t('auth:errors.dateOfBirthRequired', 'Date of birth is required')}
+                  </p>
                 )}
               </div>
               <div>

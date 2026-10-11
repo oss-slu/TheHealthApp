@@ -321,7 +321,7 @@ it('shows a validation message when the backend rejects a prescription', async (
     validationAlerts.map((alert) => alert.textContent ?? '')
   ).toEqual(
     expect.arrayContaining([
-      expect.stringContaining('Validation failed'),
+      expect.stringContaining('prescriptionValidationError'),
     ])
   );
 });
@@ -400,7 +400,7 @@ it('shows a validation message when the backend rejects a prescription update', 
     updateValidationAlerts.map((alert) => alert.textContent ?? '')
   ).toEqual(
     expect.arrayContaining([
-      expect.stringContaining('Validation failed'),
+      expect.stringContaining('prescriptionValidationError'),
     ])
   );
 });

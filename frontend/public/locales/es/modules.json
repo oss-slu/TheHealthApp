@@ -50,6 +50,7 @@
 "prescriptionCreated": "Receta agregada correctamente.",
 "prescriptionError": "Algo salió mal. Inténtalo de nuevo.",
 "retry": "Reintentar",
-"confirmArchive": "¿Está seguro de que desea archivar esta receta?"
-
+"confirmArchive": "¿Está seguro de que desea archivar esta receta?",
+"prescriptionRequiredFields": "Completa todos los campos obligatorios.",
+"prescriptionValidationError": "Revisa tus datos y corrige los campos no válidos."
 }

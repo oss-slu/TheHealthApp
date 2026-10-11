@@ -17,6 +17,7 @@ function ageFromDateOfBirth(dateOfBirth, today = new Date()) {
     (today.getMonth() + 1 === birthMonth && today.getDate() < birthDay)
   );
 }
+import { ageFromDateOfBirth } from '../../utils/dateOfBirth';
 
 const HeartRisk = () => {
   const { t } = useTranslation(['modules']);

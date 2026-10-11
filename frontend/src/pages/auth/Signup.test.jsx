@@ -88,6 +88,19 @@ describe('Signup', () => {
       expect(screen.getByText(/date of birth is required/i)).toBeInTheDocument();
     });
 
+    it('rejects a date of birth for someone younger than 13', async () => {
+      renderSignup();
+
+      const today = new Date();
+      const underageDate = `${today.getFullYear() - 12}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const dateInput = screen.getByLabelText(/date of birth/i);
+      fireEvent.change(dateInput, { target: { value: underageDate } });
+      fireEvent.blur(dateInput);
+
+      expect(screen.getByText(/date of birth must correspond to an age between 13 and 120/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /sign up/i })).toBeDisabled();
+    });
+
     it('shows error for mismatched passwords', async () => {
       const user = userEvent.setup();
       renderSignup();

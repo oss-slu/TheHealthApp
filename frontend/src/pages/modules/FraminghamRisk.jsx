@@ -6,6 +6,7 @@ import { showErrorToast } from '../../lib/toast';
 import { healthRiskService } from '../../services/healthRiskService';
 import { parseHealthRiskAssessment } from '../../utils/riskAssessmentResponse';
 import { useAuth } from '../../hooks/useAuth';
+import { ageFromDateOfBirth } from '../../utils/dateOfBirth';
 
 const initialForm = {
   gender: '',
@@ -34,10 +35,12 @@ const FraminghamRisk = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const profileAge = ageFromDateOfBirth(user?.date_of_birth);
+  const ageForRisk = user?.date_of_birth ? profileAge : null;
 
   const validation = useMemo(() => {
     const e = {};
-    if (!user?.date_of_birth || !Number.isInteger(user.age) || user.age < 20 || user.age > 120) {
+    if (!Number.isInteger(ageForRisk) || ageForRisk < 20 || ageForRisk > 120) {
       e.age = true;
     }
     if (!form.gender) e.gender = true;
@@ -60,7 +63,7 @@ const FraminghamRisk = () => {
     if (!form.smoking_status) e.smoking_status = true;
     if (!form.diabetes_status) e.diabetes_status = true;
     return e;
-  }, [form, user?.age, user?.date_of_birth]);
+  }, [ageForRisk, form]);
 
   const isValid = Object.keys(validation).length === 0;
 
@@ -189,7 +192,7 @@ const FraminghamRisk = () => {
                 id="age"
                 className={`w-full border rounded px-3 py-2 ${showErr('age') ? 'border-red-500' : 'border-gray-300'}`}
               >
-                {user?.age ?? '-'}
+                {ageForRisk ?? '-'}
               </p>
               {!user?.date_of_birth && (
                 <p className="mt-1 text-sm text-red-600">

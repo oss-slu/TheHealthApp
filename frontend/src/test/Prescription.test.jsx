@@ -548,7 +548,8 @@ it('disables the archive button while archiving', async () => {
   window.confirm.mockRestore();
 });
 
-it('disables the add button when required fields are blank', async () => {
+
+it('shows a validation message when required fields are blank', async () => {
   const user = userEvent.setup();
 
   prescriptionService.getAll.mockResolvedValue([]);
@@ -563,14 +564,13 @@ it('disables the add button when required fields are blank', async () => {
     name: /savePrescription/i,
   });
 
-  expect(saveButton).toBeDisabled();
+  expect(saveButton).toBeEnabled();
 
-  await user.type(
-    screen.getByPlaceholderText('medicationName'),
-    '   '
-  );
+  await user.click(saveButton);
 
-  expect(saveButton).toBeDisabled();
+  expect(
+    await screen.findByRole('alert')
+  ).toHaveTextContent('prescriptionRequiredFields');
 
   expect(prescriptionService.create).not.toHaveBeenCalled();
 });

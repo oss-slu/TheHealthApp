@@ -1,30 +1,5 @@
 @import "tailwindcss";
-@config "../tailwind.config.js";
-
-/* Health-themed app surface */
-:root {
-  --health-bg: linear-gradient(180deg, #f8fafc 0%, #f0fdfa 35%, #ecfeff 100%);
-}
-
-body {
-  min-height: 100vh;
-}
-
-.health-app-shell {
-  background: var(--health-bg);
-}
-
-/* Softer focus rings for accessibility + brand */
-.health-header a:focus-visible,
-.health-header button:focus-visible {
-  outline: 2px solid rgb(45 212 191);
-  outline-offset: 2px;
-}
-
-.health-landing {
-  isolation: isolate;
-}
-
+@import "./styles/tokens.css";
 @media print {
   body.printing-health-summary {
     background: #fff;
@@ -47,4 +22,3 @@ body {
     background: #fff;
   }
 }
-

@@ -1,10 +1,11 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import { BrowserRouter, MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
+import { ThemeProvider } from '../context/ThemeContext';
 import framinghamEn from '../../public/locales/en/framingham.json';
 import summaryEn from '../../public/locales/en/summary.json';
 
@@ -30,6 +31,16 @@ testI18n.use(initReactI18next).init({
         others: 'Other',
         preferNotToSay: 'Prefer not to say',
         save: 'Save',
+        skipToContent: 'Skip to content',
+        primaryNav: 'Primary',
+        openMenu: 'Open menu',
+        backgroundTheme: 'Background theme',
+        allRightsReserved: 'All rights reserved.',
+        themes: {
+          calm: 'Calm',
+          clinical: 'Clinical',
+          grove: 'Grove',
+        },
       },
       auth: {
         login: 'Login',
@@ -62,10 +73,10 @@ testI18n.use(initReactI18next).init({
       dashboard: {
         title: 'Dashboard',
         menuLabel: 'Dashboard',
-        recentAssessments: 'Recent Assessments',
-        noRecent: 'No recent assessments',
-        healthStatus: 'Health Status',
-        promptAssess: 'Complete an assessment to view your health status',
+        recentAssessments: 'Recent activity',
+        noRecent: 'No recent assessments yet',
+        healthStatus: 'Your health snapshot',
+        promptAssess: 'Complete your profile to unlock personalized status.',
         reminders: 'Reminders',
         noReminders: 'No reminders',
         viewDetails: 'View Details',
@@ -75,6 +86,21 @@ testI18n.use(initReactI18next).init({
         completeQuestionnaire: 'Complete Now',
         framinghamCardTitle: 'Framingham Risk Assessment',
         framinghamCardDesc: '10-year cardiovascular risk from the backend model.',
+        primaryActionLabel: 'Start here',
+        primaryActionCompleteTitle: 'Continue your heart health journey',
+        primaryActionCompleteDesc: 'Your questionnaire is complete.',
+        startFramingham: 'Start Framingham assessment',
+        toolsHeading: 'Health tools',
+        toolsSubtitle: 'Assess risk, manage prescriptions, and get support.',
+        profileMetricLabel: 'Health profile',
+        profileComplete: 'Complete',
+        profileIncomplete: 'Incomplete',
+        profileCompleteHint: 'Questionnaire finished',
+        nextStepLabel: 'Suggested next step',
+        nextStepAssess: 'Risk assessment',
+        nextStepQuestionnaire: 'Questionnaire',
+        nextStepHint: 'Guided from your current progress',
+        activityEmptyDesc: 'When you finish assessments, they will appear here.',
       },
       modules: {
         heartRisk: 'Heart Risk Assessment',
@@ -107,6 +133,16 @@ testI18n.use(initReactI18next).init({
         pleaseWait: 'يرجى الانتظار...',
         logout: 'تسجيل خروج',
         save: 'حفظ',
+        skipToContent: 'تخطي إلى المحتوى',
+        primaryNav: 'التنقل الرئيسي',
+        openMenu: 'فتح القائمة',
+        backgroundTheme: 'سمة الخلفية',
+        allRightsReserved: 'جميع الحقوق محفوظة.',
+        themes: {
+          calm: 'هادئ',
+          clinical: 'سريري',
+          grove: 'بستان',
+        },
       },
       auth: {
         login: 'تسجيل الدخول',
@@ -170,7 +206,8 @@ export function renderWithProviders(
 ) {
   // Set document direction for RTL testing
   document.documentElement.dir = dir;
-  
+  document.documentElement.lang = locale;
+
   // Set locale
   testI18n.changeLanguage(locale);
 
@@ -178,13 +215,15 @@ export function renderWithProviders(
 
   function Wrapper({ children }) {
     return (
-      <I18nextProvider i18n={testI18n}>
-        <AuthContext.Provider value={mergedAuthContext}>
-          <MemoryRouter initialEntries={[route]}>
-            {children}
-          </MemoryRouter>
-        </AuthContext.Provider>
-      </I18nextProvider>
+      <ThemeProvider initialTheme="calm">
+        <I18nextProvider i18n={testI18n}>
+          <AuthContext.Provider value={mergedAuthContext}>
+            <MemoryRouter initialEntries={[route]}>
+              {children}
+            </MemoryRouter>
+          </AuthContext.Provider>
+        </I18nextProvider>
+      </ThemeProvider>
     );
   }
 

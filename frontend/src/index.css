@@ -1,2 +1,24 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
+@media print {
+  body.printing-health-summary {
+    background: #fff;
+  }
+
+  body.printing-health-summary .health-header,
+  body.printing-health-summary .health-footer,
+  body.printing-health-summary .summary-controls,
+  body.printing-health-summary .summary-actions {
+    display: none !important;
+  }
+
+  body.printing-health-summary .health-summary-paper {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  body.printing-health-summary .health-app-shell {
+    background: #fff;
+  }
+}

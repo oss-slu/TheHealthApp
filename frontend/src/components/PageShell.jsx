@@ -8,7 +8,7 @@ import { useTheme, THEMES } from '../context/ThemeContext';
 const LANG_CODES = ['en', 'hi', 'es', 'ar', 'zh'];
 
 const PageShell = ({ children, title, showNav = true, variant = 'default' }) => {
-  const { t } = useTranslation(['common', 'auth', 'dashboard', 'modules']);
+  const { t } = useTranslation(['common', 'auth', 'dashboard', 'modules','summary']);
   const [langOpen, setLangOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -27,6 +27,7 @@ const PageShell = ({ children, title, showNav = true, variant = 'default' }) => 
     ...(isAuthenticated
       ? [
           { path: '/dashboard', label: t('dashboard:menuLabel') },
+          { path: '/health-summary', label: t('summary:navLabel') },
           { path: '/settings/account', label: t('common:accountSettings') },
         ]
       : [

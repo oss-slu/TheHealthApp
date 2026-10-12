@@ -177,6 +177,8 @@ class UserResponse(BaseModel):
 
         date_of_birth = data.get('date_of_birth')
         if date_of_birth is not None:
+            if isinstance(date_of_birth, str):
+                date_of_birth = date.fromisoformat(date_of_birth)
             data['age'] = age_from_date_of_birth(date_of_birth)
         return data
 
@@ -379,6 +381,13 @@ class HealthRiskOutput(BaseModel):
         description="Medical disclaimer"
     )
 
+class HealthRiskAssessment(Document):
+    user_id: uuid.UUID = Indexed()
+    result: HealthRiskOutput
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "health_risk_assessments"
 class Prescription(Document):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_id: uuid.UUID
@@ -416,15 +425,16 @@ class PrescriptionUpdate(BaseModel):
     frequency: Optional[str] = None
     next_dose: Optional[datetime] = None
 
-    @field_validator("medication_name", "dosage", "frequency")
+    @field_validator("medication_name", "dosage", "frequency", mode="before")
     @classmethod
     def validate_optional_text(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
-            return value
-
-        value = value.strip()
-        if not value:
             raise ValueError("This field cannot be blank")
+
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                raise ValueError("This field cannot be blank")
         return value
 
 

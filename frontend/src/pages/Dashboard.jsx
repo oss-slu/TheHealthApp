@@ -7,6 +7,12 @@ import apiClient from '../api/client';
 
 const TOOLS = [
   {
+    path: '/health-summary',
+    titleKey: 'summary:navLabel',
+    descKey: 'summary:dashboardDescription',
+    ns: 'summary',
+  },
+  {
     path: '/modules/framingham-risk',
     titleKey: 'dashboard:framinghamCardTitle',
     descKey: 'dashboard:framinghamCardDesc',
@@ -33,7 +39,7 @@ const TOOLS = [
 ];
 
 const Dashboard = () => {
-  const { t } = useTranslation(['dashboard', 'modules', 'questionnaire', 'common']);
+  const { t } = useTranslation(['dashboard', 'modules', 'questionnaire', 'common', 'summary']);
   const location = useLocation();
   const [loadingStatus, setLoadingStatus] = useState(true);
 
@@ -145,7 +151,6 @@ const Dashboard = () => {
               {t('dashboard:toolsHeading')}
             </h2>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">{t('dashboard:toolsSubtitle')}</p>
-          </div>
           <ul className="grid grid-cols-1 gap-4 md:grid-cols-2" data-testid="dashboard-tools">
             {TOOLS.map((tool) => (
               <li key={tool.path}>

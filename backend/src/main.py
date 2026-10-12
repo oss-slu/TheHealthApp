@@ -3,7 +3,7 @@ import uuid
 import bcrypt
 from pathlib import Path
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Annotated
 from pymongo.errors import DuplicateKeyError
 
@@ -78,6 +78,7 @@ from .models import (
     ErrorResponse,
     SuccessResponse,
     RevokedToken,
+    HealthRiskAssessment,
     HealthRiskInput,
     HealthRiskOutput,
     ConsentSubmit,
@@ -92,6 +93,7 @@ from .models import (
     PrescriptionResponse,
 )
 from .risk_calculator import calculate_health_risk
+from .health_summary import build_health_summary
 
 limiter = Limiter(key_func=get_remote_address,default_limits=["100 per 15 minutes"])
 security = HTTPBearer()
@@ -175,7 +177,13 @@ def _mongo_connection_string() -> str:
 async def lifespan(app: FastAPI):
     await init_beanie(
         connection_string=_mongo_connection_string(),
-        document_models=[User, RevokedToken, Questionnaire, Prescription],
+        document_models=[
+            User,
+            RevokedToken,
+            Questionnaire,
+            HealthRiskAssessment,
+            Prescription,
+        ],
     )
     print("Database connection established.")
     yield
@@ -280,7 +288,7 @@ async def signup_user(request: Request, payload: UserCreate):
                 status_code=409,
                 detail={
                     "code": "DUPLICATE_USERNAME",
-                    "message": "Username already exists",
+                    "message": "Username is already in use",
                 },
             ) from exc
 
@@ -457,6 +465,73 @@ async def get_questionnaire_status(
         }
     )
 
+@app.get(
+    "/api/v1/users/me/health-summary",
+    response_model=SuccessResponse[dict],
+    tags=["Health Summary"],
+    summary="Generate a personal health summary",
+)
+async def get_health_summary(
+    current_user: Annotated[User, Depends(require_health_consent)],
+    start_date: date | None = None,
+    end_date: date | None = None,
+    start_at: datetime | None = None,
+    end_before: datetime | None = None,
+):
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Start date must be on or before end date",
+        )
+    if (start_at is None) != (end_before is None) or (
+        start_at is not None and end_before is not None and start_at >= end_before
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Start and end date boundaries must define a valid period",
+        )
+
+    range_start = (
+        _mongo_utc_naive(start_at)
+        if start_at
+        else datetime.combine(start_date, datetime.min.time()) if start_date else None
+    )
+    range_end = (
+        _mongo_utc_naive(end_before)
+        if end_before
+        else datetime.combine(end_date + timedelta(days=1), datetime.min.time()) if end_date else None
+    )
+
+    questionnaire_filter = {"user_id": current_user.id}
+    questionnaire_dates = {}
+    if range_start:
+        questionnaire_dates["$gte"] = range_start
+    if range_end:
+        questionnaire_dates["$lt"] = range_end
+    if questionnaire_dates:
+        questionnaire_filter["created_at"] = questionnaire_dates
+
+    questionnaires = await Questionnaire.find(questionnaire_filter).sort("-created_at").to_list()
+    risk_filter = {"user_id": current_user.id}
+    risk_dates = {}
+    if range_start:
+        risk_dates["$gte"] = range_start
+    if range_end:
+        risk_dates["$lt"] = range_end
+    if risk_dates:
+        risk_filter["created_at"] = risk_dates
+    risk_assessments = await HealthRiskAssessment.find(risk_filter).sort("-created_at").to_list()
+    return SuccessResponse(
+        data=build_health_summary(current_user, questionnaires, risk_assessments, start_date, end_date)
+    )
+
+
+def _mongo_utc_naive(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 
 @app.get("/api/v1/consent/status", response_model=SuccessResponse[ConsentStatusData], tags=["Consent"])
 async def consent_status(current_user: Annotated[User, Depends(get_current_user)]):
@@ -562,6 +637,11 @@ async def calculate_risk_assessment(
         )
     try:
         result = calculate_health_risk(payload.model_copy(update={"age": age}))
+        assessment = HealthRiskAssessment(
+            user_id=current_user.id,
+            result=HealthRiskOutput.model_validate(result),
+        )
+        await assessment.insert()
         return SuccessResponse(data=result)
     except ValueError as e:
         raise HTTPException(

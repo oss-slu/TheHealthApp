@@ -41,5 +41,7 @@
 "prescriptionCreated": "Prescription added successfully.",
 "prescriptionError": "Something went wrong. Please try again.",
 "retry": "Retry",
-"confirmArchive": "Are you sure you want to archive this prescription?"
+"confirmArchive": "Are you sure you want to archive this prescription?",
+"prescriptionRequiredFields": "Please fill in all required fields.",
+"prescriptionValidationError": "Please check your entries and correct any invalid fields."
 }

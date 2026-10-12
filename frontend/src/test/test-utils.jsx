@@ -7,13 +7,14 @@ import { initReactI18next } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import framinghamEn from '../../public/locales/en/framingham.json';
+import summaryEn from '../../public/locales/en/summary.json';
 
 // Create a test i18n instance with inline translations
 const testI18n = i18n.createInstance();
 testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'auth', 'dashboard', 'modules', 'errors', 'framingham', 'questionnaire'],
+  ns: ['common', 'auth', 'dashboard', 'modules', 'errors', 'framingham', 'questionnaire', 'summary'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
   resources: {
@@ -123,6 +124,7 @@ testI18n.use(initReactI18next).init({
         timeout: 'Request timed out',
       },
       framingham: framinghamEn,
+      summary: summaryEn,
     },
     ar: {
       common: {

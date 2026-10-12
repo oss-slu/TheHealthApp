@@ -50,5 +50,7 @@
   "prescriptionCreated": "تمت إضافة الوصفة الطبية بنجاح.",
   "prescriptionError": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
   "retry": "إعادة المحاولة",
-  "confirmArchive": "هل أنت متأكد من أنك تريد أرشفة هذه الوصفة الطبية؟"
+  "confirmArchive": "هل أنت متأكد من أنك تريد أرشفة هذه الوصفة الطبية؟",
+  "prescriptionRequiredFields": "يرجى ملء جميع الحقول المطلوبة.",
+"prescriptionValidationError": "يرجى مراجعة المدخلات وتصحيح أي حقول غير صالحة."
 }

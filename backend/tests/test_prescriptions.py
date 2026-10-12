@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import pytest
 from beanie import init_beanie
 from httpx import ASGITransport, AsyncClient
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 
 os.environ["MONGO_DB_NAME"] = "healthapp_test"
 
@@ -20,7 +20,7 @@ from src.models import (
 
 @pytest.fixture
 async def test_db():
-    client = AsyncIOMotorClient("mongodb://localhost:27017")
+    client = AsyncMongoClient("mongodb://localhost:27017")
     database = client["healthapp_test"]
 
     await init_beanie(
@@ -31,7 +31,7 @@ async def test_db():
     yield database
 
     await database.client.drop_database("healthapp_test")
-    client.close()
+    await client.close()
 
 
 @pytest.fixture
@@ -199,6 +199,7 @@ async def test_update_prescription(client, test_user):
 
     await prescription.insert()
 
+    original_updated_at = prescription.updated_at
     response = await client.put(
         f"/api/v1/prescriptions/{prescription.id}",
         json={
@@ -215,6 +216,46 @@ async def test_update_prescription(client, test_user):
     assert data["dosage"] == "20mg"
     assert data["frequency"] == "Once daily"
 
+    saved = await Prescription.get(prescription.id)
+    assert saved is not None
+    assert saved.updated_at > original_updated_at
+
+@pytest.mark.anyio
+async def test_update_prescription_requires_health_consent(
+    test_db, test_user
+):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Original Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    test_user.consent_given = False
+    await test_user.insert()
+
+    async def override_current_user():
+        return test_user
+
+    app.dependency_overrides[get_current_user] = override_current_user
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as test_client:
+        response = await test_client.put(
+            f"/api/v1/prescriptions/{prescription.id}",
+            json={"dosage": "20mg"},
+        )
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+
+    saved = await Prescription.get(prescription.id)
+    assert saved is not None
+    assert saved.dosage == "10mg"
 
 @pytest.mark.anyio
 async def test_update_other_users_prescription_returns_404(
@@ -235,29 +276,6 @@ async def test_update_other_users_prescription_returns_404(
     )
 
     assert response.status_code == 404
-@pytest.mark.anyio
-async def test_archive_prescription(client, test_user):
-    prescription = Prescription(
-        user_id=test_user.id,
-        medication_name="Archive Medication",
-        dosage="10mg",
-        frequency="Once daily",
-    )
-
-    await prescription.insert()
-
-    response = await client.patch(
-        f"/api/v1/prescriptions/{prescription.id}/archive"
-    )
-
-    assert response.status_code == 200
-
-    saved = await Prescription.get(prescription.id)
-
-    assert saved is not None
-    assert saved.archived is True
-    assert saved.archived_at is not None
-
 
 @pytest.mark.anyio
 async def test_archive_other_users_prescription_returns_404(
@@ -278,6 +296,35 @@ async def test_archive_other_users_prescription_returns_404(
 
     assert response.status_code == 404
 
+    saved = await Prescription.get(prescription.id)
+    assert saved is not None
+    assert saved.archived is False
+
+@pytest.mark.anyio
+async def test_archive_prescription(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Archive Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+
+    await prescription.insert()
+
+    original_updated_at = prescription.updated_at
+
+    response = await client.patch(
+        f"/api/v1/prescriptions/{prescription.id}/archive"
+    )
+
+    assert response.status_code == 200
+
+    saved = await Prescription.get(prescription.id)
+
+    assert saved is not None
+    assert saved.archived is True
+    assert saved.archived_at is not None
+    assert saved.updated_at > original_updated_at
 
 @pytest.mark.anyio
 @pytest.mark.parametrize(
@@ -302,6 +349,38 @@ async def test_create_rejects_invalid_required_values(client, field, value):
     assert response.status_code == 422
 
 @pytest.mark.anyio
+@pytest.mark.parametrize(
+    "field",
+    ["medication_name", "dosage", "frequency"],
+)
+@pytest.mark.parametrize("value", ["", "   ", None])
+async def test_update_rejects_invalid_required_values(
+    client, test_user, field, value
+):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.put(
+        f"/api/v1/prescriptions/{prescription.id}",
+        json={field: value},
+    )
+
+    assert response.status_code == 422
+
+    saved = await Prescription.get(prescription.id)
+    assert saved is not None
+    assert getattr(saved, field) == {
+        "medication_name": "Test Medication",
+        "dosage": "10mg",
+        "frequency": "Once daily",
+    }[field]
+
+@pytest.mark.anyio
 async def test_missing_prescription_returns_404(client):
     missing_id = uuid.uuid4()
 
@@ -311,8 +390,6 @@ async def test_missing_prescription_returns_404(client):
     )
 
     assert response.status_code == 404
-
-
 @pytest.mark.anyio
 async def test_archived_prescription_cannot_be_updated(client, test_user):
     prescription = Prescription(
@@ -332,8 +409,6 @@ async def test_archived_prescription_cannot_be_updated(client, test_user):
     )
 
     assert response.status_code == 404
-
-
 @pytest.mark.anyio
 async def test_archived_prescription_cannot_be_archived_again(
     client, test_user
@@ -354,5 +429,3 @@ async def test_archived_prescription_cannot_be_archived_again(
     )
 
     assert response.status_code == 404
-
-

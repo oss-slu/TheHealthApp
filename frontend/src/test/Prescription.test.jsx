@@ -97,7 +97,7 @@ it('opens and submits the add prescription form', async () => {
       frequency: 'Once daily',
     });
   });
-  
+
   await waitFor(() => {
   expect(prescriptionService.getAll).toHaveBeenCalledTimes(2);
 });

@@ -214,7 +214,7 @@ const [errorMessage, setErrorMessage] = useState('');
       <label
         htmlFor="add-medication-name"
         className="block text-sm font-medium text-gray-700"
-        > 
+        >
         {t('modules:medicationName')}
         </label>
       <input

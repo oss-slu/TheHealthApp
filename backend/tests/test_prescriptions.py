@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import pytest
 from beanie import init_beanie
 from httpx import ASGITransport, AsyncClient
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 
 os.environ["MONGO_DB_NAME"] = "healthapp_test"
 
@@ -20,7 +20,7 @@ from src.models import (
 
 @pytest.fixture
 async def test_db():
-    client = AsyncIOMotorClient("mongodb://localhost:27017")
+    client = AsyncMongoClient("mongodb://localhost:27017")
     database = client["healthapp_test"]
 
     await init_beanie(
@@ -31,7 +31,7 @@ async def test_db():
     yield database
 
     await database.client.drop_database("healthapp_test")
-    client.close()
+    await client.close()
 
 
 @pytest.fixture
@@ -390,8 +390,6 @@ async def test_missing_prescription_returns_404(client):
     )
 
     assert response.status_code == 404
-
-
 @pytest.mark.anyio
 async def test_archived_prescription_cannot_be_updated(client, test_user):
     prescription = Prescription(
@@ -411,8 +409,6 @@ async def test_archived_prescription_cannot_be_updated(client, test_user):
     )
 
     assert response.status_code == 404
-
-
 @pytest.mark.anyio
 async def test_archived_prescription_cannot_be_archived_again(
     client, test_user
@@ -433,5 +429,3 @@ async def test_archived_prescription_cannot_be_archived_again(
     )
 
     assert response.status_code == 404
-
-

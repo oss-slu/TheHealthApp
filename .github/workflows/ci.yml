@@ -78,7 +78,7 @@ jobs:
           retention-days: 7
 
   backend-test:
-    name: Backend Prescription Tests
+    name: Backend Tests
     runs-on: ubuntu-latest
 
     services:
@@ -109,4 +109,4 @@ jobs:
           export JWT_REFRESH_SECRET="test-refresh-secret"
           export ACCESS_TOKEN_EXPIRE_MINUTES="30"
           export REFRESH_TOKEN_EXPIRE_DAYS="7"
-          PYTHONPATH=$(pwd) pytest tests/test_prescriptions.py -v
+          PYTHONPATH=$(pwd) pytest tests -v

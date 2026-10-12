@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const PageShell = ({ children, title, showNav = true, variant = 'default' }) => {
-  const { t } = useTranslation(['common','auth','dashboard','modules']);
+  const { t } = useTranslation(['common','auth','dashboard','modules','summary']);
   const [open, setOpen] = useState(false);
   const { isAuthenticated, logout: authLogout } = useAuth();
   const location = useLocation();
@@ -20,6 +20,7 @@ const PageShell = ({ children, title, showNav = true, variant = 'default' }) => 
     ...(isAuthenticated
       ? [
           { path: '/dashboard', label: t('dashboard:menuLabel') },
+          { path: '/health-summary', label: t('summary:navLabel') },
           { path: '/settings/account', label: t('common:accountSettings') },
         ]
       : [

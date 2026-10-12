@@ -381,6 +381,13 @@ class HealthRiskOutput(BaseModel):
         description="Medical disclaimer"
     )
 
+class HealthRiskAssessment(Document):
+    user_id: uuid.UUID = Indexed()
+    result: HealthRiskOutput
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "health_risk_assessments"
 class Prescription(Document):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_id: uuid.UUID

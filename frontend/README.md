@@ -184,7 +184,3 @@ Currently, authentication uses mock/simulated success. To integrate with backend
 ## License
 
 © 2024 The Health App. All rights reserved.
-
-## Team Members Check in
-this is our weekly check-in for our health app group.
-my name is Nayira Nwikpuinee

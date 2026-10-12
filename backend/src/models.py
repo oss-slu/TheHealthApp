@@ -177,6 +177,8 @@ class UserResponse(BaseModel):
 
         date_of_birth = data.get('date_of_birth')
         if date_of_birth is not None:
+            if isinstance(date_of_birth, str):
+                date_of_birth = date.fromisoformat(date_of_birth)
             data['age'] = age_from_date_of_birth(date_of_birth)
         return data
 
@@ -379,7 +381,6 @@ class HealthRiskOutput(BaseModel):
         description="Medical disclaimer"
     )
 
-
 class HealthRiskAssessment(Document):
     user_id: uuid.UUID = Indexed()
     result: HealthRiskOutput
@@ -387,3 +388,66 @@ class HealthRiskAssessment(Document):
 
     class Settings:
         name = "health_risk_assessments"
+class Prescription(Document):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    medication_name: str
+    dosage: str
+    frequency: str
+    next_dose: Optional[datetime] = None
+    archived: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    archived_at: Optional[datetime] = None
+
+    class Settings:
+        name = "prescriptions"
+
+
+class PrescriptionCreate(BaseModel):
+    medication_name: str
+    dosage: str
+    frequency: str
+    next_dose: Optional[datetime] = None
+
+    @field_validator("medication_name", "dosage", "frequency")
+    @classmethod
+    def validate_required_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("This field cannot be blank")
+        return value
+
+
+class PrescriptionUpdate(BaseModel):
+    medication_name: Optional[str] = None
+    dosage: Optional[str] = None
+    frequency: Optional[str] = None
+    next_dose: Optional[datetime] = None
+
+    @field_validator("medication_name", "dosage", "frequency", mode="before")
+    @classmethod
+    def validate_optional_text(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            raise ValueError("This field cannot be blank")
+
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                raise ValueError("This field cannot be blank")
+        return value
+
+
+class PrescriptionResponse(BaseModel):
+    id: uuid.UUID
+    medication_name: str
+    dosage: str
+    frequency: str
+    next_dose: Optional[datetime] = None
+    archived: bool = False
+    created_at: datetime
+    updated_at: datetime
+    archived_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

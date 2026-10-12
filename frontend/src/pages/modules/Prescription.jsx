@@ -276,12 +276,8 @@ const [errorMessage, setErrorMessage] = useState('');
       <div className="flex gap-2">
         <button
           onClick={handleAdd}
-          disabled={
-            saving ||
-            !addForm.medication_name.trim() ||
-            !addForm.dosage.trim() ||
-            !addForm.frequency.trim()
-          }
+          disabled={saving}
+          
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
           {saving

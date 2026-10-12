@@ -35,6 +35,15 @@ const Dashboard = () => {
           </span>
         </Link>
 
+        <Link
+          to="/health-summary"
+          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+        >
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('summary:navLabel', 'Personal health summary')}</h3>
+          <p className="text-gray-600 mb-4">{t('summary:dashboardDescription', 'Review and export your health information.')}</p>
+          <span className="text-teal-700 font-medium">{t('summary:openSummary', 'Open summary')} →</span>
+        </Link>
+
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard:recentAssessments')}</h3>
           <p className="text-gray-600">{t('dashboard:noRecent')}</p>

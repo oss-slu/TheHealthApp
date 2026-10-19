@@ -10,6 +10,7 @@ import {
   validatePassword,
   validateUsername,
 } from '../../utils/validation';
+import { formatDateForInput, isValidDateOfBirth } from '../../utils/dateOfBirth';
 
 const Signup = ({ onAuthSuccess = () => {} }) => {
   const { t } = useTranslation(['auth', 'common', 'errors']);
@@ -27,7 +28,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   const [touched, setTouched] = useState({
     username: false,
     name: false,
-    age: false,
+    dateOfBirth: false,
     gender: false,
     phone: false,
     password: false,
@@ -58,7 +59,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   );
   const confirmValid = form.confirm.length > 0 && form.confirm === form.password;
 
-  const isFormValid = usernameValid && nameValid && dobValid && genderValid && phoneValid && passwordValid && confirmValid;
+  const isFormValid = usernameValid && nameValid && dateOfBirthValid && genderValid && phoneValid && passwordValid && confirmValid;
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -114,9 +115,16 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
         navigate('/consent', { replace: true, state: { from: '/questionnaire' } });
       }
     } catch (err) {
-      const messageKey = err.messageKey || 'errors.generic';
-      setError(t(messageKey, err.message || t('errors.generic')));
+      const errCode = err.code || err.response?.data?.detail?.code;
+      if (errCode === 'DUPLICATE_USERNAME') {
+        setError(t('auth:errors.usernameInUse', 'Username is already in use'));
+      } else {
+        const messageKey = err.messageKey || 'errors.generic';
+        setError(t(messageKey, err.message || t('errors.generic')));
+      }
+
       if (err.status >= 500) {
+        const messageKey = err.messageKey || 'errors.generic';
         showErrorToast(messageKey, err.message);
       }
     } finally {
@@ -187,23 +195,26 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="dateOfBirth">
-                  {t('auth:dob', 'Date of Birth')} *
+                  {t('auth:dateOfBirth', 'Date of birth')} *
                 </label>
                 <input
                   id="dateOfBirth"
                   type="date"
                   className={`w-full border rounded px-3 py-2 ${
-                    touched.dateOfBirth && !dobValid ? 'border-red-500' : 'border-gray-300'
+                    touched.dateOfBirth && !dateOfBirthValid ? 'border-red-500' : 'border-gray-300'
                   }`}
                   name="dateOfBirth"
                   value={form.dateOfBirth}
                   onChange={onChange}
                   onBlur={onBlur}
-                  max={new Date().toISOString().split("T")[0]}
+                  max={formatDateForInput()}
+                  autoComplete="bday"
                 />
-                {touched.dateOfBirth && !dobValid && (
+                {touched.dateOfBirth && !dateOfBirthValid && (
                   <p className="text-xs text-red-600 mt-1">
-                    {t('auth:errors.dobInvalid', 'You must be between 13 and 120 years old')}
+                    {form.dateOfBirth
+                      ? t('auth:errors.dateOfBirthInvalid', 'Date of birth must correspond to an age between 13 and 120')
+                      : t('auth:errors.dateOfBirthRequired', 'Date of birth is required')}
                   </p>
                 )}
               </div>

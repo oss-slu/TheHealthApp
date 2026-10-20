@@ -84,28 +84,40 @@ jobs:
           output-file: TheHealthApp-frontend-sbom.spdx.json
           upload-artifact: false
 
-      - name: Upload frontend SBOM
+      - name: Generate frontend dependencies SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          file: frontend/package-lock.json
+          format: spdx-json
+          output-file: TheHealthApp-frontend-deps-sbom.spdx.json
+          upload-artifact: false
+
+      - name: Upload frontend SBOMs
         uses: actions/upload-artifact@v4
         with:
-          name: TheHealthApp-frontend-sbom
-          path: TheHealthApp-frontend-sbom.spdx.json
+          name: TheHealthApp-frontend-sboms
+          path: |
+            TheHealthApp-frontend-sbom.spdx.json
+            TheHealthApp-frontend-deps-sbom.spdx.json
           if-no-files-found: error
 
       - name: Attest frontend SBOM provenance
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/attest@v4
         with:
-          subject-path: TheHealthApp-frontend-sbom.spdx.json
-                
-      - name: Verify frontend SBOM attestation
+          subject-path: |
+            TheHealthApp-frontend-sbom.spdx.json
+            TheHealthApp-frontend-deps-sbom.spdx.json
+
+      - name: Verify frontend SBOM attestations
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh attestation verify TheHealthApp-frontend-sbom.spdx.json \
-            --repo ${{ github.repository }}
-
+          gh attestation verify TheHealthApp-frontend-sbom.spdx.json --repo ${{ github.repository }}
+          gh attestation verify TheHealthApp-frontend-deps-sbom.spdx.json --repo ${{ github.repository }}
+          
       - uses: actions/upload-artifact@v4
         with:
           name: build-output

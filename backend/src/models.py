@@ -451,3 +451,35 @@ class PrescriptionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DoseStatus(str, Enum):
+    taken = "taken"
+    skipped = "skipped"
+
+
+class MedicationDose(Document):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    prescription_id: uuid.UUID
+    status: DoseStatus
+    recorded_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+    class Settings:
+        name = "medication_doses"
+
+
+class MedicationDoseCreate(BaseModel):
+    status: DoseStatus
+
+
+class MedicationDoseResponse(BaseModel):
+    id: uuid.UUID
+    prescription_id: uuid.UUID
+    status: DoseStatus
+    recorded_at: datetime
+
+    class Config:
+        from_attributes = True

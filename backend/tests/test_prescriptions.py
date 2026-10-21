@@ -15,6 +15,8 @@ from src.models import (
     GenderEnum,
     Prescription,
     User,
+    MedicationDose,
+    DoseStatus,
 )
 
 
@@ -25,7 +27,7 @@ async def test_db():
 
     await init_beanie(
         database=database,
-        document_models=[User, Prescription],
+        document_models=[User, Prescription, MedicationDose],
     )
 
     yield database
@@ -429,3 +431,141 @@ async def test_archived_prescription_cannot_be_archived_again(
     )
 
     assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_record_taken_dose(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "taken"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["status"] == "taken"
+    assert data["prescription_id"] == str(prescription.id)
+    assert data["recorded_at"] is not None
+
+    doses = await MedicationDose.find(
+        MedicationDose.user_id == test_user.id,
+        MedicationDose.prescription_id == prescription.id,
+    ).to_list()
+    assert len(doses) == 1
+    assert doses[0].status == DoseStatus.taken
+
+
+@pytest.mark.anyio
+async def test_record_skipped_dose(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "skipped"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["status"] == "skipped"
+
+
+@pytest.mark.anyio
+async def test_invalid_dose_status_is_rejected(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "maybe"},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_cannot_record_dose_for_another_users_prescription(
+    client, other_user
+):
+    prescription = Prescription(
+        user_id=other_user.id,
+        medication_name="Other User Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "taken"},
+    )
+
+    assert response.status_code == 404
+
+    doses = await MedicationDose.find(
+        MedicationDose.prescription_id == prescription.id,
+    ).to_list()
+    assert doses == []
+
+
+@pytest.mark.anyio
+async def test_get_dose_history(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    for dose_status in (DoseStatus.taken, DoseStatus.skipped):
+        await MedicationDose(
+            user_id=test_user.id,
+            prescription_id=prescription.id,
+            status=dose_status,
+        ).insert()
+
+    response = await client.get(
+        f"/api/v1/prescriptions/{prescription.id}/doses"
+    )
+
+    assert response.status_code == 200
+    records = response.json()["data"]
+    assert len(records) == 2
+    assert {record["status"] for record in records} == {"taken", "skipped"}
+
+
+@pytest.mark.anyio
+async def test_cannot_get_dose_history_for_another_users_prescription(
+    client, other_user
+):
+    prescription = Prescription(
+        user_id=other_user.id,
+        medication_name="Other User Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.get(
+        f"/api/v1/prescriptions/{prescription.id}/doses"
+    )
+
+    assert response.status_code == 404
+

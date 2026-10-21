@@ -52,5 +52,19 @@
 "retry": "重试",
 "confirmArchive": "您确定要归档此处方吗？",
 "prescriptionRequiredFields": "请填写所有必填字段。",
-"prescriptionValidationError": "请检查您填写的内容并更正无效字段。"
+"prescriptionValidationError": "请检查您填写的内容并更正无效字段。",
+"doseTracking": "用药依从性",
+"recordTaken": "标记为已服用",
+"recordSkipped": "标记为跳过",
+"doseHistory": "服药记录",
+"loadingDoseHistory": "正在加载服药记录...",
+"noDoseHistory": "尚无服药记录。",
+"doseRecordedTaken": "已记录为服用。",
+"doseRecordedSkipped": "已记录为跳过。",
+"doseRecordError": "无法记录此次服药，请重试。",
+"doseHistoryError": "无法加载服药记录，请重试。",
+"recordingDose": "正在记录...",
+"taken": "已服用",
+"skipped": "已跳过",
+"recordedAt": "记录时间"
 }

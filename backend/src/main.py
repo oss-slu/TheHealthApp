@@ -91,6 +91,10 @@ from .models import (
     PrescriptionCreate,
     PrescriptionUpdate,
     PrescriptionResponse,
+    DoseStatus,
+    MedicationDose,
+    MedicationDoseCreate,
+    MedicationDoseResponse,
 )
 from .risk_calculator import calculate_health_risk
 from .health_summary import build_health_summary
@@ -183,6 +187,7 @@ async def lifespan(app: FastAPI):
             Questionnaire,
             HealthRiskAssessment,
             Prescription,
+            MedicationDose,
         ],
     )
     print("Database connection established.")
@@ -811,3 +816,70 @@ async def archive_prescription(
     return SuccessResponse(
         data=PrescriptionResponse.model_validate(prescription)
     )
+
+
+@app.post(
+    "/api/v1/prescriptions/{prescription_id}/doses",
+    response_model=SuccessResponse[MedicationDoseResponse],
+)
+async def record_medication_dose(
+    prescription_id: uuid.UUID,
+    dose_data: MedicationDoseCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    dose = MedicationDose(
+        user_id=current_user.id,
+        prescription_id=prescription.id,
+        status=dose_data.status,
+    )
+    await dose.insert()
+
+    return SuccessResponse(
+        data=MedicationDoseResponse.model_validate(dose)
+    )
+
+
+@app.get(
+    "/api/v1/prescriptions/{prescription_id}/doses",
+    response_model=SuccessResponse[list[MedicationDoseResponse]],
+)
+async def get_medication_doses(
+    prescription_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    doses = await MedicationDose.find(
+        MedicationDose.user_id == current_user.id,
+        MedicationDose.prescription_id == prescription.id,
+    ).sort(-MedicationDose.recorded_at).to_list()
+
+    return SuccessResponse(
+        data=[
+            MedicationDoseResponse.model_validate(dose)
+            for dose in doses
+        ]
+    )
+

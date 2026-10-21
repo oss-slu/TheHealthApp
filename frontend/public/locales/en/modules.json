@@ -43,5 +43,19 @@
 "retry": "Retry",
 "confirmArchive": "Are you sure you want to archive this prescription?",
 "prescriptionRequiredFields": "Please fill in all required fields.",
-"prescriptionValidationError": "Please check your entries and correct any invalid fields."
+"prescriptionValidationError": "Please check your entries and correct any invalid fields.",
+"doseTracking": "Medication adherence",
+"recordTaken": "Mark as taken",
+"recordSkipped": "Mark as skipped",
+"doseHistory": "Dose history",
+"loadingDoseHistory": "Loading dose history...",
+"noDoseHistory": "No doses recorded yet.",
+"doseRecordedTaken": "Dose recorded as taken.",
+"doseRecordedSkipped": "Dose recorded as skipped.",
+"doseRecordError": "Could not record this dose. Please try again.",
+"doseHistoryError": "Could not load dose history. Please try again.",
+"recordingDose": "Recording...",
+"taken": "Taken",
+"skipped": "Skipped",
+"recordedAt": "Recorded"
 }

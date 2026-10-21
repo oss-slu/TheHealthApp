@@ -27,6 +27,11 @@ const [editingSaving, setEditingSaving] = useState(false);
 const [archivingId, setArchivingId] = useState(null);
 const [message, setMessage] = useState('');
 const [errorMessage, setErrorMessage] = useState('');
+const [doseHistory, setDoseHistory] = useState({});
+const [doseHistoryError, setDoseHistoryError] = useState({});
+const [doseHistoryLoading, setDoseHistoryLoading] = useState({});
+const [doseSavingId, setDoseSavingId] = useState(null);
+const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
 
   const loadPrescriptions = async () => {
   try {
@@ -165,6 +170,82 @@ const [errorMessage, setErrorMessage] = useState('');
     setArchivingId(null);
   }
 };
+
+  const handleRecordDose = async (prescriptionId, status) => {
+    setDoseSavingId(prescriptionId);
+    setMessage('');
+    setErrorMessage('');
+
+    try {
+      await prescriptionService.recordDose(prescriptionId, status);
+
+      setMessage(
+        status === 'taken'
+          ? t('modules:doseRecordedTaken')
+          : t('modules:doseRecordedSkipped')
+      );
+
+      await handleLoadDoseHistory(prescriptionId);
+    } catch (error) {
+      console.error('Failed to record medication dose:', error);
+      setErrorMessage(t('modules:doseRecordError'));
+    } finally {
+      setDoseSavingId(null);
+    }
+  };
+
+  const handleLoadDoseHistory = async (prescriptionId) => {
+  setDoseHistoryLoading((previous) => ({
+    ...previous,
+    [prescriptionId]: true,
+  }));
+
+  setDoseHistoryError((previous) => ({
+    ...previous,
+    [prescriptionId]: false,
+  }));
+
+  try {
+    const history =
+      await prescriptionService.getDoseHistory(prescriptionId);
+
+    setDoseHistory((previous) => ({
+      ...previous,
+      [prescriptionId]: history,
+    }));
+  } catch (error) {
+    console.error('Failed to load dose history:', error);
+
+    setDoseHistoryError((previous) => ({
+      ...previous,
+      [prescriptionId]: true,
+    }));
+  } finally {
+    setDoseHistoryLoading((previous) => ({
+      ...previous,
+      [prescriptionId]: false,
+    }));
+  }
+};
+
+    const handleToggleDoseHistory = async (prescriptionId) => {
+    const isVisible = doseHistoryVisible[prescriptionId];
+
+    if (isVisible) {
+      setDoseHistoryVisible((previous) => ({
+        ...previous,
+        [prescriptionId]: false,
+      }));
+      return;
+    }
+
+    setDoseHistoryVisible((previous) => ({
+      ...previous,
+      [prescriptionId]: true,
+    }));
+
+    await handleLoadDoseHistory(prescriptionId);
+  };
 
   return (
     <PageShell title="modules:prescription">
@@ -438,6 +519,86 @@ const [errorMessage, setErrorMessage] = useState('');
                           ).toLocaleString()}
                         </p>
                       )}
+
+                      
+<div className="mt-4 border-t pt-4">
+  <h4 className="font-semibold text-gray-900 mb-3">
+    {t('modules:doseTracking')}
+  </h4>
+
+  <div className="flex flex-wrap gap-2">
+    <button
+      type="button"
+      onClick={() => handleRecordDose(prescription.id, 'taken')}
+      disabled={doseSavingId === prescription.id}
+      className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+    >
+      {doseSavingId === prescription.id
+        ? t('modules:recordingDose')
+        : t('modules:recordTaken')}
+    </button>
+
+    <button
+      type="button"
+      onClick={() => handleRecordDose(prescription.id, 'skipped')}
+      disabled={doseSavingId === prescription.id}
+      className="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50"
+    >
+      {t('modules:recordSkipped')}
+    </button>
+
+    <button
+      type="button"
+      onClick={() => handleToggleDoseHistory(prescription.id)}
+      aria-expanded={Boolean(doseHistoryVisible[prescription.id])}
+      className="px-3 py-2 border rounded-md hover:bg-gray-50"
+    >
+      {t('modules:doseHistory')}
+    </button>
+  </div>
+
+  {doseHistoryVisible[prescription.id] && (
+    <div className="mt-3" aria-live="polite">
+      {doseHistoryLoading[prescription.id] ? (
+  <p>{t('modules:loadingDoseHistory')}</p>
+) : doseHistoryError[prescription.id] ? (
+  <div>
+    <p role="alert" className="text-red-700">
+      {t('modules:doseHistoryError')}
+    </p>
+    <button
+      type="button"
+      onClick={() => handleLoadDoseHistory(prescription.id)}
+      className="mt-2 px-3 py-2 border rounded-md hover:bg-gray-50"
+    >
+      {t('modules:retry')}
+    </button>
+  </div>
+) : Array.isArray(doseHistory[prescription.id]) &&
+  doseHistory[prescription.id].length > 0 ? (
+  <ul className="space-y-2">
+    {doseHistory[prescription.id].map((dose) => (
+      <li
+        key={dose.id}
+        className="text-sm text-gray-700 border-b pb-2"
+      >
+        <span className="font-medium">
+          {t(`modules:${dose.status}`)}
+        </span>
+        {' — '}
+        {t('modules:recordedAt')}:{' '}
+        {new Date(dose.recorded_at).toLocaleString()}
+      </li>
+    ))}
+  </ul>
+) : (
+  <p className="text-gray-600">
+    {t('modules:noDoseHistory')}
+  </p>
+)}
+    </div>
+  )}
+</div>
 
                       <div className="flex gap-2 mt-4">
                         <button

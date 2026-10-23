@@ -1,4 +1,5 @@
 
+
 import apiClient from '../api/client';
 
 export const prescriptionService = {
@@ -24,5 +25,17 @@ export const prescriptionService = {
 
   async getDoseHistory(id) {
     return apiClient.get(`/prescriptions/${id}/doses`);
+  },
+
+  async getReminder(id) {
+    return apiClient.get(`/prescriptions/${id}/reminder`);
+  },
+
+  async createReminder(id, payload) {
+    return apiClient.post(`/prescriptions/${id}/reminder`, payload);
+  },
+
+  async updateReminder(id, payload) {
+    return apiClient.patch(`/prescriptions/${id}/reminder`, payload);
   },
 };

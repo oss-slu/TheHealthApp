@@ -483,3 +483,61 @@ class MedicationDoseResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class MedicationReminder(Document):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    prescription_id: uuid.UUID
+    reminder_time: str
+    enabled: bool = False
+    paused: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "medication_reminders"
+
+
+class MedicationReminderCreate(BaseModel):
+    reminder_time: str
+
+    @field_validator("reminder_time")
+    @classmethod
+    def validate_reminder_time(cls, value: str) -> str:
+        import re
+
+        if not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value):
+            raise ValueError("Reminder time must use HH:MM format")
+        return value
+
+
+class MedicationReminderUpdate(BaseModel):
+    reminder_time: Optional[str] = None
+    enabled: Optional[bool] = None
+    paused: Optional[bool] = None
+
+    @field_validator("reminder_time")
+    @classmethod
+    def validate_reminder_time(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+
+        import re
+
+        if not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value):
+            raise ValueError("Reminder time must use HH:MM format")
+        return value
+
+
+class MedicationReminderResponse(BaseModel):
+    id: uuid.UUID
+    prescription_id: uuid.UUID
+    reminder_time: str
+    enabled: bool
+    paused: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

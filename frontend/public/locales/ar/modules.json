@@ -66,5 +66,20 @@
 "recordingDose": "جارٍ التسجيل...",
 "taken": "تم تناولها",
 "skipped": "تم تخطيها",
-"recordedAt": "وقت التسجيل"
+"recordedAt": "وقت التسجيل",
+"medicationReminders": "تذكيرات الأدوية",
+"reminderTime": "وقت التذكير",
+"enableReminder": "تفعيل التذكيرات",
+"pauseReminder": "إيقاف التذكيرات مؤقتًا",
+"resumeReminder": "استئناف التذكيرات",
+"disableReminder": "تعطيل التذكيرات",
+"saveReminder": "حفظ إعدادات التذكيرات",
+"reminderSaved": "تم حفظ إعدادات التذكيرات بنجاح.",
+"reminderDisabled": "التذكيرات معطلة.",
+"reminderPaused": "التذكيرات متوقفة مؤقتًا.",
+"reminderError": "تعذر حفظ إعدادات التذكيرات. يرجى المحاولة مرة أخرى.",
+"reminderLoadError": "تعذر تحميل إعدادات التذكيرات. يرجى المحاولة مرة أخرى.",
+"reminderNotSentNotice": "تحفظ هذه الإعدادات تفضيلاتك. قد لا يتمكن التطبيق من إرسال الإشعارات بعد.",
+"noReminderSet": "لم يتم إعداد أي تذكير.",
+"loadingReminder": "جارٍ تحميل إعدادات التذكيرات..."
 }

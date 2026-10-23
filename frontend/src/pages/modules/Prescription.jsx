@@ -32,6 +32,14 @@ const [doseHistoryError, setDoseHistoryError] = useState({});
 const [doseHistoryLoading, setDoseHistoryLoading] = useState({});
 const [doseSavingId, setDoseSavingId] = useState(null);
 const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
+const [reminderSettings, setReminderSettings] = useState({});
+const [reminderTimes, setReminderTimes] = useState({});
+const [reminderLoading, setReminderLoading] = useState({});
+const [reminderSaving, setReminderSaving] = useState({});
+const [reminderLoadErrors, setReminderLoadErrors] = useState({});
+const [reminderSaveErrors, setReminderSaveErrors] = useState({});
+const [currentTime, setCurrentTime] = useState(() => new Date());
+const [dismissedReminders, setDismissedReminders] = useState({});
 
   const loadPrescriptions = async () => {
   try {
@@ -40,6 +48,9 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
 
     const data = await prescriptionService.getAll();
     setPrescriptions(data);
+    data.forEach((prescription) => {
+  handleLoadReminder(prescription.id);
+});
   } catch (error) {
     console.error('Failed to load prescriptions:', error);
     setLoadError(true);
@@ -49,8 +60,20 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
 };
 
   useEffect(() => {
-    loadPrescriptions();
+    const load = async () => {
+      await loadPrescriptions();
+    };
+
+    load();
   }, []);
+
+  useEffect(() => {
+  const timerId = setInterval(() => {
+    setCurrentTime(new Date());
+  }, 15000);
+
+  return () => clearInterval(timerId);
+}, []);
 
   const handleAdd = async () => {
   if (
@@ -170,6 +193,127 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
     setArchivingId(null);
   }
 };
+
+  const handleLoadReminder = async (prescriptionId) => {
+    setReminderLoading((previous) => ({
+      ...previous,
+      [prescriptionId]: true,
+    }));
+
+    setReminderLoadErrors((previous) => ({
+      ...previous,
+      [prescriptionId]: false,
+    }));
+
+    try {
+      const reminder =
+        await prescriptionService.getReminder(prescriptionId);
+
+      setReminderSettings((previous) => ({
+        ...previous,
+        [prescriptionId]: reminder || null,
+      }));
+
+      setReminderTimes((previous) => ({
+        ...previous,
+        [prescriptionId]:
+          reminder?.reminder_time || previous[prescriptionId] || '08:00',
+      }));
+    } catch (error) {
+      console.error('Failed to load medication reminder:', error);
+
+      setReminderLoadErrors((previous) => ({
+        ...previous,
+        [prescriptionId]: true,
+      }));
+    } finally {
+      setReminderLoading((previous) => ({
+        ...previous,
+        [prescriptionId]: false,
+      }));
+    }
+  };
+
+    const handleSaveReminder = async (prescriptionId, action) => {
+    const reminderTime = reminderTimes[prescriptionId] || '08:00';
+    const existingReminder = reminderSettings[prescriptionId];
+
+    setReminderSaving((previous) => ({
+      ...previous,
+      [prescriptionId]: true,
+    }));
+    setReminderSaveErrors((previous) => ({
+      ...previous,
+      [prescriptionId]: false,
+    }));
+    setMessage('');
+    setErrorMessage('');
+
+    try {
+      let reminder = existingReminder;
+
+      // Create the preference first if this prescription has no reminder.
+      if (!reminder) {
+        reminder = await prescriptionService.createReminder(
+          prescriptionId,
+          { reminder_time: reminderTime }
+        );
+      }
+
+      const updates = { reminder_time: reminderTime };
+
+      if (action === 'enable' || action === 'resume') {
+        updates.enabled = true;
+        updates.paused = false;
+      } else if (action === 'pause') {
+        updates.enabled = true;
+        updates.paused = true;
+      } else if (action === 'disable') {
+        updates.enabled = false;
+        updates.paused = false;
+      }
+
+      // A newly created reminder is already disabled. Only patch when
+      // an existing reminder needs updating, or when enabling a new one.
+      if (
+        existingReminder ||
+        action === 'enable' ||
+        action === 'resume' ||
+        action === 'pause' ||
+        action === 'disable'
+      ) {
+        reminder = await prescriptionService.updateReminder(
+          prescriptionId,
+          updates
+        );
+      }
+
+      setReminderSettings((previous) => ({
+        ...previous,
+        [prescriptionId]: reminder,
+      }));
+
+      setReminderTimes((previous) => ({
+        ...previous,
+        [prescriptionId]: reminder.reminder_time,
+      }));
+
+      setMessage(t('modules:reminderSaved'));
+    } catch (error) {
+      console.error('Failed to save medication reminder:', error);
+      setReminderSaveErrors((previous) => ({
+        ...previous,
+        [prescriptionId]: true,
+      }));
+      setErrorMessage(t('modules:reminderError'));
+    } finally {
+      setReminderSaving((previous) => ({
+        ...previous,
+        [prescriptionId]: false,
+      }));
+    }
+  };
+
 
   const handleRecordDose = async (prescriptionId, status) => {
     setDoseSavingId(prescriptionId);
@@ -403,11 +547,28 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
             </p>
           ) : (
             <div className="space-y-4">
-              {prescriptions.map((prescription) => (
-                <div
-                  key={prescription.id}
-                  className="border rounded-lg p-4"
-                >
+              {prescriptions.map((prescription) => {
+  const reminder = reminderSettings[prescription.id];
+  const doseTime = prescription.next_dose
+    ? new Date(prescription.next_dose)
+    : null;
+  const reminderIsDue =
+    reminder?.enabled === true &&
+    reminder?.paused === false &&
+    doseTime !== null &&
+    !Number.isNaN(doseTime.getTime()) &&
+    doseTime <= currentTime;
+
+  const today = currentTime.toLocaleDateString('en-CA');
+  const dismissalKey = `${prescription.id}-${today}`;
+  const reminderDismissed =
+    dismissedReminders[dismissalKey] === true;
+
+  return (
+    <div
+      key={prescription.id}
+      className="border rounded-lg p-4"
+    >
                   {editingId === prescription.id ? (
                     <div className="space-y-3">
                       <label
@@ -600,6 +761,162 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
   )}
 </div>
 
+
+<div className="mt-4 border-t pt-4">
+  <h4 className="font-semibold text-gray-900 mb-3">
+    {t('modules:medicationReminders')}
+  </h4>
+
+  {reminderIsDue && !reminderDismissed && (
+  <div
+    role="status"
+    aria-live="polite"
+    className="mb-3 rounded-md border border-amber-300 bg-amber-50 p-3"
+  >
+    <p>
+      {t('modules:doseReminderDue', {
+        medication: prescription.medication_name,
+      })}
+    </p>
+    <button
+      type="button"
+      onClick={() =>
+        setDismissedReminders((previous) => ({
+          ...previous,
+          [dismissalKey]: true,
+        }))
+      }
+      className="mt-2 rounded-md border px-3 py-2 hover:bg-amber-100"
+    >
+      {t('modules:dismissReminder')}
+    </button>
+  </div>
+)}
+
+  {reminderLoading[prescription.id] ? (
+    <p role="status">{t('modules:loadingReminder')}</p>
+  ) : reminderLoadErrors[prescription.id] ? (
+    <div>
+      <p role="alert" className="text-red-700 mb-2">
+        {t('modules:reminderLoadError')}
+      </p>
+      <button
+        type="button"
+        onClick={() => handleLoadReminder(prescription.id)}
+        className="px-3 py-2 border rounded-md hover:bg-gray-50"
+      >
+        {t('modules:retry')}
+      </button>
+    </div>
+  ) : (
+    <div className="space-y-3">
+      <label
+        htmlFor={`reminder-time-${prescription.id}`}
+        className="block text-sm font-medium text-gray-700"
+      >
+        {t('modules:reminderTime')}
+      </label>
+
+      <input
+        id={`reminder-time-${prescription.id}`}
+        type="time"
+        value={reminderTimes[prescription.id] || '08:00'}
+        onChange={(event) =>
+          setReminderTimes((previous) => ({
+            ...previous,
+            [prescription.id]: event.target.value,
+          }))
+        }
+        disabled={reminderSaving[prescription.id]}
+        className="border rounded-md px-3 py-2"
+      />
+
+      {reminderSaveErrors[prescription.id] && (
+  <p role="alert" className="text-red-700">
+    {t('modules:reminderError')}
+  </p>
+)}
+
+      <p className="text-sm text-gray-600" aria-live="polite">
+        {!reminderSettings[prescription.id]
+          ? t('modules:noReminderSet')
+          : !reminderSettings[prescription.id].enabled
+            ? t('modules:reminderDisabled')
+            : reminderSettings[prescription.id].paused
+              ? t('modules:reminderPaused')
+              : t('modules:enableReminder')}
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        {!reminderSettings[prescription.id] ||
+        !reminderSettings[prescription.id].enabled ? (
+          <button
+            type="button"
+            onClick={() =>
+              handleSaveReminder(prescription.id, 'enable')
+            }
+            disabled={reminderSaving[prescription.id]}
+            className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          >
+            {t('modules:enableReminder')}
+          </button>
+        ) : reminderSettings[prescription.id].paused ? (
+          <button
+            type="button"
+            onClick={() =>
+              handleSaveReminder(prescription.id, 'resume')
+            }
+            disabled={reminderSaving[prescription.id]}
+            className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          >
+            {t('modules:resumeReminder')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() =>
+              handleSaveReminder(prescription.id, 'pause')
+            }
+            disabled={reminderSaving[prescription.id]}
+            className="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50"
+          >
+            {t('modules:pauseReminder')}
+          </button>
+        )}
+
+        {reminderSettings[prescription.id]?.enabled && (
+          <button
+            type="button"
+            onClick={() =>
+              handleSaveReminder(prescription.id, 'disable')
+            }
+            disabled={reminderSaving[prescription.id]}
+            className="px-3 py-2 border rounded-md hover:bg-gray-50 disabled:opacity-50"
+          >
+            {t('modules:disableReminder')}
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => handleSaveReminder(prescription.id, 'save')}
+          disabled={reminderSaving[prescription.id]}
+          className="px-3 py-2 border rounded-md hover:bg-gray-50 disabled:opacity-50"
+        >
+          {reminderSaving[prescription.id]
+            ? t('modules:saving')
+            : t('modules:saveReminder')}
+        </button>
+      </div>
+
+      <p className="text-sm text-gray-500">
+        {t('modules:reminderNotSentNotice')}
+      </p>
+    </div>
+  )}
+</div>
+
+
                       <div className="flex gap-2 mt-4">
                         <button
                           onClick={() => handleEdit(prescription)}
@@ -621,7 +938,8 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
                     </>
                   )}
                 </div>
-              ))}
+               );
+               })}
             </div>
           )}
         </div>

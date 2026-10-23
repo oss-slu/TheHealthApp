@@ -4,7 +4,7 @@ import bcrypt
 from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Optional
 from pymongo.errors import DuplicateKeyError
 
 from fastapi import FastAPI, HTTPException, status, Depends, Request, UploadFile, File
@@ -95,6 +95,10 @@ from .models import (
     MedicationDose,
     MedicationDoseCreate,
     MedicationDoseResponse,
+    MedicationReminder,
+    MedicationReminderCreate,
+    MedicationReminderUpdate,
+    MedicationReminderResponse,
 )
 from .risk_calculator import calculate_health_risk
 from .health_summary import build_health_summary
@@ -188,6 +192,7 @@ async def lifespan(app: FastAPI):
             HealthRiskAssessment,
             Prescription,
             MedicationDose,
+            MedicationReminder,
         ],
     )
     print("Database connection established.")
@@ -881,5 +886,149 @@ async def get_medication_doses(
             MedicationDoseResponse.model_validate(dose)
             for dose in doses
         ]
+    )
+
+@app.post(
+    "/api/v1/prescriptions/{prescription_id}/reminder",
+    response_model=SuccessResponse[MedicationReminderResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_medication_reminder(
+    prescription_id: uuid.UUID,
+    reminder_data: MedicationReminderCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    existing_reminder = await MedicationReminder.find_one(
+        MedicationReminder.user_id == current_user.id,
+        MedicationReminder.prescription_id == prescription.id,
+    )
+
+    if existing_reminder:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A reminder already exists for this prescription",
+        )
+
+    now = datetime.now(timezone.utc)
+    reminder = MedicationReminder(
+        user_id=current_user.id,
+        prescription_id=prescription.id,
+        reminder_time=reminder_data.reminder_time,
+        enabled=False,
+        paused=False,
+        created_at=now,
+        updated_at=now,
+    )
+    await reminder.insert()
+
+    return SuccessResponse(
+        data=MedicationReminderResponse.model_validate(reminder)
+    )
+
+
+@app.get(
+    "/api/v1/prescriptions/{prescription_id}/reminder",
+    response_model=SuccessResponse[
+        Optional[MedicationReminderResponse]
+    ],
+)
+async def get_medication_reminder(
+    prescription_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    reminder = await MedicationReminder.find_one(
+        MedicationReminder.user_id == current_user.id,
+        MedicationReminder.prescription_id == prescription.id,
+    )
+
+    if not reminder:
+        return SuccessResponse(data=None)
+
+    return SuccessResponse(
+        data=MedicationReminderResponse.model_validate(reminder)
+    )
+
+
+@app.patch(
+    "/api/v1/prescriptions/{prescription_id}/reminder",
+    response_model=SuccessResponse[MedicationReminderResponse],
+)
+async def update_medication_reminder(
+    prescription_id: uuid.UUID,
+    reminder_data: MedicationReminderUpdate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    reminder = await MedicationReminder.find_one(
+        MedicationReminder.user_id == current_user.id,
+        MedicationReminder.prescription_id == prescription.id,
+    )
+
+    if not reminder:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reminder not found",
+        )
+
+    updates = reminder_data.model_dump(exclude_unset=True)
+
+    if not updates:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="At least one reminder setting must be provided",
+        )
+
+    if (
+        updates.get("paused", reminder.paused)
+        and not updates.get("enabled", reminder.enabled)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="A disabled reminder cannot be paused",
+        )
+
+    for field, value in updates.items():
+        setattr(reminder, field, value)
+
+    reminder.updated_at = datetime.now(timezone.utc)
+    await reminder.save()
+
+    return SuccessResponse(
+        data=MedicationReminderResponse.model_validate(reminder)
     )
 

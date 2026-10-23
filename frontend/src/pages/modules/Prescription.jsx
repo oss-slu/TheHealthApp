@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
 import { prescriptionService } from '../../services/prescriptionService';
@@ -41,7 +41,47 @@ const [reminderSaveErrors, setReminderSaveErrors] = useState({});
 const [currentTime, setCurrentTime] = useState(() => new Date());
 const [dismissedReminders, setDismissedReminders] = useState({});
 
-  const loadPrescriptions = async () => {
+const handleLoadReminder = useCallback(async (prescriptionId) => {
+    setReminderLoading((previous) => ({
+      ...previous,
+      [prescriptionId]: true,
+    }));
+
+    setReminderLoadErrors((previous) => ({
+      ...previous,
+      [prescriptionId]: false,
+    }));
+
+    try {
+      const reminder =
+        await prescriptionService.getReminder(prescriptionId);
+
+      setReminderSettings((previous) => ({
+        ...previous,
+        [prescriptionId]: reminder || null,
+      }));
+
+      setReminderTimes((previous) => ({
+        ...previous,
+        [prescriptionId]:
+          reminder?.reminder_time || previous[prescriptionId] || '08:00',
+      }));
+    } catch (error) {
+      console.error('Failed to load medication reminder:', error);
+
+      setReminderLoadErrors((previous) => ({
+        ...previous,
+        [prescriptionId]: true,
+      }));
+    } finally {
+      setReminderLoading((previous) => ({
+        ...previous,
+        [prescriptionId]: false,
+      }));
+    }
+  }, []);
+  
+const loadPrescriptions = useCallback(async () => {
   try {
     setLoading(true);
     setLoadError(false);
@@ -57,15 +97,11 @@ const [dismissedReminders, setDismissedReminders] = useState({});
   } finally {
     setLoading(false);
   }
-};
+}, [handleLoadReminder]);
 
   useEffect(() => {
-    const load = async () => {
-      await loadPrescriptions();
-    };
-
-    load();
-  }, []);
+  loadPrescriptions();
+}, [loadPrescriptions]);
 
   useEffect(() => {
   const timerId = setInterval(() => {
@@ -194,46 +230,7 @@ const [dismissedReminders, setDismissedReminders] = useState({});
   }
 };
 
-  const handleLoadReminder = async (prescriptionId) => {
-    setReminderLoading((previous) => ({
-      ...previous,
-      [prescriptionId]: true,
-    }));
-
-    setReminderLoadErrors((previous) => ({
-      ...previous,
-      [prescriptionId]: false,
-    }));
-
-    try {
-      const reminder =
-        await prescriptionService.getReminder(prescriptionId);
-
-      setReminderSettings((previous) => ({
-        ...previous,
-        [prescriptionId]: reminder || null,
-      }));
-
-      setReminderTimes((previous) => ({
-        ...previous,
-        [prescriptionId]:
-          reminder?.reminder_time || previous[prescriptionId] || '08:00',
-      }));
-    } catch (error) {
-      console.error('Failed to load medication reminder:', error);
-
-      setReminderLoadErrors((previous) => ({
-        ...previous,
-        [prescriptionId]: true,
-      }));
-    } finally {
-      setReminderLoading((previous) => ({
-        ...previous,
-        [prescriptionId]: false,
-      }));
-    }
-  };
-
+  
     const handleSaveReminder = async (prescriptionId, action) => {
     const reminderTime = reminderTimes[prescriptionId] || '08:00';
     const existingReminder = reminderSettings[prescriptionId];

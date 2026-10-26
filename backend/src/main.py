@@ -379,6 +379,69 @@ async def get_own_profile(current_user: Annotated[User, Depends(get_current_user
     return SuccessResponse(data=current_user)
 
 
+@app.get("/api/v1/users/me/data-export", tags=["User"], summary="Export the current user's stored data")
+async def export_own_data(current_user: Annotated[User, Depends(get_current_user)]):
+    questionnaires = await Questionnaire.find({"user_id": current_user.id}).sort("created_at").to_list()
+    risk_assessments = await HealthRiskAssessment.find({"user_id": current_user.id}).sort("created_at").to_list()
+
+    export = {
+        "schema_version": "1.0",
+        "exported_at": datetime.now(timezone.utc),
+        "profile": {
+            "username": current_user.username,
+            "name": current_user.name,
+            "date_of_birth": current_user.date_of_birth,
+            "gender": current_user.gender,
+            "phone": current_user.phone,
+            "photo_url": current_user.photo_url,
+            "created_at": current_user.created_at,
+            "updated_at": current_user.updated_at,
+        },
+        "consent": {
+            "consent_given": current_user.consent_given,
+            "data_usage": current_user.data_usage,
+            "marketing": current_user.marketing,
+            "version": current_user.consent_version,
+            "recorded_at": current_user.consent_timestamp,
+        },
+        "questionnaires": [
+            {
+                "submitted_at": record.created_at,
+                "first_name": record.first_name,
+                "last_name": record.last_name,
+                "date_of_birth": record.date_of_birth,
+                "gender": record.gender,
+                "email": record.email,
+                "phone": record.phone,
+                "existing_conditions": record.existing_conditions,
+                "allergies": record.allergies,
+                "current_medications": record.current_medications,
+                "family_history": record.family_history,
+                "exercise_frequency": record.exercise_frequency,
+                "diet_type": record.diet_type,
+                "smoking_status": record.smoking_status,
+                "alcohol_consumption": record.alcohol_consumption,
+                "sleep_hours": record.sleep_hours,
+                "stress_level": record.stress_level,
+            }
+            for record in questionnaires
+        ],
+        "risk_assessments": [
+            {
+                "assessed_at": record.created_at,
+                "result": record.result.model_dump(mode="json"),
+            }
+            for record in risk_assessments
+        ],
+    }
+    return JSONResponse(
+        content=jsonable_encoder(export),
+        headers={
+            "Cache-Control": "no-store",
+        },
+    )
+
+
 @app.post("/api/v1/consent", response_model=SuccessResponse[UserResponse], tags=["Consent"])
 @limiter.limit("10/minute")
 async def submit_consent(

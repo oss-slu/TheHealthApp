@@ -15,3 +15,6 @@ venv/
 .idea/
 .vscode/
 uploads/
+
+# Generated brag output
+brag-output/

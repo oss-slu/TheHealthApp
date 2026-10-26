@@ -7,7 +7,6 @@ export default {
   theme: {
     extend: {
       colors: {
-
         health: {
           primary: '#0f766e',
           secondary: '#059669',
@@ -15,10 +14,9 @@ export default {
           warning: '#f59e0b',
           critical: '#ef4444',
           surface: '#f0fdfa',
-        
-      }
+        }
+      },
     },
   },
   plugins: [],
-}
 }

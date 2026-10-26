@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { userHasValidHealthConsent } from '../../lib/consentConstants';
 import { showErrorToast } from '../../lib/toast';
 import {
+  isValidDateOfBirth,
   normalizeUsername,
   validatePassword,
   validateUsername,
@@ -42,13 +43,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   );
   const nameValid = form.name.trim().length >= 2;
 
-  const dobValid = useMemo(() => {
-    if (!form.dateOfBirth) return false;
-    const dob = new Date(form.dateOfBirth);
-    const ageDate = new Date(Date.now() - dob.getTime());
-    const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970);
-    return calculatedAge > 12 && calculatedAge < 121;
-  }, [form.dateOfBirth]);
+  const dateOfBirthValid = isValidDateOfBirth(form.dateOfBirth);
 
   const genderValid = ['male', 'female', 'other', 'na'].includes(form.gender);
   const phoneValid = /^\+?[0-9]{10,15}$/.test(form.phone);
@@ -58,7 +53,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   );
   const confirmValid = form.confirm.length > 0 && form.confirm === form.password;
 
-  const isFormValid = usernameValid && nameValid && dobValid && genderValid && phoneValid && passwordValid && confirmValid;
+  const isFormValid = usernameValid && nameValid && dateOfBirthValid && genderValid && phoneValid && passwordValid && confirmValid;
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -193,7 +188,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
                   id="dateOfBirth"
                   type="date"
                   className={`w-full border rounded px-3 py-2 ${
-                    touched.dateOfBirth && !dobValid ? 'border-red-500' : 'border-gray-300'
+                    touched.dateOfBirth && !dateOfBirthValid ? 'border-red-500' : 'border-gray-300'
                   }`}
                   name="dateOfBirth"
                   value={form.dateOfBirth}
@@ -201,7 +196,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
                   onBlur={onBlur}
                   max={new Date().toISOString().split("T")[0]}
                 />
-                {touched.dateOfBirth && !dobValid && (
+                {touched.dateOfBirth && !dateOfBirthValid && (
                   <p className="text-xs text-red-600 mt-1">
                     {t('auth:errors.dobInvalid', 'You must be between 13 and 120 years old')}
                   </p>

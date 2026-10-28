@@ -66,5 +66,12 @@
 "recordingDose": "جارٍ التسجيل...",
 "taken": "تم تناولها",
 "skipped": "تم تخطيها",
-"recordedAt": "وقت التسجيل"
+"recordedAt": "وقت التسجيل",
+"scheduledDoseDate": "التاريخ المحدد للجرعة",
+"scheduledDateRequired": "يرجى اختيار التاريخ المحدد لهذه الجرعة.",
+"doseAlreadyRecorded": "تم تسجيل جرعة من هذا الدواء بالفعل في هذا التاريخ.",
+"recordTakenForMedication": "تحديد {{medication}} على أنها تم تناولها",
+"recordSkippedForMedication": "تحديد {{medication}} على أنها فائتة",
+"viewDoseHistoryForMedication": "عرض سجل جرعات {{medication}}",
+"doseActionsForMedication": "إجراءات الجرعة الخاصة بـ {{medication}}"
 }

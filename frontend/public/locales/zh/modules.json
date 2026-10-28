@@ -66,5 +66,12 @@
 "recordingDose": "正在记录...",
 "taken": "已服用",
 "skipped": "已跳过",
-"recordedAt": "记录时间"
+"recordedAt": "记录时间",
+"scheduledDoseDate": "计划服药日期",
+"scheduledDateRequired": "请选择此次服药的计划日期。",
+"doseAlreadyRecorded": "该日期已记录过此药物的服药情况。",
+"recordTakenForMedication": "将 {{medication}} 标记为已服用",
+"recordSkippedForMedication": "将 {{medication}} 标记为跳过",
+"viewDoseHistoryForMedication": "查看 {{medication}} 的服药记录",
+"doseActionsForMedication": "{{medication}} 的服药操作"
 }

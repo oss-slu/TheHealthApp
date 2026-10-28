@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field, StringConstraints, field_validator, model
 from enum import Enum
 from datetime import date, datetime, timezone
 from typing import Optional, Annotated, Generic, TypeVar
+from pymongo import IndexModel
 
 # --- Consent (must match frontend CURRENT_CONSENT_VERSION) ---
 CURRENT_CONSENT_VERSION = "v1.0"
@@ -453,6 +454,7 @@ class PrescriptionResponse(BaseModel):
         from_attributes = True
 
 
+
 class DoseStatus(str, Enum):
     taken = "taken"
     skipped = "skipped"
@@ -462,6 +464,7 @@ class MedicationDose(Document):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_id: uuid.UUID
     prescription_id: uuid.UUID
+    scheduled_date: date
     status: DoseStatus
     recorded_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
@@ -469,15 +472,27 @@ class MedicationDose(Document):
 
     class Settings:
         name = "medication_doses"
+        indexes = [
+            IndexModel(
+                [
+                    ("user_id", 1),
+                    ("prescription_id", 1),
+                    ("scheduled_date", 1),
+                ],
+                unique=True,
+            )
+        ]
 
 
 class MedicationDoseCreate(BaseModel):
+    scheduled_date: date
     status: DoseStatus
 
 
 class MedicationDoseResponse(BaseModel):
     id: uuid.UUID
     prescription_id: uuid.UUID
+    scheduled_date: date
     status: DoseStatus
     recorded_at: datetime
 

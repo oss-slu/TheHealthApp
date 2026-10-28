@@ -620,14 +620,15 @@ it('records a dose as taken and displays a success message', async () => {
   await screen.findByText('Lisinopril');
 
   await user.click(
-    screen.getByRole('button', { name: 'recordTaken' })
+    screen.getByRole('button', { name: 'recordTakenForMedication' })
   );
 
   await waitFor(() => {
     expect(prescriptionService.recordDose).toHaveBeenCalledWith(
-      'prescription-1',
-      'taken'
-    );
+  'prescription-1',
+  'taken',
+  expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+);
   });
 
   expect(
@@ -649,14 +650,15 @@ it('records a dose as skipped', async () => {
   await screen.findByText('Lisinopril');
 
   await user.click(
-    screen.getByRole('button', { name: 'recordSkipped' })
+    screen.getByRole('button', { name: 'recordSkippedForMedication' })
   );
 
   await waitFor(() => {
     expect(prescriptionService.recordDose).toHaveBeenCalledWith(
-      'prescription-1',
-      'skipped'
-    );
+  'prescription-1',
+  'skipped',
+  expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+);
   });
 
   expect(
@@ -682,7 +684,7 @@ it('loads and displays dose history', async () => {
   await screen.findByText('Lisinopril');
 
   await user.click(
-    screen.getByRole('button', { name: 'doseHistory' })
+    screen.getByRole('button', { name: 'viewDoseHistoryForMedication' })
   );
 
   expect(await screen.findByText('taken')).toBeInTheDocument();
@@ -691,6 +693,57 @@ it('loads and displays dose history', async () => {
     'prescription-1'
   );
 });
+
+
+it('shows an empty message when dose history has no records', async () => {
+  const user = userEvent.setup();
+
+  prescriptionService.getAll.mockResolvedValue([activePrescription]);
+  prescriptionService.getDoseHistory.mockResolvedValue([]);
+
+  renderWithProviders(<Prescription />);
+
+  await screen.findByText('Lisinopril');
+
+  await user.click(
+    screen.getByRole('button', { name: 'viewDoseHistoryForMedication' })
+  );
+
+  expect(await screen.findByText('noDoseHistory')).toBeInTheDocument();
+});
+
+it('allows retrying when dose history fails to load', async () => {
+  const user = userEvent.setup();
+
+  prescriptionService.getAll.mockResolvedValue([activePrescription]);
+  prescriptionService.getDoseHistory
+    .mockRejectedValueOnce(new Error('Request failed'))
+    .mockResolvedValueOnce([
+      {
+        id: 'dose-1',
+        prescription_id: 'prescription-1',
+        status: 'taken',
+        recorded_at: '2026-10-21T14:00:00Z',
+        scheduled_date: '2026-10-21',
+      },
+    ]);
+
+  renderWithProviders(<Prescription />);
+
+  await screen.findByText('Lisinopril');
+
+  await user.click(
+    screen.getByRole('button', { name: 'viewDoseHistoryForMedication' })
+  );
+
+  expect(await screen.findByText('doseHistoryError')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'retry' }));
+
+  expect(await screen.findByText('taken')).toBeInTheDocument();
+  expect(prescriptionService.getDoseHistory).toHaveBeenCalledTimes(2);
+});
+
 
 it('shows an error when recording a dose fails', async () => {
   const user = userEvent.setup();
@@ -705,7 +758,7 @@ it('shows an error when recording a dose fails', async () => {
   await screen.findByText('Lisinopril');
 
   await user.click(
-    screen.getByRole('button', { name: 'recordTaken' })
+    screen.getByRole('button', { name: 'recordTakenForMedication' })
   );
 
   expect(

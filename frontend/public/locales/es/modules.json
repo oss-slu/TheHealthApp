@@ -66,5 +66,12 @@
 "recordingDose": "Registrando...",
 "taken": "Tomada",
 "skipped": "Omitida",
-"recordedAt": "Registrada"
+"recordedAt": "Registrada",
+"scheduledDoseDate": "Fecha programada de la dosis",
+"scheduledDateRequired": "Selecciona la fecha programada de esta dosis.",
+"doseAlreadyRecorded": "Ya se ha registrado una dosis de este medicamento en esa fecha.",
+"recordTakenForMedication": "Marcar {{medication}} como tomada",
+"recordSkippedForMedication": "Marcar {{medication}} como omitida",
+"viewDoseHistoryForMedication": "Ver el historial de dosis de {{medication}}",
+"doseActionsForMedication": "Acciones de dosis para {{medication}}"
 }

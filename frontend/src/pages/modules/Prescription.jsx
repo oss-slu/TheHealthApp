@@ -4,7 +4,7 @@ import PageShell from '../../components/PageShell';
 import { prescriptionService } from '../../services/prescriptionService';
 
 const Prescription = () => {
-  const { t } = useTranslation(['modules']);
+  const { t, i18n } = useTranslation(['modules']);
 
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +32,8 @@ const [doseHistoryError, setDoseHistoryError] = useState({});
 const [doseHistoryLoading, setDoseHistoryLoading] = useState({});
 const [doseSavingId, setDoseSavingId] = useState(null);
 const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
+const [doseScheduledDates, setDoseScheduledDates] = useState({});
+
 
   const loadPrescriptions = async () => {
   try {
@@ -39,7 +41,26 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
     setLoadError(false);
 
     const data = await prescriptionService.getAll();
-    setPrescriptions(data);
+setPrescriptions(data);
+
+const today = new Date();
+const year = today.getFullYear();
+const month = String(today.getMonth() + 1).padStart(2, '0');
+const day = String(today.getDate()).padStart(2, '0');
+const localToday = `${year}-${month}-${day}`;
+
+setDoseScheduledDates((previous) => {
+  const next = { ...previous };
+
+  data.forEach((prescription) => {
+    if (!next[prescription.id]) {
+      next[prescription.id] = localToday;
+    }
+  });
+
+  return next;
+});
+
   } catch (error) {
     console.error('Failed to load prescriptions:', error);
     setLoadError(true);
@@ -172,27 +193,42 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
 };
 
   const handleRecordDose = async (prescriptionId, status) => {
-    setDoseSavingId(prescriptionId);
+  const scheduledDate = doseScheduledDates[prescriptionId];
+  if (!scheduledDate) {
+    setErrorMessage(t('modules:scheduledDateRequired'));
     setMessage('');
-    setErrorMessage('');
+    return;
+  }
 
-    try {
-      await prescriptionService.recordDose(prescriptionId, status);
+  setDoseSavingId(prescriptionId);
+  setMessage('');
+  setErrorMessage('');
 
-      setMessage(
-        status === 'taken'
-          ? t('modules:doseRecordedTaken')
-          : t('modules:doseRecordedSkipped')
-      );
+  try {
+    await prescriptionService.recordDose(
+      prescriptionId,
+      status,
+      scheduledDate
+    );
 
-      await handleLoadDoseHistory(prescriptionId);
-    } catch (error) {
-      console.error('Failed to record medication dose:', error);
-      setErrorMessage(t('modules:doseRecordError'));
-    } finally {
-      setDoseSavingId(null);
-    }
-  };
+    setMessage(
+      status === 'taken'
+        ? t('modules:doseRecordedTaken')
+        : t('modules:doseRecordedSkipped')
+    );
+
+    await handleLoadDoseHistory(prescriptionId);
+  } catch (error) {
+    console.error('Failed to record medication dose:', error);
+    setErrorMessage(
+      error?.response?.status === 409
+        ? t('modules:doseAlreadyRecorded')
+        : t('modules:doseRecordError')
+    );
+  } finally {
+    setDoseSavingId(null);
+  }
+};
 
   const handleLoadDoseHistory = async (prescriptionId) => {
   setDoseHistoryLoading((previous) => ({
@@ -526,9 +562,49 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
     {t('modules:doseTracking')}
   </h4>
 
-  <div className="flex flex-wrap gap-2">
+<div className="mb-3">
+  <label
+    htmlFor={`dose-date-${prescription.id}`}
+    className="block text-sm font-medium text-gray-700 mb-1"
+  >
+    {t('modules:scheduledDoseDate')}
+    {' — '}
+    {prescription.medication_name}
+  </label>
+
+  <input
+    id={`dose-date-${prescription.id}`}
+    type="date"
+    value={
+      doseScheduledDates[prescription.id] ||
+      new Date().getFullYear() +
+        '-' +
+        String(new Date().getMonth() + 1).padStart(2, '0') +
+        '-' +
+        String(new Date().getDate()).padStart(2, '0')
+    }
+    onChange={(event) =>
+      setDoseScheduledDates((previous) => ({
+        ...previous,
+        [prescription.id]: event.target.value,
+      }))
+    }
+    className="border rounded-md px-3 py-2"
+  />
+</div>
+
+  <div
+  role="group"
+  aria-label={t('modules:doseActionsForMedication', {
+    medication: prescription.medication_name,
+  })}
+  className="flex flex-wrap gap-2"
+>
     <button
       type="button"
+      aria-label={t('modules:recordTakenForMedication', {
+  medication: prescription.medication_name,
+})}
       onClick={() => handleRecordDose(prescription.id, 'taken')}
       disabled={doseSavingId === prescription.id}
       className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
@@ -540,6 +616,9 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
 
     <button
       type="button"
+      aria-label={t('modules:recordSkippedForMedication', {
+  medication: prescription.medication_name,
+})}
       onClick={() => handleRecordDose(prescription.id, 'skipped')}
       disabled={doseSavingId === prescription.id}
       className="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50"
@@ -549,6 +628,9 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
 
     <button
       type="button"
+      aria-label={t('modules:viewDoseHistoryForMedication', {
+  medication: prescription.medication_name,
+})}
       onClick={() => handleToggleDoseHistory(prescription.id)}
       aria-expanded={Boolean(doseHistoryVisible[prescription.id])}
       className="px-3 py-2 border rounded-md hover:bg-gray-50"
@@ -587,7 +669,10 @@ const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
         </span>
         {' — '}
         {t('modules:recordedAt')}:{' '}
-        {new Date(dose.recorded_at).toLocaleString()}
+        {new Intl.DateTimeFormat(i18n.resolvedLanguage || i18n.language, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(new Date(dose.recorded_at))}
       </li>
     ))}
   </ul>

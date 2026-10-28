@@ -57,5 +57,12 @@
 "recordingDose": "Recording...",
 "taken": "Taken",
 "skipped": "Skipped",
-"recordedAt": "Recorded"
+"recordedAt": "Recorded",
+"scheduledDoseDate": "Scheduled dose date",
+"scheduledDateRequired": "Please select the scheduled date for this dose.",
+"doseAlreadyRecorded": "A dose has already been recorded for this medication on that date.",
+"recordTakenForMedication": "Mark {{medication}} as taken",
+"recordSkippedForMedication": "Mark {{medication}} as skipped",
+"viewDoseHistoryForMedication": "View dose history for {{medication}}",
+"doseActionsForMedication": "Dose actions for {{medication}}"
 }

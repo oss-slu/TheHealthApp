@@ -818,6 +818,7 @@ async def archive_prescription(
     )
 
 
+
 @app.post(
     "/api/v1/prescriptions/{prescription_id}/doses",
     response_model=SuccessResponse[MedicationDoseResponse],
@@ -839,12 +840,31 @@ async def record_medication_dose(
             detail="Prescription not found",
         )
 
+    existing_dose = await MedicationDose.find_one(
+        MedicationDose.user_id == current_user.id,
+        MedicationDose.prescription_id == prescription.id,
+        MedicationDose.scheduled_date == dose_data.scheduled_date,
+    )
+
+    if existing_dose:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A dose record already exists for this scheduled date",
+        )
     dose = MedicationDose(
         user_id=current_user.id,
         prescription_id=prescription.id,
+        scheduled_date=dose_data.scheduled_date,
         status=dose_data.status,
     )
-    await dose.insert()
+
+    try:
+        await dose.insert()
+    except DuplicateKeyError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A dose record already exists for this scheduled date",
+        )
 
     return SuccessResponse(
         data=MedicationDoseResponse.model_validate(dose)

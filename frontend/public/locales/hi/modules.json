@@ -66,5 +66,12 @@
 "recordingDose": "दर्ज किया जा रहा है...",
 "taken": "ली गई",
 "skipped": "छोड़ी गई",
-"recordedAt": "दर्ज किया गया"
+"recordedAt": "दर्ज किया गया",
+"scheduledDoseDate": "खुराक की निर्धारित तारीख",
+"scheduledDateRequired": "कृपया इस खुराक की निर्धारित तारीख चुनें।",
+"doseAlreadyRecorded": "इस तारीख को इस दवा की खुराक पहले ही दर्ज की जा चुकी है।",
+"recordTakenForMedication": "{{medication}} को ली गई के रूप में चिह्नित करें",
+"recordSkippedForMedication": "{{medication}} को छोड़ी गई के रूप में चिह्नित करें",
+"viewDoseHistoryForMedication": "{{medication}} की खुराक का इतिहास देखें",
+"doseActionsForMedication": "{{medication}} के लिए खुराक की कार्रवाइयाँ"
 }

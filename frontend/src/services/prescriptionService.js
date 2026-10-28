@@ -18,9 +18,12 @@ export const prescriptionService = {
     return apiClient.patch(`/prescriptions/${id}/archive`);
   },
 
-  async recordDose(id, status) {
-    return apiClient.post(`/prescriptions/${id}/doses`, { status });
-  },
+  async recordDose(id, status, scheduledDate) {
+  return apiClient.post(`/prescriptions/${id}/doses`, {
+    status,
+    scheduled_date: scheduledDate,
+  });
+},
 
   async getDoseHistory(id) {
     return apiClient.get(`/prescriptions/${id}/doses`);

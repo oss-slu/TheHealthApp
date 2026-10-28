@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import pytest
 from beanie import init_beanie
@@ -15,6 +15,8 @@ from src.models import (
     GenderEnum,
     Prescription,
     User,
+    MedicationDose,
+    DoseStatus,
 )
 
 
@@ -25,7 +27,7 @@ async def test_db():
 
     await init_beanie(
         database=database,
-        document_models=[User, Prescription],
+        document_models=[User, Prescription, MedicationDose],
     )
 
     yield database
@@ -429,3 +431,206 @@ async def test_archived_prescription_cannot_be_archived_again(
     )
 
     assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_record_taken_dose(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "taken", "scheduled_date": "2026-10-28"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["status"] == "taken"
+    assert data["prescription_id"] == str(prescription.id)
+    assert data["recorded_at"] is not None
+    assert data["scheduled_date"] == "2026-10-28"
+
+    doses = await MedicationDose.find(
+        MedicationDose.user_id == test_user.id,
+        MedicationDose.prescription_id == prescription.id,
+    ).to_list()
+    assert len(doses) == 1
+    assert doses[0].status == DoseStatus.taken
+
+@pytest.mark.anyio
+async def test_cannot_record_duplicate_dose_for_same_date(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    payload = {
+        "status": "taken",
+        "scheduled_date": "2026-01-15",
+    }
+    url = f"/api/v1/prescriptions/{prescription.id}/doses"
+
+    first_response = await client.post(url, json=payload)
+    second_response = await client.post(url, json=payload)
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 409
+
+@pytest.mark.anyio
+async def test_cannot_record_dose_without_health_consent(test_db, test_user):
+    test_user.consent_given = False
+    await test_user.insert()
+
+    async def override_current_user():
+        return test_user
+
+    app.dependency_overrides[get_current_user] = override_current_user
+    app.dependency_overrides.pop(require_health_consent, None)
+
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as test_client:
+            prescription = Prescription(
+                user_id=test_user.id,
+                medication_name="Test Medication",
+                dosage="10mg",
+                frequency="Once daily",
+            )
+            await prescription.insert()
+
+            response = await test_client.post(
+                f"/api/v1/prescriptions/{prescription.id}/doses",
+                json={
+                    "status": "taken",
+                    "scheduled_date": "2026-01-15",
+                },
+            )
+
+        assert response.status_code == 403
+    finally:
+        app.dependency_overrides.clear()
+
+@pytest.mark.anyio
+async def test_record_skipped_dose(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "skipped", "scheduled_date": "2026-10-28"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["status"] == "skipped"
+
+
+@pytest.mark.anyio
+async def test_invalid_dose_status_is_rejected(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "maybe", "scheduled_date": "2026-10-28"},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_cannot_record_dose_for_another_users_prescription(
+    client, other_user
+):
+    prescription = Prescription(
+        user_id=other_user.id,
+        medication_name="Other User Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "taken", "scheduled_date": "2026-10-28"},
+    )
+
+    assert response.status_code == 404
+
+    doses = await MedicationDose.find(
+        MedicationDose.prescription_id == prescription.id,
+    ).to_list()
+    assert doses == []
+
+
+@pytest.mark.anyio
+async def test_get_dose_history(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+    for scheduled_date, dose_status in (
+        (date(2026, 1, 14), DoseStatus.taken),
+        (date(2026, 1, 15), DoseStatus.skipped),
+    ):
+        await MedicationDose(
+            user_id=test_user.id,
+            prescription_id=prescription.id,
+            scheduled_date=scheduled_date,
+            status=dose_status,
+        ).insert()
+
+    response = await client.get(
+        f"/api/v1/prescriptions/{prescription.id}/doses"
+    )
+
+    assert response.status_code == 200
+    records = response.json()["data"]
+    assert len(records) == 2
+    assert {record["status"] for record in records} == {"taken", "skipped"}
+    assert {record["scheduled_date"] for record in records} == {
+        "2026-01-14",
+        "2026-01-15",
+    }
+
+
+@pytest.mark.anyio
+async def test_cannot_get_dose_history_for_another_users_prescription(
+    client, other_user
+):
+    prescription = Prescription(
+        user_id=other_user.id,
+        medication_name="Other User Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.get(
+        f"/api/v1/prescriptions/{prescription.id}/doses"
+    )
+
+    assert response.status_code == 404
+

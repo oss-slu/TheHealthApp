@@ -80,7 +80,7 @@ const handleLoadReminder = useCallback(async (prescriptionId) => {
       }));
     }
   }, []);
-  
+
 const loadPrescriptions = useCallback(async () => {
   try {
     setLoading(true);
@@ -230,7 +230,7 @@ const loadPrescriptions = useCallback(async () => {
   }
 };
 
-  
+
     const handleSaveReminder = async (prescriptionId, action) => {
     const reminderTime = reminderTimes[prescriptionId] || '08:00';
     const existingReminder = reminderSettings[prescriptionId];
@@ -499,7 +499,7 @@ const loadPrescriptions = useCallback(async () => {
         <button
           onClick={handleAdd}
           disabled={saving}
-          
+
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
           {saving
@@ -545,22 +545,38 @@ const loadPrescriptions = useCallback(async () => {
           ) : (
             <div className="space-y-4">
               {prescriptions.map((prescription) => {
-  const reminder = reminderSettings[prescription.id];
-  const doseTime = prescription.next_dose
-    ? new Date(prescription.next_dose)
-    : null;
-  const reminderIsDue =
-    reminder?.enabled === true &&
-    reminder?.paused === false &&
-    doseTime !== null &&
-    !Number.isNaN(doseTime.getTime()) &&
-    doseTime <= currentTime;
 
-  const today = currentTime.toLocaleDateString('en-CA');
-  const dismissalKey = `${prescription.id}-${today}`;
-  const reminderDismissed =
-    dismissedReminders[dismissalKey] === true;
+                  const reminder = reminderSettings[prescription.id];
+                const reminderTime = reminder?.reminder_time;
 
+                // Daily schedule uses the user's local timezone.
+                const validReminderTime =
+                  typeof reminderTime === 'string' &&
+                  /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(reminderTime);
+
+                const currentLocalMinutes =
+                  currentTime.getHours() * 60 + currentTime.getMinutes();
+
+                const scheduledLocalMinutes = validReminderTime
+                  ? Number(reminderTime.slice(0, 2)) * 60 +
+                    Number(reminderTime.slice(3, 5))
+                  : null;
+
+                const reminderIsDue =
+                  reminder?.enabled === true &&
+                  reminder?.paused === false &&
+                  scheduledLocalMinutes !== null &&
+                  currentLocalMinutes >= scheduledLocalMinutes;
+
+                const today = [
+                  currentTime.getFullYear(),
+                  String(currentTime.getMonth() + 1).padStart(2, '0'),
+                  String(currentTime.getDate()).padStart(2, '0'),
+                ].join('-');
+
+                const dismissalKey = `${prescription.id}-${today}`;
+                const reminderDismissed =
+                  dismissedReminders[dismissalKey] === true;
   return (
     <div
       key={prescription.id}
@@ -678,7 +694,7 @@ const loadPrescriptions = useCallback(async () => {
                         </p>
                       )}
 
-                      
+
 <div className="mt-4 border-t pt-4">
   <h4 className="font-semibold text-gray-900 mb-3">
     {t('modules:doseTracking')}
@@ -841,7 +857,7 @@ const loadPrescriptions = useCallback(async () => {
             ? t('modules:reminderDisabled')
             : reminderSettings[prescription.id].paused
               ? t('modules:reminderPaused')
-              : t('modules:enableReminder')}
+              : t('modules:reminderEnabled')}
       </p>
 
       <div className="flex flex-wrap gap-2">

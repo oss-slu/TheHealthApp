@@ -29,6 +29,14 @@ const activePrescription = {
   next_dose: null,
 };
 
+const localTimeOffset = (minutes) => {
+  const date = new Date(Date.now() + minutes * 60 * 1000);
+
+  return `${String(date.getHours()).padStart(2, '0')}:${String(
+    date.getMinutes()
+  ).padStart(2, '0')}`;
+};
+
 describe('Prescription', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -824,6 +832,78 @@ it('shows an in-app reminder for a due scheduled dose', async () => {
     screen.getByRole('button', { name: 'dismissReminder' })
   ).toBeInTheDocument();
 });
+
+it('uses reminder_time instead of next_dose to determine when a reminder is due', async () => {
+  const prescription = {
+    ...activePrescription,
+    next_dose: '2099-01-01T08:00:00Z',
+  };
+
+  prescriptionService.getAll.mockResolvedValue([prescription]);
+  prescriptionService.getReminder.mockResolvedValue({
+    reminder_time: localTimeOffset(-2),
+    enabled: true,
+    paused: false,
+  });
+
+  renderWithProviders(<Prescription />);
+
+  expect(
+    await screen.findByText('doseReminderDue')
+  ).toBeInTheDocument();
+});
+
+it('shows a due reminder when next_dose is null', async () => {
+  const prescription = {
+    ...activePrescription,
+    next_dose: null,
+  };
+
+  prescriptionService.getAll.mockResolvedValue([prescription]);
+  prescriptionService.getReminder.mockResolvedValue({
+    reminder_time: localTimeOffset(-2),
+    enabled: true,
+    paused: false,
+  });
+
+  renderWithProviders(<Prescription />);
+
+  expect(
+    await screen.findByText('doseReminderDue')
+  ).toBeInTheDocument();
+});
+
+it('does not show a reminder before its scheduled local time', async () => {
+  const prescription = {
+    ...activePrescription,
+    next_dose: '2020-01-01T08:00:00Z',
+  };
+
+  prescriptionService.getAll.mockResolvedValue([prescription]);
+  prescriptionService.getReminder.mockResolvedValue({
+    reminder_time: localTimeOffset(5),
+    enabled: true,
+    paused: false,
+  });
+
+  renderWithProviders(<Prescription />);
+
+  await screen.findByText('reminderEnabled');
+
+  expect(screen.queryByText('doseReminderDue')).not.toBeInTheDocument();
+});
+
+it('shows the empty reminder state when no reminder is configured', async () => {
+  prescriptionService.getAll.mockResolvedValue([activePrescription]);
+  prescriptionService.getReminder.mockResolvedValue(null);
+
+  renderWithProviders(<Prescription />);
+
+  expect(
+    await screen.findByText('noReminderSet')
+  ).toBeInTheDocument();
+});
+
 
 it('does not show a due reminder when reminders are paused', async () => {
   prescriptionService.getAll.mockResolvedValue([

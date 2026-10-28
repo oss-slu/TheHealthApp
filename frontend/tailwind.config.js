@@ -8,14 +8,14 @@ export default {
     extend: {
       colors: {
         health: {
-          primary: '#0f766e',   // (Teal)
-          secondary: '#059669', // (Emerald)
-          good: '#10b981',      // Normal (Green)
-          warning: '#f59e0b',   // Caution (Orange)
-          critical: '#ef4444',  // Danger (Red)
-          surface: '#f0fdfa',   // Background (Teal-50)
+          primary: '#0f766e',
+          secondary: '#059669',
+          good: '#10b981',
+          warning: '#f59e0b',
+          critical: '#ef4444',
+          surface: '#f0fdfa',
         }
-      }
+      },
     },
   },
   plugins: [],

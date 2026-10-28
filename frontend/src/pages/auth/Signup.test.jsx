@@ -5,6 +5,7 @@ import {
   screen,
   userEvent,
   waitFor,
+  fireEvent,
 } from '../../test/test-utils';
 import Signup from './Signup';
 
@@ -81,6 +82,10 @@ describe('Signup', () => {
     it('requires a date of birth', async () => {
       const user = userEvent.setup();
       renderSignup();
+      
+      const dobInput = screen.getByLabelText(/date of birth/i);
+      fireEvent.change(dobInput, { target: { value: '2020-01-01' } });
+      fireEvent.blur(dobInput);
 
       screen.getByLabelText(/date of birth/i).focus();
       await user.tab();
@@ -211,14 +216,16 @@ describe('Signup', () => {
       await user.type(screen.getByLabelText(/full name/i), 'John Doe');
       fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
       await user.selectOptions(screen.getByRole('combobox'), 'male');
-      
-      // Try to type letters - they should be stripped
+
       const phoneInput = screen.getByPlaceholderText(/phone number/i);
-      await user.type(phoneInput, '123abc4567890');
-      
-      await user.type(screen.getByLabelText(/^password$/i), 'Password123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'Password123');
-      await user.click(screen.getByRole('button', { name: /sign up/i }));
+      await user.type(phoneInput, '123-456-7890');
+
+      await user.type(screen.getByLabelText(/^password$/i), 'Password123!');
+      await user.type(screen.getByLabelText(/confirm password/i), 'Password123!');
+
+      const submitButton = screen.getByRole('button', { name: /sign up/i });
+      expect(submitButton).toBeEnabled();
+      await user.click(submitButton);
 
       await waitFor(() => {
         expect(mockSignup).toHaveBeenCalledWith(

@@ -34,3 +34,19 @@ export const validatePassword = (value) => {
   return checks.hasUppercase && checks.hasNumber;
 };
 
+export const isValidDateOfBirth = (value) => {
+  if (!value) return false;
+  const dob = new Date(value);
+  if (Number.isNaN(dob.getTime())) return false;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age >= 13 && age <= 120;
+};
+
+export const formatDateForInput = (date = new Date()) => {
+  return date.toISOString().split('T')[0];
+};

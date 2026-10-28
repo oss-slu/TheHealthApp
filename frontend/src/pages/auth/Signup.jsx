@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { userHasValidHealthConsent } from '../../lib/consentConstants';
 import { showErrorToast } from '../../lib/toast';
 import {
+  isValidDateOfBirth,
   normalizeUsername,
   validatePassword,
   validateUsername,
@@ -42,10 +43,9 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
     [form.username]
   );
   const nameValid = form.name.trim().length >= 2;
-  const dateOfBirthValid = useMemo(
-    () => isValidDateOfBirth(form.dateOfBirth),
-    [form.dateOfBirth],
-  );
+
+  const dateOfBirthValid = isValidDateOfBirth(form.dateOfBirth);
+
   const genderValid = ['male', 'female', 'other', 'na'].includes(form.gender);
   const phoneValid = /^\+?[0-9]{10,15}$/.test(form.phone);
   const passwordValid = useMemo(
@@ -231,7 +231,9 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
                   <option value="na">{t('common:preferNotToSay', 'Prefer not to say')}</option>
                 </select>
                 {touched.gender && !genderValid && (
-                  <p className="text-xs text-red-600 mt-1">{t('auth:errors.genderRequired', 'Please select a gender')}</p>
+                  <p className="text-xs text-red-600 mt-1">
+                    {t('auth:errors.genderRequired', 'Please select a gender')}
+                  </p>
                 )}
               </div>
             </div>

@@ -15,6 +15,9 @@ from src.models import (
     GenderEnum,
     Prescription,
     User,
+    MedicationDose,
+    DoseStatus,
+    MedicationReminder,
 )
 
 
@@ -25,7 +28,7 @@ async def test_db():
 
     await init_beanie(
         database=database,
-        document_models=[User, Prescription],
+        document_models=[User, Prescription, MedicationDose, MedicationReminder],
     )
 
     yield database
@@ -426,6 +429,336 @@ async def test_archived_prescription_cannot_be_archived_again(
 
     response = await client.patch(
         f"/api/v1/prescriptions/{prescription.id}/archive"
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_record_taken_dose(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "taken"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["status"] == "taken"
+    assert data["prescription_id"] == str(prescription.id)
+    assert data["recorded_at"] is not None
+
+    doses = await MedicationDose.find(
+        MedicationDose.user_id == test_user.id,
+        MedicationDose.prescription_id == prescription.id,
+    ).to_list()
+    assert len(doses) == 1
+    assert doses[0].status == DoseStatus.taken
+
+
+@pytest.mark.anyio
+async def test_record_skipped_dose(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "skipped"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["status"] == "skipped"
+
+
+@pytest.mark.anyio
+async def test_invalid_dose_status_is_rejected(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "maybe"},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_cannot_record_dose_for_another_users_prescription(
+    client, other_user
+):
+    prescription = Prescription(
+        user_id=other_user.id,
+        medication_name="Other User Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/doses",
+        json={"status": "taken"},
+    )
+
+    assert response.status_code == 404
+
+    doses = await MedicationDose.find(
+        MedicationDose.prescription_id == prescription.id,
+    ).to_list()
+    assert doses == []
+
+
+@pytest.mark.anyio
+async def test_get_dose_history(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    for dose_status in (DoseStatus.taken, DoseStatus.skipped):
+        await MedicationDose(
+            user_id=test_user.id,
+            prescription_id=prescription.id,
+            status=dose_status,
+        ).insert()
+
+    response = await client.get(
+        f"/api/v1/prescriptions/{prescription.id}/doses"
+    )
+
+    assert response.status_code == 200
+    records = response.json()["data"]
+    assert len(records) == 2
+    assert {record["status"] for record in records} == {"taken", "skipped"}
+
+
+@pytest.mark.anyio
+async def test_cannot_get_dose_history_for_another_users_prescription(
+    client, other_user
+):
+    prescription = Prescription(
+        user_id=other_user.id,
+        medication_name="Other User Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.get(
+        f"/api/v1/prescriptions/{prescription.id}/doses"
+    )
+
+    assert response.status_code == 404
+
+
+
+@pytest.mark.anyio
+async def test_create_medication_reminder_starts_disabled(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Reminder Test Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"reminder_time": "09:30"},
+    )
+
+    assert response.status_code == 201
+    reminder = response.json()["data"]
+    assert reminder["reminder_time"] == "09:30"
+    assert reminder["enabled"] is False
+    assert reminder["paused"] is False
+
+
+@pytest.mark.anyio
+async def test_get_medication_reminder_empty_state(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="No Reminder Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.get(
+        f"/api/v1/prescriptions/{prescription.id}/reminder"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"] is None
+
+
+@pytest.mark.anyio
+async def test_update_medication_reminder_settings(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Update Reminder Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    create_response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"reminder_time": "09:30"},
+    )
+    assert create_response.status_code == 201
+
+    response = await client.patch(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"reminder_time": "10:45", "enabled": True},
+    )
+
+    assert response.status_code == 200
+    reminder = response.json()["data"]
+    assert reminder["reminder_time"] == "10:45"
+    assert reminder["enabled"] is True
+
+
+@pytest.mark.anyio
+async def test_pause_and_resume_medication_reminder(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Pause Reminder Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"reminder_time": "09:30"},
+    )
+
+    enable_response = await client.patch(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"enabled": True},
+    )
+    assert enable_response.status_code == 200
+
+    pause_response = await client.patch(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"paused": True},
+    )
+    assert pause_response.status_code == 200
+    assert pause_response.json()["data"]["paused"] is True
+
+    resume_response = await client.patch(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"paused": False},
+    )
+    assert resume_response.status_code == 200
+    assert resume_response.json()["data"]["paused"] is False
+    assert resume_response.json()["data"]["enabled"] is True
+
+
+@pytest.mark.anyio
+async def test_disable_medication_reminder(client, test_user):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Disable Reminder Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"reminder_time": "09:30"},
+    )
+    await client.patch(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"enabled": True},
+    )
+
+    response = await client.patch(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"enabled": False, "paused": False},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["enabled"] is False
+    assert response.json()["data"]["paused"] is False
+
+
+@pytest.mark.anyio
+async def test_invalid_medication_reminder_time_is_rejected(
+    client, test_user
+):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Invalid Reminder Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"reminder_time": "25:90"},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_cannot_create_reminder_for_another_users_prescription(
+    client, other_user
+):
+    prescription = Prescription(
+        user_id=other_user.id,
+        medication_name="Other User Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"reminder_time": "09:30"},
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_cannot_get_reminder_for_another_users_prescription(
+    client, other_user
+):
+    prescription = Prescription(
+        user_id=other_user.id,
+        medication_name="Other User Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    response = await client.get(
+        f"/api/v1/prescriptions/{prescription.id}/reminder"
     )
 
     assert response.status_code == 404

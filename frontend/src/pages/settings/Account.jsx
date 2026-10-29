@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
 import { useAuth } from '../../hooks/useAuth.js';
 import { showSuccessToast } from '../../lib/toast.js';
+import { authService } from '../../services/authService.js';
 
 const Account = () => {
   const { t } = useTranslation(['common', 'auth', 'errors']);
@@ -12,6 +13,9 @@ const Account = () => {
   const [formError, setFormError] = useState(null);
   const [photoError, setPhotoError] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [exportingData, setExportingData] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const [exportStatus, setExportStatus] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -109,6 +113,30 @@ const Account = () => {
     } finally {
       setUploadingPhoto(false);
       event.target.value = '';
+    }
+  };
+
+  const onExportData = async () => {
+    setExportError('');
+    setExportStatus('');
+    setExportingData(true);
+    try {
+      const data = await authService.exportOwnData();
+      const objectUrl = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = 'my-health-data.json';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+
+      const hasHealthRecords = data.questionnaires?.length || data.risk_assessments?.length;
+      setExportStatus(t(hasHealthRecords ? 'common:privacyExportSuccess' : 'common:privacyExportEmpty'));
+    } catch {
+      setExportError(t('common:privacyExportError'));
+    } finally {
+      setExportingData(false);
     }
   };
 
@@ -214,6 +242,40 @@ const Account = () => {
             </div>
           </form>
         </div>
+
+        <section className="mt-6 border-t border-gray-200 pt-6" aria-labelledby="privacy-controls-title">
+          <h2 id="privacy-controls-title" className="text-lg font-semibold text-gray-900">
+            {t('common:privacyControlsTitle')}
+          </h2>
+
+          <div className="mt-5 border-t border-gray-200 pt-5">
+            <h3 className="font-medium text-gray-900">{t('common:privacyExportTitle')}</h3>
+            <p className="mt-1 text-sm text-gray-600">{t('common:privacyExportDescription')}</p>
+            <button
+              type="button"
+              onClick={onExportData}
+              disabled={exportingData}
+              className="mt-3 rounded border border-teal-800 px-4 py-2 text-sm font-medium text-teal-900 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {exportingData ? t('common:privacyExportLoading') : t('common:privacyExportButton')}
+            </button>
+            {exportStatus ? <p role="status" className="mt-2 text-sm text-green-800">{exportStatus}</p> : null}
+            {exportError ? <p role="alert" className="mt-2 text-sm text-red-700">{exportError}</p> : null}
+          </div>
+
+          <div className="mt-5 border-t border-gray-200 pt-5">
+            <h3 className="font-medium text-gray-900">{t('common:privacyRetentionTitle')}</h3>
+            <p className="mt-1 text-sm text-gray-600">{t('common:privacyRetentionDescription')}</p>
+          </div>
+
+          <div className="mt-5 border-t border-gray-200 pt-5">
+            <h3 className="font-medium text-gray-900">{t('common:privacyConsentTitle')}</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              {t(user?.consent_given ? 'common:privacyConsentGranted' : 'common:privacyConsentNotGranted')}
+            </p>
+            <p className="mt-1 text-sm text-gray-600">{t('common:privacyConsentDescription')}</p>
+          </div>
+        </section>
       </div>
     </PageShell>
   );

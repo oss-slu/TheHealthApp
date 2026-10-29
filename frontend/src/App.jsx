@@ -33,9 +33,9 @@ function App() {
 
           <Route element={<RequireAuth />}>
             <Route path="/consent" element={<ConsentPage />} />
+            <Route path="/settings/account" element={<Account />} />
             <Route element={<RequireHealthConsent />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/settings/account" element={<Account />} />
               <Route path="/modules/heart-risk" element={<HeartRisk />} />
               <Route path="/modules/framingham-risk" element={<FraminghamRisk />} />
               <Route path="/modules/prescription" element={<Prescription />} />

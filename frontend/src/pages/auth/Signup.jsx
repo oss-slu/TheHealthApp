@@ -6,7 +6,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { userHasValidHealthConsent } from '../../lib/consentConstants';
 import { showErrorToast } from '../../lib/toast';
 import {
-  isValidDateOfBirth,
   normalizeUsername,
   validatePassword,
   validateUsername,

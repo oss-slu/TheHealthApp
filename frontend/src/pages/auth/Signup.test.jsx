@@ -5,7 +5,6 @@ import {
   screen,
   userEvent,
   waitFor,
-  fireEvent,
 } from '../../test/test-utils';
 import Signup from './Signup';
 
@@ -80,15 +79,11 @@ describe('Signup', () => {
     });
 
     it('requires a date of birth', async () => {
-      const user = userEvent.setup();
       renderSignup();
-      
       const dobInput = screen.getByLabelText(/date of birth/i);
-      fireEvent.change(dobInput, { target: { value: '2020-01-01' } });
-      fireEvent.blur(dobInput);
 
-      screen.getByLabelText(/date of birth/i).focus();
-      await user.tab();
+      fireEvent.focus(dobInput);
+      fireEvent.blur(dobInput);
 
       expect(screen.getByText(/date of birth is required/i)).toBeInTheDocument();
     });

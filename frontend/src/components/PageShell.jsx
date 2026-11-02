@@ -1,4 +1,4 @@
-import React, { useState, startTransition } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n.js';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -11,6 +11,10 @@ const PageShell = ({ children, title, showNav = true, variant = 'default' }) => 
   const { isAuthenticated, logout: authLogout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     await authLogout();
@@ -30,7 +34,8 @@ const PageShell = ({ children, title, showNav = true, variant = 'default' }) => 
     ...(isAuthenticated
       ? [
           { path: '/dashboard', label: t('dashboard:menuLabel', 'Dashboard') },
-          { path: '/modules/framingham', label: t('dashboard:framingham', 'Risk Assessment') },
+          { path: '/health-summary', label: t('dashboard:healthSummary', 'Health Summary') },
+          { path: '/modules/framingham-risk', label: t('dashboard:framingham', 'Risk Assessment') },
           { path: '/settings/account', label: t('common:accountSettings', 'Settings') },
         ]
       : [
@@ -128,7 +133,9 @@ const PageShell = ({ children, title, showNav = true, variant = 'default' }) => 
                 <button
                   type="button"
                   className="md:hidden p-2 rounded-md text-gray-600 hover:text-teal-800 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  aria-label="Toggle navigation menu"
+                  aria-label={t('common:toggleNav', 'Toggle navigation menu')}
+                  aria-expanded={mobileMenuOpen}
+                  aria-controls="mobile-navigation-drawer"
                   onClick={() => setMobileMenuOpen((prev) => !prev)}
                 >
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -148,7 +155,10 @@ const PageShell = ({ children, title, showNav = true, variant = 'default' }) => 
 
         {/* Mobile Navigation Drawer */}
         {showNav && mobileMenuOpen && (
-          <div className="md:hidden border-t border-teal-100 bg-white/95 backdrop-blur-md px-4 pt-2 pb-4 space-y-1 shadow-inner">
+          <div
+            id="mobile-navigation-drawer"
+            className="md:hidden border-t border-teal-100 bg-white/95 backdrop-blur-md px-4 pt-2 pb-4 space-y-1 shadow-inner"
+          >
             {navigation.map((item) => {
               const isActive = location.pathname === item.path;
               return (

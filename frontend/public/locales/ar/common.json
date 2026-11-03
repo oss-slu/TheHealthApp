@@ -39,5 +39,15 @@
 "introHighlight1": "تقييم شخصي لمخاطر الصحة",
 "introHighlight2": "دعم متعدد اللغات لإتاحة الوصول للجميع",
 "introHighlight3": "معالجة آمنة وخاصة للبيانات",
-"introHighlight4": "رؤى فورية مدعومة بأنظمة ذكية"
+"introHighlight4": "رؤى فورية مدعومة بأنظمة ذكية",
+"skipToContent": "تخطي إلى المحتوى",
+"primaryNav": "التنقل الرئيسي",
+"openMenu": "فتح القائمة",
+"backgroundTheme": "سمة الخلفية",
+"allRightsReserved": "جميع الحقوق محفوظة.",
+"themes": {
+  "calm": "هادئ",
+  "clinical": "سريري",
+  "grove": "بستان"
+}
 }

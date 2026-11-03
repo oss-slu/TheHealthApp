@@ -33,5 +33,15 @@
   "introHighlight1": "Personalized health risk assessment",
   "introHighlight2": "Multilingual support for inclusive access",
   "introHighlight3": "Secure and private data handling",
-  "introHighlight4": "Real-time insights powered by intelligent systems"
+  "introHighlight4": "Real-time insights powered by intelligent systems",
+  "skipToContent": "Skip to content",
+  "primaryNav": "Primary",
+  "openMenu": "Open menu",
+  "backgroundTheme": "Background theme",
+  "allRightsReserved": "All rights reserved.",
+  "themes": {
+    "calm": "Calm",
+    "clinical": "Clinical",
+    "grove": "Grove"
+  }
 }

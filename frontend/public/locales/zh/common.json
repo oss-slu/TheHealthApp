@@ -39,5 +39,15 @@
 "introHighlight1": "个性化健康风险评估",
 "introHighlight2": "多语言支持，促进包容获取",
 "introHighlight3": "安全私密的数据处理",
-"introHighlight4": "智能系统驱动的实时洞察"
+"introHighlight4": "智能系统驱动的实时洞察",
+"skipToContent": "跳到内容",
+"primaryNav": "主导航",
+"openMenu": "打开菜单",
+"backgroundTheme": "背景主题",
+"allRightsReserved": "保留所有权利。",
+"themes": {
+  "calm": "平静",
+  "clinical": "临床",
+  "grove": "林间"
+}
 }

@@ -39,5 +39,15 @@
   "introHighlight1": "Evaluación personalizada del riesgo de salud",
   "introHighlight2": "Soporte multilingüe para un acceso inclusivo",
   "introHighlight3": "Manejo seguro y privado de los datos",
-  "introHighlight4": "Información en tiempo real con sistemas inteligentes"
+  "introHighlight4": "Información en tiempo real con sistemas inteligentes",
+  "skipToContent": "Saltar al contenido",
+  "primaryNav": "Navegación principal",
+  "openMenu": "Abrir menú",
+  "backgroundTheme": "Tema de fondo",
+  "allRightsReserved": "Todos los derechos reservados.",
+  "themes": {
+    "calm": "Calma",
+    "clinical": "Clínico",
+    "grove": "Bosque"
+  }
 }

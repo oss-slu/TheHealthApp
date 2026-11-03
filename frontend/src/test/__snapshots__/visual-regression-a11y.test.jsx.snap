@@ -134,6 +134,27 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
               completeQuestionnaire →
             </span>
           </a>
+          <a
+            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+            data-discover="true"
+            href="/health-summary"
+          >
+            <h3
+              class="text-lg font-semibold text-gray-900 mb-4"
+            >
+              Personal health summary
+            </h3>
+            <p
+              class="text-gray-600 mb-4"
+            >
+              Review and export your health information.
+            </p>
+            <span
+              class="text-teal-700 font-medium"
+            >
+              Open summary →
+            </span>
+          </a>
           <div
             class="bg-white p-6 rounded-lg shadow-md"
           >

@@ -1,20 +1,23 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 const HealthStateView = ({
   type = 'empty', // 'loading' | 'empty' | 'error'
   title,
   message,
+  loadingLabel = 'Loading content',
   actionLabel,
   onAction,
   className = '',
 }) => {
   const isError = type === 'error';
   const isLoading = type === 'loading';
+  const titleId = useId();
 
   return (
     <div
-      role="region"
-      aria-live="polite"
+      role={isError ? 'alert' : 'region'}
+      aria-live={isError ? 'assertive' : 'polite'}
+      aria-labelledby={title ? titleId : undefined}
       className={`flex flex-col items-center justify-center p-8 text-center rounded-xl border border-dashed ${
         isError ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-slate-50/50'
       } ${className}`}
@@ -22,7 +25,7 @@ const HealthStateView = ({
       {isLoading ? (
         <div
           role="progressbar"
-          aria-label="Loading content"
+          aria-label={loadingLabel}
           className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin mb-4"
         />
       ) : (
@@ -32,13 +35,22 @@ const HealthStateView = ({
       )}
 
       {title && (
-        <h4 className={`text-base font-semibold mb-1 ${isError ? 'text-rose-900' : 'text-slate-800'}`}>
+        <h4
+          id={titleId}
+          className={`text-base font-semibold mb-1 ${
+            isError ? 'text-rose-900' : 'text-slate-800'
+          }`}
+        >
           {title}
         </h4>
       )}
 
       {message && (
-        <p className={`text-sm max-w-sm ${isError ? 'text-rose-700' : 'text-slate-600'} mb-4`}>
+        <p
+          className={`text-sm max-w-sm mb-4 ${
+            isError ? 'text-rose-700' : 'text-slate-600'
+          }`}
+        >
           {message}
         </p>
       )}

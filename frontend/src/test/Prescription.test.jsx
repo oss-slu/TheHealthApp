@@ -615,56 +615,39 @@ it('disables the edit save button when a required field is blank', async () => {
 });
 
 
-it('records a dose as taken and displays a success message', async () => {
-  const user = userEvent.setup();
-
-  prescriptionService.recordDose.mockResolvedValue({
+it.each([
+  {
     status: 'taken',
-  });
-
-  await renderPrescriptionForAdherence();
-
-  await user.click(
-    screen.getByRole('button', { name: 'Mark Lisinopril as taken' })
-  );
-
-  await waitFor(() => {
-    expect(prescriptionService.recordDose).toHaveBeenCalledWith(
-      'prescription-1',
-      'taken',
-      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
-    );
-  });
-
-  expect(
-    await screen.findByText('Dose recorded as taken.')
-  ).toBeInTheDocument();
-});
-
-it('records a dose as skipped', async () => {
+    buttonName: 'Mark Lisinopril as taken',
+    successMessage: 'Dose recorded as taken.',
+    testName: 'records a dose as taken and displays a success message',
+  },
+  {
+    status: 'skipped',
+    buttonName: 'Mark Lisinopril as skipped',
+    successMessage: 'Dose recorded as skipped.',
+    testName: 'records a dose as skipped',
+  },
+])('$testName', async ({ status, buttonName, successMessage }) => {
   const user = userEvent.setup();
 
-  prescriptionService.recordDose.mockResolvedValue({
-    status: 'skipped',
-  });
+  prescriptionService.recordDose.mockResolvedValue({ status });
 
   await renderPrescriptionForAdherence();
 
   await user.click(
-    screen.getByRole('button', { name: 'Mark Lisinopril as skipped' })
+    screen.getByRole('button', { name: buttonName })
   );
 
   await waitFor(() => {
     expect(prescriptionService.recordDose).toHaveBeenCalledWith(
       'prescription-1',
-      'skipped',
+      status,
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
     );
   });
 
-  expect(
-    await screen.findByText('Dose recorded as skipped.')
-  ).toBeInTheDocument();
+  expect(await screen.findByText(successMessage)).toBeInTheDocument();
 });
 
 it('displays medication adherence button labels in Arabic', async () => {

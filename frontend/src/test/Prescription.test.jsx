@@ -865,6 +865,49 @@ it('creates and enables a medication reminder', async () => {
   ).toBeInTheDocument();
 });
 
+it('retries enabling a reminder after the initial update fails', async () => {
+  const user = userEvent.setup();
+
+  const createdReminder = {
+    id: 'reminder-1',
+    prescription_id: 'prescription-1',
+    reminder_time: '08:00',
+    enabled: false,
+    paused: false,
+  };
+
+  const enabledReminder = {
+    ...createdReminder,
+    enabled: true,
+  };
+
+  prescriptionService.getAll.mockResolvedValue([activePrescription]);
+  prescriptionService.getReminder.mockResolvedValue(null);
+  prescriptionService.createReminder.mockResolvedValue(createdReminder);
+  prescriptionService.updateReminder
+    .mockRejectedValueOnce(new Error('Update failed'))
+    .mockResolvedValueOnce(enabledReminder);
+
+  renderWithProviders(<Prescription />);
+
+  const enableButton = await screen.findByRole('button', {
+    name: 'enableReminder',
+  });
+
+  await user.click(enableButton);
+
+  expect(await screen.findAllByText('reminderError')).toHaveLength(2);
+
+  await user.click(enableButton);
+
+  await waitFor(() => {
+    expect(prescriptionService.createReminder).toHaveBeenCalledTimes(1);
+    expect(prescriptionService.updateReminder).toHaveBeenCalledTimes(2);
+  });
+
+  expect(await screen.findByText('reminderSaved')).toBeInTheDocument();
+});
+
 it('shows an in-app reminder for a due scheduled dose', async () => {
   prescriptionService.getAll.mockResolvedValue([
     {
@@ -964,56 +1007,35 @@ it('shows the empty reminder state when no reminder is configured', async () => 
 });
 
 
-it('does not show a due reminder when reminders are paused', async () => {
-  prescriptionService.getAll.mockResolvedValue([
-    {
-      ...activePrescription,
-      next_dose: '2020-01-01T08:00:00Z',
-    },
-  ]);
+it.each([
+  ['paused', { enabled: true, paused: true }],
+  ['disabled', { enabled: false, paused: false }],
+])(
+  'does not show a due reminder when reminders are %s',
+  async (_status, reminderSettings) => {
+    prescriptionService.getAll.mockResolvedValue([
+      {
+        ...activePrescription,
+        next_dose: '2020-01-01T08:00:00Z',
+      },
+    ]);
 
-  prescriptionService.getReminder.mockResolvedValue({
-    id: 'reminder-1',
-    prescription_id: 'prescription-1',
-    reminder_time: '08:00',
-    enabled: true,
-    paused: true,
-  });
+    prescriptionService.getReminder.mockResolvedValue({
+      id: 'reminder-1',
+      prescription_id: 'prescription-1',
+      reminder_time: '08:00',
+      ...reminderSettings,
+    });
 
-  renderWithProviders(<Prescription />);
+    renderWithProviders(<Prescription />);
 
-  await screen.findByText('Lisinopril');
+    await screen.findByText('Lisinopril');
 
-  expect(
-    screen.queryByText('doseReminderDue')
-  ).not.toBeInTheDocument();
-});
-
-it('does not show a due reminder when reminders are disabled', async () => {
-  prescriptionService.getAll.mockResolvedValue([
-    {
-      ...activePrescription,
-      next_dose: '2020-01-01T08:00:00Z',
-    },
-  ]);
-
-  prescriptionService.getReminder.mockResolvedValue({
-    id: 'reminder-1',
-    prescription_id: 'prescription-1',
-    reminder_time: '08:00',
-    enabled: false,
-    paused: false,
-  });
-
-  renderWithProviders(<Prescription />);
-
-  await screen.findByText('Lisinopril');
-
-  expect(
-    screen.queryByText('doseReminderDue')
-  ).not.toBeInTheDocument();
-});
-
+    expect(
+      screen.queryByText('doseReminderDue')
+    ).not.toBeInTheDocument();
+  }
+);
 
 it('shows an error when saving medication reminder settings fails', async () => {
   prescriptionService.getAll.mockResolvedValue([activePrescription]);

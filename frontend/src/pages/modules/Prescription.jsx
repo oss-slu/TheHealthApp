@@ -269,7 +269,7 @@ setDoseScheduledDates((previous) => {
     setErrorMessage('');
 
     try {
-      let reminder = existingReminder;
+            let reminder = existingReminder;
 
       // Create the preference first if this prescription has no reminder.
       if (!reminder) {
@@ -277,8 +277,13 @@ setDoseScheduledDates((previous) => {
           prescriptionId,
           { reminder_time: reminderTime }
         );
-      }
 
+        // Keep the created reminder so a retry updates it instead of creating another.
+        setReminderSettings((previous) => ({
+          ...previous,
+          [prescriptionId]: reminder,
+        }));
+      }
       const updates = { reminder_time: reminderTime };
 
       if (action === 'enable' || action === 'resume') {

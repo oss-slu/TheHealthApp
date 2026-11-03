@@ -1,13 +1,13 @@
-/**
- * Semantic health status color mappings and helper
- */
-export const HEALTH_STATUS_STYLES = {
-  good: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-  warning: 'bg-amber-50 text-amber-800 border-amber-200',
-  critical: 'bg-rose-50 text-rose-800 border-rose-200',
-  neutral: 'bg-slate-50 text-slate-700 border-slate-200',
+const HEALTH_STATUS_CLASSES = {
+  good: 'border-health-good bg-health-good/10 text-emerald-950',
+  warning: 'border-health-warning bg-health-warning/10 text-amber-950',
+  critical: 'border-health-critical bg-health-critical/10 text-red-950',
+  neutral: 'border-slate-400 bg-slate-100 text-slate-800',
 };
 
-export const getHealthStatusClass = (status = 'neutral') => {
-  return HEALTH_STATUS_STYLES[status] || HEALTH_STATUS_STYLES.neutral;
-};
+export function getHealthStatusClasses(status) {
+  return HEALTH_STATUS_CLASSES[status] || HEALTH_STATUS_CLASSES.neutral;
+}
+
+export const getHealthStatusClass = getHealthStatusClasses;
+export const HEALTH_STATUS_STYLES = HEALTH_STATUS_CLASSES;

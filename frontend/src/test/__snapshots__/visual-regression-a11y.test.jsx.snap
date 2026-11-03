@@ -1,0 +1,299 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verifications > 5. Visual Regression DOM Snapshots > matches visual DOM snapshot for mobile and desktop views 1`] = `
+<DocumentFragment>
+  <div
+    class="health-app-shell min-h-screen flex flex-col"
+  >
+    <header
+      class="health-header sticky top-0 z-30 border-b border-teal-100/60 bg-white/85 backdrop-blur-md shadow-sm"
+    >
+      <div
+        class="max-w-7xl mx-auto pl-2 sm:pl-4 lg:pl-6 pr-4 sm:pr-6 lg:pr-8"
+      >
+        <div
+          class="flex justify-between items-center h-16"
+        >
+          <a
+            class="flex items-center gap-2 cursor-pointer"
+            data-discover="true"
+            href="/"
+          >
+            <span
+              aria-hidden="true"
+              class="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-500/25"
+            >
+              <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            <h1
+              class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-teal-800 to-emerald-800 bg-clip-text text-transparent"
+            >
+               appName
+            </h1>
+          </a>
+          <div
+            class="hidden md:flex items-center space-x-8"
+          >
+            <a
+              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-teal-800 hover:bg-teal-50/80"
+              data-discover="true"
+              href="/auth/login"
+            >
+              login
+            </a>
+            <a
+              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-teal-800 hover:bg-teal-50/80"
+              data-discover="true"
+              href="/auth/signup"
+            >
+              signup
+            </a>
+            <div
+              class="flex items-center space-x-4"
+            >
+              <div
+                class="relative"
+              >
+                <button
+                  aria-label="language"
+                  class="border rounded-full w-9 h-9 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                >
+                  🌐
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main
+      class="flex-1 w-full max-w-7xl mx-auto py-6 sm:px-6 lg:px-8"
+    >
+      <div
+        class="px-4 py-6 sm:px-0"
+      >
+        <div
+          class="mb-6"
+        >
+          <h2
+            class="text-2xl font-bold text-gray-900 tracking-tight"
+          >
+            title
+          </h2>
+        </div>
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          <a
+            class="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer text-white"
+            data-discover="true"
+            href="/questionnaire"
+          >
+            <div
+              class="flex items-center justify-between mb-4"
+            >
+              <h3
+                class="text-lg font-semibold"
+              >
+                healthQuestionnaire
+              </h3>
+              <svg
+                class="w-8 h-8 opacity-80"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                />
+              </svg>
+            </div>
+            <p
+              class="text-blue-100 mb-4"
+            >
+              questionnaireDescription
+            </p>
+            <span
+              class="text-white font-medium flex items-center"
+            >
+              completeQuestionnaire →
+            </span>
+          </a>
+          <div
+            class="bg-white p-6 rounded-lg shadow-md"
+          >
+            <h3
+              class="text-lg font-semibold text-gray-900 mb-4"
+            >
+              recentAssessments
+            </h3>
+            <p
+              class="text-gray-600"
+            >
+              noRecent
+            </p>
+          </div>
+          <div
+            class="bg-white p-6 rounded-lg shadow-md"
+          >
+            <h3
+              class="text-lg font-semibold text-gray-900 mb-4"
+            >
+              healthStatus
+            </h3>
+            <p
+              class="text-gray-600"
+            >
+              promptAssess
+            </p>
+          </div>
+          <div
+            class="bg-white p-6 rounded-lg shadow-md"
+          >
+            <h3
+              class="text-lg font-semibold text-gray-900 mb-4"
+            >
+              reminders
+            </h3>
+            <p
+              class="text-gray-600"
+            >
+              noReminders
+            </p>
+          </div>
+          <a
+            class="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer text-white"
+            data-discover="true"
+            href="/modules/framingham-risk"
+          >
+            <div
+              class="flex items-center justify-between mb-4"
+            >
+              <h3
+                class="text-lg font-semibold"
+              >
+                framinghamCardTitle
+              </h3>
+              <svg
+                aria-hidden="true"
+                class="w-8 h-8 opacity-90"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                />
+              </svg>
+            </div>
+            <p
+              class="text-indigo-100 mb-4"
+            >
+              framinghamCardDesc
+            </p>
+            <span
+              class="text-white font-medium flex items-center"
+            >
+              viewDetails →
+            </span>
+          </a>
+          <a
+            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+            data-discover="true"
+            href="/modules/heart-risk"
+          >
+            <h3
+              class="text-lg font-semibold text-gray-900 mb-4"
+            >
+              heartRisk
+            </h3>
+            <p
+              class="text-gray-600 mb-4"
+            >
+              This assessment helps evaluate your risk for heart disease and other cardiovascular conditions.
+            </p>
+            <span
+              class="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              View Details →
+            </span>
+          </a>
+          <a
+            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+            data-discover="true"
+            href="/modules/prescription"
+          >
+            <h3
+              class="text-lg font-semibold text-gray-900 mb-4"
+            >
+              prescription
+            </h3>
+            <p
+              class="text-gray-600 mb-4"
+            >
+              Manage and view your medical prescriptions here.
+            </p>
+            <span
+              class="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              View Details →
+            </span>
+          </a>
+          <a
+            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+            data-discover="true"
+            href="/modules/tba"
+          >
+            <h3
+              class="text-lg font-semibold text-gray-900 mb-4"
+            >
+              tba
+            </h3>
+            <p
+              class="text-gray-600 mb-4"
+            >
+              Connect with healthcare professionals and get personalized support for your health needs.
+            </p>
+            <span
+              class="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              View Details →
+            </span>
+          </a>
+        </div>
+      </div>
+    </main>
+    <footer
+      class="health-footer mt-auto border-t border-teal-100/80 bg-white/90 backdrop-blur-sm"
+    >
+      <div
+        class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8"
+      >
+        <p
+          class="text-center text-sm text-teal-800/70"
+        >
+          © 2026 appName. All rights reserved.
+        </p>
+      </div>
+    </footer>
+  </div>
+</DocumentFragment>
+`;

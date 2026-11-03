@@ -16,9 +16,16 @@ const PageShell = ({ children, title, showNav = true, variant = 'default' }) => 
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  const handleLogout = async () => {
-    await authLogout();
-    navigate('/auth/login', { replace: true });
+  const handleLogout = () => {
+    setMobileMenuOpen(false);
+    authLogout()
+      .then(() => {
+        navigate('/auth/login', { replace: true });
+      })
+      .catch((error) => {
+        console.error('Logout failed:', error);
+        navigate('/auth/login', { replace: true });
+      });
   };
 
   const changeLanguage = (code) => {
@@ -180,10 +187,7 @@ const PageShell = ({ children, title, showNav = true, variant = 'default' }) => 
               <button
                 type="button"
                 className="w-full text-left rtl:text-right px-3 py-2 rounded-md text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleLogout();
-                }}
+                onClick={handleLogout}
               >
                 {t('common:logout', 'Logout')}
               </button>

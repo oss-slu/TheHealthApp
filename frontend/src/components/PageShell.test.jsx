@@ -6,7 +6,7 @@ import PageShell from './PageShell';
 import * as authHook from '../hooks/useAuth';
 
 describe('PageShell Navigation & Accessibility (Issue #157)', () => {
-  const mockLogout = vi.fn();
+  const mockLogout = vi.fn().mockResolvedValue();
 
   beforeEach(() => {
     vi.clearAllMocks();

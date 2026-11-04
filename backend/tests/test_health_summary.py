@@ -1,4 +1,5 @@
 import unittest
+import json
 from datetime import date, datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -8,7 +9,7 @@ from fastapi import HTTPException
 from starlette.requests import Request
 
 from src.health_summary import build_health_summary
-from src.main import app, calculate_risk_assessment, get_health_summary
+from src.main import app, calculate_risk_assessment, export_own_data, get_health_summary
 from src.models import HealthRiskAssessment, HealthRiskInput, HealthRiskOutput, GenderEnum, Questionnaire
 
 
@@ -176,6 +177,98 @@ class HealthSummaryTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(saved[0].user_id, self.user.id)
         self.assertEqual(saved[0].result.risk_score, result.risk_score)
         self.assertEqual(response.data, result)
+
+
+class UserDataExportTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.user = SimpleNamespace(
+            id=uuid4(),
+            username="export-user",
+            name="Export User",
+            date_of_birth=date(1990, 1, 2),
+            gender=GenderEnum.female,
+            phone="+15555550123",
+            password_hash="must-not-export",
+            consent_given=True,
+            data_usage=True,
+            marketing=False,
+            consent_version="v1.0",
+            consent_timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            photo_url=None,
+            created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        )
+
+    async def test_export_scopes_records_to_current_user_and_excludes_credentials(self):
+        queries = {}
+        questionnaire = SimpleNamespace(
+            created_at=datetime(2026, 2, 1, tzinfo=timezone.utc),
+            first_name="Export",
+            last_name="User",
+            date_of_birth="1990-01-02",
+            gender=GenderEnum.female,
+            email="export@example.test",
+            phone=None,
+            existing_conditions=["asthma"],
+            allergies="None",
+            current_medications="None",
+            family_history="None",
+            exercise_frequency="weekly",
+            diet_type="mixed",
+            smoking_status="never",
+            alcohol_consumption="none",
+            sleep_hours="8",
+            stress_level="low",
+        )
+        risk_result = HealthRiskOutput(
+            risk_score=4.2,
+            risk_category="low",
+            risk_category_description="Low estimated risk",
+            factor_breakdown={
+                "age_factor": 1,
+                "cholesterol_factor": 1,
+                "blood_pressure_factor": 1,
+                "smoking_factor": 1,
+                "diabetes_factor": 0,
+            },
+            recommendations=["Discuss results with a healthcare professional"],
+        )
+        assessment = SimpleNamespace(created_at=datetime(2026, 2, 2, tzinfo=timezone.utc), result=risk_result)
+
+        def find_for(collection, records):
+            def find(query):
+                queries[collection] = query
+                return FakeQuery(records)
+            return find
+
+        with (
+            patch.object(Questionnaire, "find", side_effect=find_for("questionnaire", [questionnaire])),
+            patch.object(HealthRiskAssessment, "find", side_effect=find_for("risk", [assessment])),
+        ):
+            response = await export_own_data(self.user)
+
+        data = json.loads(response.body)
+        self.assertEqual(queries["questionnaire"], {"user_id": self.user.id})
+        self.assertEqual(queries["risk"], {"user_id": self.user.id})
+        self.assertEqual(data["questionnaires"][0]["existing_conditions"], ["asthma"])
+        self.assertEqual(data["risk_assessments"][0]["result"]["risk_score"], 4.2)
+        self.assertNotIn("password_hash", response.body.decode())
+        self.assertEqual(response.headers["cache-control"], "no-store")
+
+    async def test_export_succeeds_with_empty_health_history(self):
+        self.user.consent_given = False
+        self.user.data_usage = False
+        with (
+            patch.object(Questionnaire, "find", return_value=FakeQuery([])),
+            patch.object(HealthRiskAssessment, "find", return_value=FakeQuery([])),
+        ):
+            response = await export_own_data(self.user)
+
+        data = json.loads(response.body)
+        self.assertFalse(data["consent"]["consent_given"])
+        self.assertEqual(data["questionnaires"], [])
+        self.assertEqual(data["risk_assessments"], [])
+        self.assertEqual(data["profile"]["username"], self.user.username)
 
 
 if __name__ == "__main__":

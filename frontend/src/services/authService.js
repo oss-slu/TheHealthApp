@@ -18,6 +18,9 @@ export const authService = {
   async getCurrentUser(options = {}) {
     return apiClient.get('/users/me', options);
   },
+  async exportOwnData(options = {}) {
+    return apiClient.get('/users/me/data-export', options);
+  },
   async updateProfile(payload) {
     return apiClient.patch('/users/me', withJson(payload));
   },

@@ -919,7 +919,7 @@ it('shows an in-app reminder for a due scheduled dose', async () => {
   prescriptionService.getReminder.mockResolvedValue({
     id: 'reminder-1',
     prescription_id: 'prescription-1',
-    reminder_time: '08:00',
+    reminder_time: localTimeOffset(-2),
     enabled: true,
     paused: false,
   });

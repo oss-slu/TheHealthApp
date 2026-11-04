@@ -7,6 +7,8 @@ import { initReactI18next } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import framinghamEn from '../../public/locales/en/framingham.json';
 import summaryEn from '../../public/locales/en/summary.json';
+import modulesEn from '../../public/locales/en/modules.json';
+import modulesAr from '../../public/locales/ar/modules.json';
 
 // Create a test i18n instance with inline translations
 const testI18n = i18n.createInstance();
@@ -86,7 +88,17 @@ testI18n.use(initReactI18next).init({
         selectYourGender: 'Select gender',
         male: 'Male',
         female: 'Female',
+        doseTracking: modulesEn.doseTracking,
+        noDoseHistory: modulesEn.noDoseHistory,
+        doseRecordedTaken: modulesEn.doseRecordedTaken,
+        doseRecordedSkipped: modulesEn.doseRecordedSkipped,
+        doseRecordError: modulesEn.doseRecordError,
+        doseHistoryError: modulesEn.doseHistoryError,
+        recordTakenForMedication: modulesEn.recordTakenForMedication,
+        recordSkippedForMedication: modulesEn.recordSkippedForMedication,
+        viewDoseHistoryForMedication: modulesEn.viewDoseHistoryForMedication,
       },
+
       errors: {
         generic: 'Something went wrong',
         boundaryTitle: 'Something went wrong',
@@ -127,6 +139,7 @@ testI18n.use(initReactI18next).init({
         retry: 'حاول مرة أخرى',
         goHome: 'الذهاب إلى الصفحة الرئيسية',
       },
+      modules: modulesAr,
     },
   },
 });

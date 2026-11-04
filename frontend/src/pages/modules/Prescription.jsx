@@ -4,7 +4,7 @@ import PageShell from '../../components/PageShell';
 import { prescriptionService } from '../../services/prescriptionService';
 
 const Prescription = () => {
-  const { t } = useTranslation(['modules']);
+  const { t, i18n } = useTranslation(['modules']);
 
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +27,13 @@ const [editingSaving, setEditingSaving] = useState(false);
 const [archivingId, setArchivingId] = useState(null);
 const [message, setMessage] = useState('');
 const [errorMessage, setErrorMessage] = useState('');
+const [doseHistory, setDoseHistory] = useState({});
+const [doseHistoryError, setDoseHistoryError] = useState({});
+const [doseHistoryLoading, setDoseHistoryLoading] = useState({});
+const [doseSavingId, setDoseSavingId] = useState(null);
+const [doseHistoryVisible, setDoseHistoryVisible] = useState({});
+const [doseScheduledDates, setDoseScheduledDates] = useState({});
+
 
   const loadPrescriptions = async () => {
   try {
@@ -34,7 +41,26 @@ const [errorMessage, setErrorMessage] = useState('');
     setLoadError(false);
 
     const data = await prescriptionService.getAll();
-    setPrescriptions(data);
+setPrescriptions(data);
+
+const today = new Date();
+const year = today.getFullYear();
+const month = String(today.getMonth() + 1).padStart(2, '0');
+const day = String(today.getDate()).padStart(2, '0');
+const localToday = `${year}-${month}-${day}`;
+
+setDoseScheduledDates((previous) => {
+  const next = { ...previous };
+
+  data.forEach((prescription) => {
+    if (!next[prescription.id]) {
+      next[prescription.id] = localToday;
+    }
+  });
+
+  return next;
+});
+
   } catch (error) {
     console.error('Failed to load prescriptions:', error);
     setLoadError(true);
@@ -165,6 +191,97 @@ const [errorMessage, setErrorMessage] = useState('');
     setArchivingId(null);
   }
 };
+
+  const handleRecordDose = async (prescriptionId, status) => {
+  const scheduledDate = doseScheduledDates[prescriptionId];
+  if (!scheduledDate) {
+    setErrorMessage(t('modules:scheduledDateRequired'));
+    setMessage('');
+    return;
+  }
+
+  setDoseSavingId(prescriptionId);
+  setMessage('');
+  setErrorMessage('');
+
+  try {
+    await prescriptionService.recordDose(
+      prescriptionId,
+      status,
+      scheduledDate
+    );
+
+    setMessage(
+      status === 'taken'
+        ? t('modules:doseRecordedTaken')
+        : t('modules:doseRecordedSkipped')
+    );
+
+    await handleLoadDoseHistory(prescriptionId);
+  } catch (error) {
+    console.error('Failed to record medication dose:', error);
+    setErrorMessage(
+      error?.response?.status === 409
+        ? t('modules:doseAlreadyRecorded')
+        : t('modules:doseRecordError')
+    );
+  } finally {
+    setDoseSavingId(null);
+  }
+};
+
+  const handleLoadDoseHistory = async (prescriptionId) => {
+  setDoseHistoryLoading((previous) => ({
+    ...previous,
+    [prescriptionId]: true,
+  }));
+
+  setDoseHistoryError((previous) => ({
+    ...previous,
+    [prescriptionId]: false,
+  }));
+
+  try {
+    const history =
+      await prescriptionService.getDoseHistory(prescriptionId);
+
+    setDoseHistory((previous) => ({
+      ...previous,
+      [prescriptionId]: history,
+    }));
+  } catch (error) {
+    console.error('Failed to load dose history:', error);
+
+    setDoseHistoryError((previous) => ({
+      ...previous,
+      [prescriptionId]: true,
+    }));
+  } finally {
+    setDoseHistoryLoading((previous) => ({
+      ...previous,
+      [prescriptionId]: false,
+    }));
+  }
+};
+
+    const handleToggleDoseHistory = async (prescriptionId) => {
+    const isVisible = doseHistoryVisible[prescriptionId];
+
+    if (isVisible) {
+      setDoseHistoryVisible((previous) => ({
+        ...previous,
+        [prescriptionId]: false,
+      }));
+      return;
+    }
+
+    setDoseHistoryVisible((previous) => ({
+      ...previous,
+      [prescriptionId]: true,
+    }));
+
+    await handleLoadDoseHistory(prescriptionId);
+  };
 
   return (
     <PageShell title="modules:prescription">
@@ -438,6 +555,135 @@ const [errorMessage, setErrorMessage] = useState('');
                           ).toLocaleString()}
                         </p>
                       )}
+
+                      
+<div className="mt-4 border-t pt-4">
+  <h4 className="font-semibold text-gray-900 mb-3">
+    {t('modules:doseTracking')}
+  </h4>
+
+<div className="mb-3">
+  <label
+    htmlFor={`dose-date-${prescription.id}`}
+    className="block text-sm font-medium text-gray-700 mb-1"
+  >
+    {t('modules:scheduledDoseDate')}
+    {' — '}
+    {prescription.medication_name}
+  </label>
+
+  <input
+    id={`dose-date-${prescription.id}`}
+    type="date"
+    value={
+      doseScheduledDates[prescription.id] ||
+      new Date().getFullYear() +
+        '-' +
+        String(new Date().getMonth() + 1).padStart(2, '0') +
+        '-' +
+        String(new Date().getDate()).padStart(2, '0')
+    }
+    onChange={(event) =>
+      setDoseScheduledDates((previous) => ({
+        ...previous,
+        [prescription.id]: event.target.value,
+      }))
+    }
+    className="border rounded-md px-3 py-2"
+  />
+</div>
+
+  <div
+  role="group"
+  aria-label={t('modules:doseActionsForMedication', {
+    medication: prescription.medication_name,
+  })}
+  className="flex flex-wrap gap-2"
+>
+    <button
+      type="button"
+      aria-label={t('modules:recordTakenForMedication', {
+  medication: prescription.medication_name,
+})}
+      onClick={() => handleRecordDose(prescription.id, 'taken')}
+      disabled={doseSavingId === prescription.id}
+      className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+    >
+      {doseSavingId === prescription.id
+        ? t('modules:recordingDose')
+        : t('modules:recordTaken')}
+    </button>
+
+    <button
+      type="button"
+      aria-label={t('modules:recordSkippedForMedication', {
+  medication: prescription.medication_name,
+})}
+      onClick={() => handleRecordDose(prescription.id, 'skipped')}
+      disabled={doseSavingId === prescription.id}
+      className="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50"
+    >
+      {t('modules:recordSkipped')}
+    </button>
+
+    <button
+      type="button"
+      aria-label={t('modules:viewDoseHistoryForMedication', {
+  medication: prescription.medication_name,
+})}
+      onClick={() => handleToggleDoseHistory(prescription.id)}
+      aria-expanded={Boolean(doseHistoryVisible[prescription.id])}
+      className="px-3 py-2 border rounded-md hover:bg-gray-50"
+    >
+      {t('modules:doseHistory')}
+    </button>
+  </div>
+
+  {doseHistoryVisible[prescription.id] && (
+    <div className="mt-3" aria-live="polite">
+      {doseHistoryLoading[prescription.id] ? (
+  <p>{t('modules:loadingDoseHistory')}</p>
+) : doseHistoryError[prescription.id] ? (
+  <div>
+    <p role="alert" className="text-red-700">
+      {t('modules:doseHistoryError')}
+    </p>
+    <button
+      type="button"
+      onClick={() => handleLoadDoseHistory(prescription.id)}
+      className="mt-2 px-3 py-2 border rounded-md hover:bg-gray-50"
+    >
+      {t('modules:retry')}
+    </button>
+  </div>
+) : Array.isArray(doseHistory[prescription.id]) &&
+  doseHistory[prescription.id].length > 0 ? (
+  <ul className="space-y-2">
+    {doseHistory[prescription.id].map((dose) => (
+      <li
+        key={dose.id}
+        className="text-sm text-gray-700 border-b pb-2"
+      >
+        <span className="font-medium">
+          {t(`modules:${dose.status}`)}
+        </span>
+        {' — '}
+        {t('modules:recordedAt')}:{' '}
+        {new Intl.DateTimeFormat(i18n.resolvedLanguage || i18n.language, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(new Date(dose.recorded_at))}
+      </li>
+    ))}
+  </ul>
+) : (
+  <p className="text-gray-600">
+    {t('modules:noDoseHistory')}
+  </p>
+)}
+    </div>
+  )}
+</div>
 
                       <div className="flex gap-2 mt-4">
                         <button

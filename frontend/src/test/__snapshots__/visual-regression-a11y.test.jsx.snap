@@ -3,25 +3,25 @@
 exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verifications > 5. Visual Regression DOM Snapshots > matches visual DOM snapshot for mobile and desktop views 1`] = `
 <DocumentFragment>
   <div
-    class="health-app-shell min-h-screen flex flex-col"
+    class="health-app-shell min-h-screen flex flex-col bg-slate-50/50"
   >
     <header
-      class="health-header sticky top-0 z-30 border-b border-teal-100/60 bg-white/85 backdrop-blur-md shadow-sm"
+      class="health-header sticky top-0 z-30 border-b border-teal-100/60 bg-white/90 backdrop-blur-md shadow-sm"
     >
       <div
-        class="max-w-7xl mx-auto pl-2 sm:pl-4 lg:pl-6 pr-4 sm:pr-6 lg:pr-8"
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
       >
         <div
           class="flex justify-between items-center h-16"
         >
           <a
-            class="flex items-center gap-2 cursor-pointer"
+            class="flex items-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500 rounded-lg p-1"
             data-discover="true"
             href="/"
           >
             <span
               aria-hidden="true"
-              class="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-500/25"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-500/25"
             >
               <svg
                 class="h-5 w-5"
@@ -40,40 +40,62 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
             <h1
               class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-teal-800 to-emerald-800 bg-clip-text text-transparent"
             >
-               appName
+              The Health App
             </h1>
           </a>
           <div
-            class="hidden md:flex items-center space-x-8"
+            class="flex items-center space-x-3 sm:space-x-6"
           >
-            <a
-              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-teal-800 hover:bg-teal-50/80"
-              data-discover="true"
-              href="/auth/login"
-            >
-              login
-            </a>
-            <a
-              class="px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-teal-800 hover:bg-teal-50/80"
-              data-discover="true"
-              href="/auth/signup"
-            >
-              signup
-            </a>
             <div
-              class="flex items-center space-x-4"
+              class="hidden md:flex items-center space-x-6"
             >
-              <div
-                class="relative"
+              <a
+                class="px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-600 hover:text-teal-800 hover:bg-teal-50/80"
+                data-discover="true"
+                href="/auth/login"
               >
-                <button
-                  aria-label="language"
-                  class="border rounded-full w-9 h-9 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                >
-                  🌐
-                </button>
-              </div>
+                Login
+              </a>
+              <a
+                class="px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-600 hover:text-teal-800 hover:bg-teal-50/80"
+                data-discover="true"
+                href="/auth/signup"
+              >
+                Sign Up
+              </a>
             </div>
+            <div
+              class="relative"
+            >
+              <button
+                aria-label="Select Language"
+                class="border border-gray-200 rounded-full w-9 h-9 flex items-center justify-center text-sm hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
+                type="button"
+              >
+                🌐
+              </button>
+            </div>
+            <button
+              aria-controls="mobile-navigation-drawer"
+              aria-expanded="false"
+              aria-label="Toggle navigation menu"
+              class="md:hidden p-2 rounded-md text-gray-600 hover:text-teal-800 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              type="button"
+            >
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M4 6h16M4 12h16M4 18h16"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -311,7 +333,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
         <p
           class="text-center text-sm text-teal-800/70"
         >
-          © 2026 appName. All rights reserved.
+          © 2026 TheHealthApp. All rights reserved.
         </p>
       </div>
     </footer>

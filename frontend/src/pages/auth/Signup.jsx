@@ -10,6 +10,7 @@ import {
   validatePassword,
   validateUsername,
 } from '../../utils/validation';
+import { formatDateForInput, isValidDateOfBirth } from '../../utils/dateOfBirth';
 
 const Signup = ({ onAuthSuccess = () => {} }) => {
   const { t } = useTranslation(['auth', 'common', 'errors']);
@@ -18,7 +19,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   const [form, setForm] = useState({
     username: '',
     name: '',
-    age: '',
+    dateOfBirth: '',
     gender: '',
     phone: '',
     password: '',
@@ -27,7 +28,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   const [touched, setTouched] = useState({
     username: false,
     name: false,
-    age: false,
+    dateOfBirth: false,
     gender: false,
     phone: false,
     password: false,
@@ -41,7 +42,10 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
     [form.username]
   );
   const nameValid = form.name.trim().length >= 2;
-  const ageValid = form.age !== '' && parseInt(form.age, 10) > 12 && parseInt(form.age, 10) < 121;
+  const dateOfBirthValid = useMemo(
+    () => isValidDateOfBirth(form.dateOfBirth),
+    [form.dateOfBirth],
+  );
   const genderValid = ['male', 'female', 'other', 'na'].includes(form.gender);
   const phoneValid = /^\+?[0-9]{10,15}$/.test(form.phone);
   const passwordValid = useMemo(
@@ -50,7 +54,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   );
   const confirmValid = form.confirm.length > 0 && form.confirm === form.password;
 
-  const isFormValid = usernameValid && nameValid && ageValid && genderValid && phoneValid && passwordValid && confirmValid;
+  const isFormValid = usernameValid && nameValid && dateOfBirthValid && genderValid && phoneValid && passwordValid && confirmValid;
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -74,7 +78,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
     setTouched({
       username: true,
       name: true,
-      age: true,
+      dateOfBirth: true,
       gender: true,
       phone: true,
       password: true,
@@ -92,7 +96,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
       const payload = {
         username: normalizedUsername,
         name: form.name.trim(),
-        age: parseInt(form.age, 10),
+        date_of_birth: form.dateOfBirth,
         gender: form.gender,
         phone: form.phone,
         password: form.password,
@@ -106,9 +110,16 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
         navigate('/consent', { replace: true, state: { from: '/questionnaire' } });
       }
     } catch (err) {
-      const messageKey = err.messageKey || 'errors.generic';
-      setError(t(messageKey, err.message || t('errors.generic')));
+      const errCode = err.code || err.response?.data?.detail?.code;
+      if (errCode === 'DUPLICATE_USERNAME') {
+        setError(t('auth:errors.usernameInUse', 'Username is already in use'));
+      } else {
+        const messageKey = err.messageKey || 'errors.generic';
+        setError(t(messageKey, err.message || t('errors.generic')));
+      }
+
       if (err.status >= 500) {
+        const messageKey = err.messageKey || 'errors.generic';
         showErrorToast(messageKey, err.message);
       }
     } finally {
@@ -178,22 +189,28 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">{t('auth:age', 'Age')} *</label>
+                <label className="block text-sm font-medium mb-1" htmlFor="dateOfBirth">
+                  {t('auth:dateOfBirth', 'Date of birth')} *
+                </label>
                 <input
-                  type="number"
+                  id="dateOfBirth"
+                  type="date"
                   className={`w-full border rounded px-3 py-2 ${
-                    touched.age && !ageValid ? 'border-red-500' : 'border-gray-300'
+                    touched.dateOfBirth && !dateOfBirthValid ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  name="age"
-                  value={form.age}
+                  name="dateOfBirth"
+                  value={form.dateOfBirth}
                   onChange={onChange}
                   onBlur={onBlur}
-                  placeholder={t('auth:age', 'Age')}
-                  min="13"
-                  max="120"
+                  max={formatDateForInput()}
+                  autoComplete="bday"
                 />
-                {touched.age && !ageValid && (
-                  <p className="text-xs text-red-600 mt-1">{t('auth:errors.ageInvalid', 'Age must be between 13 and 120')}</p>
+                {touched.dateOfBirth && !dateOfBirthValid && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {form.dateOfBirth
+                      ? t('auth:errors.dateOfBirthInvalid', 'Date of birth must correspond to an age between 13 and 120')
+                      : t('auth:errors.dateOfBirthRequired', 'Date of birth is required')}
+                  </p>
                 )}
               </div>
               <div>

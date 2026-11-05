@@ -12,21 +12,23 @@ describe('Health UI Components (Issue #158 - PR Feedback)', () => {
       const badge = screen.getByRole('status');
       expect(badge).toBeInTheDocument();
       expect(badge).toHaveTextContent('Optimal');
-      expect(badge.className).toContain('emerald');
+      expect(badge.className).toContain('border-health-good');
     });
 
     it('renders critical status correctly', () => {
       render(<HealthBadge status="critical" label="High Risk" />);
       const badge = screen.getByRole('status');
-      expect(badge.className).toContain('rose');
-    });
+      expect(badge.className).toContain('border-health-critical');
+      expect(badge.className).toContain('bg-health-critical/10');
+      expect(badge.className).toContain('text-red-950');
+  });
 
     it('handles unknown status with fallback to neutral classes', () => {
       render(<HealthBadge status="unrecognized_status" label="Unknown State" />);
       const badge = screen.getByRole('status');
       expect(badge).toBeInTheDocument();
       expect(badge).toHaveTextContent('Unknown State');
-      expect(badge.className).toContain('slate');
+      expect(badge.className).toContain('border-slate-400');
     });
   });
 

@@ -1,8 +1,8 @@
 import React from 'react';
-import { getHealthStatusClass } from '../utils/healthStatusClasses';
+import { getHealthStatusClasses } from '../utils/healthStatusClasses';
 
 const HealthBadge = ({ status = 'neutral', label, children, className = '' }) => {
-  const badgeStyle = getHealthStatusClass(status);
+  const badgeStyle = getHealthStatusClasses(status);
 
   return (
     <span

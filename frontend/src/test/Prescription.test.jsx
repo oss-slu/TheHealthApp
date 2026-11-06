@@ -976,23 +976,30 @@ it('shows a due reminder when next_dose is null', async () => {
 });
 
 it('does not show a reminder before its scheduled local time', async () => {
-  const prescription = {
-    ...activePrescription,
-    next_dose: '2020-01-01T08:00:00Z',
-  };
+  const fixedTime = new Date(2026, 10, 5, 9, 0, 0);
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(fixedTime);
 
-  prescriptionService.getAll.mockResolvedValue([prescription]);
-  prescriptionService.getReminder.mockResolvedValue({
-    reminder_time: localTimeOffset(5),
-    enabled: true,
-    paused: false,
-  });
+  try {
+    const prescription = {
+      ...activePrescription,
+      next_dose: '2020-01-01T08:00:00Z',
+    };
 
-  renderWithProviders(<Prescription />);
+    prescriptionService.getAll.mockResolvedValue([prescription]);
+    prescriptionService.getReminder.mockResolvedValue({
+      reminder_time: '09:05',
+      enabled: true,
+      paused: false,
+    });
 
-  await screen.findByText('reminderEnabled');
+    renderWithProviders(<Prescription />);
 
-  expect(screen.queryByText('doseReminderDue')).not.toBeInTheDocument();
+    expect(await screen.findByText('reminderEnabled')).toBeInTheDocument();
+    expect(screen.queryByText('doseReminderDue')).not.toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 it('shows the empty reminder state when no reminder is configured', async () => {

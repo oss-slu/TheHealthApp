@@ -3,11 +3,16 @@ import { useTranslation } from 'react-i18next';
 import PageShell from '../../components/PageShell';
 import { useAuth } from '../../hooks/useAuth.js';
 import { showSuccessToast } from '../../lib/toast.js';
+import { userHasValidHealthConsent } from '../../lib/consentConstants.js';
 import { authService } from '../../services/authService.js';
 
 const Account = () => {
   const { t } = useTranslation(['common', 'auth', 'errors']);
-  const { user, updateProfile, uploadProfilePhoto, initializing } = useAuth();
+  const { user, consentStatus, updateProfile, uploadProfilePhoto, initializing } = useAuth();
+  // Prefer the backend's consent verdict; fall back to the same rule locally until it loads.
+  const hasValidHealthConsent = consentStatus
+    ? Boolean(consentStatus.consent_given)
+    : userHasValidHealthConsent(user);
   const [form, setForm] = useState({ name: '', date_of_birth: '', phone: '' });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
@@ -271,7 +276,7 @@ const Account = () => {
           <div className="mt-5 border-t border-gray-200 pt-5">
             <h3 className="font-medium text-gray-900">{t('common:privacyConsentTitle')}</h3>
             <p className="mt-1 text-sm text-gray-600">
-              {t(user?.consent_given ? 'common:privacyConsentGranted' : 'common:privacyConsentNotGranted')}
+              {t(hasValidHealthConsent ? 'common:privacyConsentGranted' : 'common:privacyConsentNotGranted')}
             </p>
             <p className="mt-1 text-sm text-gray-600">{t('common:privacyConsentDescription')}</p>
           </div>

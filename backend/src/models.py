@@ -1,4 +1,5 @@
 import uuid
+import re
 from beanie import Document, Indexed
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 from enum import Enum
@@ -89,6 +90,13 @@ class UserCreate(BaseModel):
     gender: GenderEnum
     phone: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]
     password: str
+
+    @field_validator('phone', mode='after')
+    def normalize_phone(cls, v: str) -> str:
+        if v:
+            return re.sub(r'(?!^\+)[^\d]', '', v)
+        return v
+
     @field_validator('password', mode='after')
     def password_complexity(cls, v: str) -> str:
         if len(v) < 8: raise ValueError('Password must be at least 8 characters long')

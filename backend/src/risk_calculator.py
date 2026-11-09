@@ -154,7 +154,8 @@ def _get_risk_category(risk_score: float) -> RiskCategoryEnum:
 
 def _generate_recommendations(
     input_data: HealthRiskInput,
-    factor_breakdown: RiskFactorBreakdown
+    factor_breakdown: RiskFactorBreakdown,
+    age: int,
 ) -> list[str]:
     """Generate personalized recommendations based on risk factors."""
     recommendations = []
@@ -209,7 +210,7 @@ def _generate_recommendations(
         )
     
     # Age-based recommendations
-    if input_data.age >= 50:
+    if age >= 50:
         recommendations.append(
             "Regular cardiovascular check-ups become increasingly important with age. "
             "Discuss screening schedules with your healthcare provider."
@@ -243,6 +244,10 @@ def calculate_health_risk(input_data: HealthRiskInput) -> HealthRiskOutput:
     Returns:
         HealthRiskOutput with risk score, category, breakdown, and recommendations
     """
+    age = input_data.age
+    if age is None:
+        raise ValueError("Age must be derived from date of birth before risk calculation")
+
     # Select coefficients based on gender
     coefficients = (
         MALE_COEFFICIENTS 
@@ -251,7 +256,7 @@ def calculate_health_risk(input_data: HealthRiskInput) -> HealthRiskOutput:
     )
     
     # Calculate individual risk factors (additive percentage contributions)
-    age_factor = _calculate_age_factor(input_data.age, coefficients)
+    age_factor = _calculate_age_factor(age, coefficients)
     
     cholesterol_factor = _calculate_cholesterol_factor(
         input_data.total_cholesterol,
@@ -322,7 +327,7 @@ def calculate_health_risk(input_data: HealthRiskInput) -> HealthRiskOutput:
     )
     
     # Generate recommendations
-    recommendations = _generate_recommendations(input_data, factor_breakdown)
+    recommendations = _generate_recommendations(input_data, factor_breakdown, age)
     
     return HealthRiskOutput(
         risk_score=risk_score,

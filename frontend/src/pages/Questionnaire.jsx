@@ -5,6 +5,7 @@ import PageShell from '../components/PageShell';
 import Stepper from '../components/Stepper';
 import { questionnaireService } from '../services/questionnaireService';
 import { showSuccessToast, showErrorToast } from '../lib/toast';
+import { useAuth } from '../hooks/useAuth';
 
 const STEPS = [
   { id: 'personal', label: 'questionnaire:steps.personal' },
@@ -45,9 +46,13 @@ const CONDITIONS_OPTIONS = [
 const Questionnaire = () => {
   const { t } = useTranslation(['questionnaire', 'common', 'errors']);
   const navigate = useNavigate();
+  const { user, updateProfile } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(0);
-  const [form, setForm] = useState(INITIAL_FORM);
+  const [form, setForm] = useState({
+    ...INITIAL_FORM,
+    dateOfBirth: user?.date_of_birth || '',
+  });
   const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -158,7 +163,11 @@ const Questionnaire = () => {
     setSubmitError(null);
 
     try {
-      await questionnaireService.submit(form);
+      const dateOfBirth = user?.date_of_birth || form.dateOfBirth;
+      if (dateOfBirth !== user?.date_of_birth) {
+        await updateProfile({ date_of_birth: dateOfBirth });
+      }
+      await questionnaireService.submit({ ...form, dateOfBirth });
       showSuccessToast(t('questionnaire:success.title'));
       navigate('/dashboard', { replace: true, state: { questionnaireComplete: true } });
     } catch (err) {
@@ -174,7 +183,7 @@ const Questionnaire = () => {
 
   const renderField = (name, label, type = 'text', options = {}) => {
     const hasError = touched[name] && validation[name];
-    const { placeholder, helpText, required = false } = options;
+    const { placeholder, helpText, required = false, disabled = false } = options;
 
     return (
       <div className="space-y-1">
@@ -188,6 +197,7 @@ const Questionnaire = () => {
           value={form[name]}
           onChange={onChange}
           onBlur={onBlur}
+          disabled={disabled}
           placeholder={placeholder ? t(placeholder) : undefined}
           className={`w-full border rounded px-3 py-2 transition-colors ${
             hasError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
@@ -259,7 +269,9 @@ const Questionnaire = () => {
         {renderField('lastName', 'questionnaire:fields.lastName', 'text', { required: true })}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {renderField('dateOfBirth', 'questionnaire:fields.dateOfBirth', 'date', { required: true })}
+        {renderField('dateOfBirth', 'questionnaire:fields.dateOfBirth', 'date', {
+          required: true,
+        })}
         {renderSelect('gender', 'questionnaire:fields.gender', 'gender', {
           required: true,
           selectOptions: ['male', 'female', 'other', 'preferNotToSay'],

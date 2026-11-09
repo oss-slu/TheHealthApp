@@ -3,8 +3,9 @@ import re
 from beanie import Document, Indexed
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 from enum import Enum
-from datetime import datetime
+from datetime import date, datetime, timezone
 from typing import Optional, Annotated, Generic, TypeVar
+from pymongo import IndexModel
 
 # --- Consent (must match frontend CURRENT_CONSENT_VERSION) ---
 CURRENT_CONSENT_VERSION = "v1.0"
@@ -13,12 +14,32 @@ CURRENT_CONSENT_VERSION = "v1.0"
 class GenderEnum(str, Enum):
     female = "female"; male = "male"; other = "other"; na = "na"
 
+
+def age_from_date_of_birth(date_of_birth: date, today: date | None = None) -> int:
+    current_date = today or datetime.now(timezone.utc).date()
+    if date_of_birth > current_date:
+        raise ValueError("Date of birth cannot be in the future")
+
+    return current_date.year - date_of_birth.year - (
+        (current_date.month, current_date.day)
+        < (date_of_birth.month, date_of_birth.day)
+    )
+
+
+def validate_date_of_birth(date_of_birth: date) -> date:
+    age = age_from_date_of_birth(date_of_birth)
+    if age < 13 or age > 120:
+        raise ValueError("Date of birth must correspond to an age between 13 and 120")
+    return date_of_birth
+
+
 # --- Database Model ---
 class User(Document):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     username: Annotated[str, Indexed(unique=True)]
     name: str = Field(min_length=2, max_length=50)
-    age: int = Field(gt=12, lt=121)
+    date_of_birth: Optional[date] = None
+    age: Optional[int] = None
     gender: GenderEnum
     phone: Annotated[str, Indexed(unique=True)]
     password_hash: str
@@ -86,7 +107,7 @@ class Questionnaire(Document):
 class UserCreate(BaseModel):
     username: Annotated[str, StringConstraints(min_length=2, max_length=50)]
     name: Annotated[str, StringConstraints(min_length=2, max_length=50)]
-    age: int = Field(..., gt=12, lt=121)
+    date_of_birth: date
     gender: GenderEnum
     phone: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]
     password: str
@@ -96,6 +117,10 @@ class UserCreate(BaseModel):
         if v:
             return re.sub(r'(?!^\+)[^\d]', '', v)
         return v
+    @field_validator('date_of_birth')
+    @classmethod
+    def validate_birth_date(cls, value: date) -> date:
+        return validate_date_of_birth(value)
 
     @field_validator('password', mode='after')
     def password_complexity(cls, v: str) -> str:
@@ -106,8 +131,13 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     name: Optional[Annotated[str, StringConstraints(min_length=2, max_length=50)]] = None
-    age: Optional[int] = Field(None, gt=12, lt=121)
+    date_of_birth: Optional[date] = None
     phone: Optional[Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]] = None
+
+    @field_validator('date_of_birth')
+    @classmethod
+    def validate_birth_date(cls, value: Optional[date]) -> Optional[date]:
+        return validate_date_of_birth(value) if value is not None else None
 
 class UserLogin(BaseModel):
     username: str; password: str
@@ -130,7 +160,8 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     username: str
     name: str
-    age: int
+    date_of_birth: Optional[date] = None
+    age: Optional[int] = None
     gender: GenderEnum
     phone: str
     photo_url: Optional[str] = None
@@ -140,6 +171,23 @@ class UserResponse(BaseModel):
     marketing: bool = False
     class Config:
         from_attributes = True
+
+    @model_validator(mode='before')
+    @classmethod
+    def derive_age(cls, value):
+        if isinstance(value, User):
+            data = value.model_dump()
+        elif isinstance(value, dict):
+            data = value.copy()
+        else:
+            return value
+
+        date_of_birth = data.get('date_of_birth')
+        if date_of_birth is not None:
+            if isinstance(date_of_birth, str):
+                date_of_birth = date.fromisoformat(date_of_birth)
+            data['age'] = age_from_date_of_birth(date_of_birth)
+        return data
 
 
 class ConsentSubmit(BaseModel):
@@ -170,7 +218,7 @@ class SignupResponse(BaseModel):
 class QuestionnaireSubmit(BaseModel):
     firstName: str = Field(..., min_length=1, max_length=100)
     lastName: str = Field(..., min_length=1, max_length=100)
-    dateOfBirth: str = Field(..., min_length=1)
+    dateOfBirth: date
     gender: GenderEnum
     email: str = Field(..., min_length=1, max_length=255)
     phone: Optional[str] = None
@@ -186,6 +234,11 @@ class QuestionnaireSubmit(BaseModel):
     alcoholConsumption: str = Field(..., min_length=1)
     sleepHours: Optional[str] = None
     stressLevel: Optional[str] = None
+
+    @field_validator('dateOfBirth')
+    @classmethod
+    def validate_birth_date(cls, value: date) -> date:
+        return validate_date_of_birth(value)
     
 
 
@@ -234,13 +287,9 @@ class RiskCategoryEnum(str, Enum):
 
 class HealthRiskInput(BaseModel):
     """Input schema for health risk calculation based on simplified Framingham model."""
-    
-    age: int = Field(
-        ..., 
-        ge=20, 
-        le=120,
-        description="Age in years (20-120)"
-    )
+
+    age: Optional[int] = Field(None, ge=20, le=120, description="Derived from date of birth by the endpoint")
+    date_of_birth: Optional[date] = None
     gender: GenderEnum = Field(
         ...,
         description="Biological sex for risk calculation"
@@ -275,6 +324,11 @@ class HealthRiskInput(BaseModel):
         ...,
         description="Diabetes status"
     )
+
+    @field_validator('date_of_birth')
+    @classmethod
+    def validate_birth_date(cls, value: Optional[date]) -> Optional[date]:
+        return validate_date_of_birth(value) if value is not None else None
 
     @field_validator('gender', mode='after')
     def validate_gender_for_risk(cls, v: GenderEnum) -> GenderEnum:
@@ -333,3 +387,120 @@ class HealthRiskOutput(BaseModel):
                 "Please consult a healthcare professional for medical advice.",
         description="Medical disclaimer"
     )
+
+class HealthRiskAssessment(Document):
+    user_id: uuid.UUID = Indexed()
+    result: HealthRiskOutput
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "health_risk_assessments"
+class Prescription(Document):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    medication_name: str
+    dosage: str
+    frequency: str
+    next_dose: Optional[datetime] = None
+    archived: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    archived_at: Optional[datetime] = None
+
+    class Settings:
+        name = "prescriptions"
+
+
+class PrescriptionCreate(BaseModel):
+    medication_name: str
+    dosage: str
+    frequency: str
+    next_dose: Optional[datetime] = None
+
+    @field_validator("medication_name", "dosage", "frequency")
+    @classmethod
+    def validate_required_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("This field cannot be blank")
+        return value
+
+
+class PrescriptionUpdate(BaseModel):
+    medication_name: Optional[str] = None
+    dosage: Optional[str] = None
+    frequency: Optional[str] = None
+    next_dose: Optional[datetime] = None
+
+    @field_validator("medication_name", "dosage", "frequency", mode="before")
+    @classmethod
+    def validate_optional_text(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            raise ValueError("This field cannot be blank")
+
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                raise ValueError("This field cannot be blank")
+        return value
+
+
+class PrescriptionResponse(BaseModel):
+    id: uuid.UUID
+    medication_name: str
+    dosage: str
+    frequency: str
+    next_dose: Optional[datetime] = None
+    archived: bool = False
+    created_at: datetime
+    updated_at: datetime
+    archived_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+
+class DoseStatus(str, Enum):
+    taken = "taken"
+    skipped = "skipped"
+
+
+class MedicationDose(Document):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    prescription_id: uuid.UUID
+    scheduled_date: date
+    status: DoseStatus
+    recorded_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+    class Settings:
+        name = "medication_doses"
+        indexes = [
+            IndexModel(
+                [
+                    ("user_id", 1),
+                    ("prescription_id", 1),
+                    ("scheduled_date", 1),
+                ],
+                unique=True,
+            )
+        ]
+
+
+class MedicationDoseCreate(BaseModel):
+    scheduled_date: date
+    status: DoseStatus
+
+
+class MedicationDoseResponse(BaseModel):
+    id: uuid.UUID
+    prescription_id: uuid.UUID
+    scheduled_date: date
+    status: DoseStatus
+    recorded_at: datetime
+
+    class Config:
+        from_attributes = True

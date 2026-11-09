@@ -1,4 +1,5 @@
 import uuid
+import re
 from beanie import Document, Indexed
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 from enum import Enum
@@ -111,6 +112,11 @@ class UserCreate(BaseModel):
     phone: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]
     password: str
 
+    @field_validator('phone', mode='after')
+    def normalize_phone(cls, v: str) -> str:
+        if v:
+            return re.sub(r'(?!^\+)[^\d]', '', v)
+        return v
     @field_validator('date_of_birth')
     @classmethod
     def validate_birth_date(cls, value: date) -> date:

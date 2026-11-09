@@ -47,7 +47,7 @@ describe('Signup', () => {
     it('renders gender dropdown with options', () => {
       renderSignup();
 
-      const genderSelect = screen.getByRole('combobox');
+      const genderSelect = document.querySelector('select[name="gender"]');
       expect(genderSelect).toBeInTheDocument();
     });
   });
@@ -114,7 +114,8 @@ describe('Signup', () => {
       await user.type(screen.getByLabelText(/username/i), 'john_doe');
       await user.type(screen.getByLabelText(/full name/i), 'John Doe');
       await user.type(screen.getByPlaceholderText(/age/i), '25');
-      await user.selectOptions(screen.getByRole('combobox'), 'male');
+      const genderSelect = document.querySelector('select[name="gender"]');
+      await user.selectOptions(genderSelect, 'male');
       await user.type(screen.getByPlaceholderText(/phone number/i), '1234567890');
       await user.type(screen.getByLabelText(/^password$/i), 'Password123');
       await user.type(screen.getByLabelText(/confirm password/i), 'Password123');
@@ -144,7 +145,7 @@ describe('Signup', () => {
           name: 'John Doe',
           age: 25,
           gender: 'male',
-          phone: '1234567890',
+          phone: '+11234567890',
           password: 'Password123',
         });
       });
@@ -190,7 +191,8 @@ describe('Signup', () => {
       await user.type(screen.getByLabelText(/username/i), 'john_doe');
       await user.type(screen.getByLabelText(/full name/i), 'John Doe');
       await user.type(screen.getByPlaceholderText(/age/i), '25');
-      await user.selectOptions(screen.getByRole('combobox'), 'male');
+      const genderSelect = document.querySelector('select[name="gender"]');
+      await user.selectOptions(genderSelect, 'male');
       
       // Try to type letters - they should be stripped
       const phoneInput = screen.getByPlaceholderText(/phone number/i);
@@ -203,7 +205,7 @@ describe('Signup', () => {
       await waitFor(() => {
         expect(mockSignup).toHaveBeenCalledWith(
           expect.objectContaining({
-            phone: '1234567890',
+            phone: '+11234567890',
           })
         );
       });

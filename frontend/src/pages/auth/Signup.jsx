@@ -24,6 +24,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
     password: '',
     confirm: '',
   });
+  const [countryCode, setCountryCode] = useState('+1');
   const [touched, setTouched] = useState({
     username: false,
     name: false,
@@ -89,12 +90,15 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
 
     try {
       const normalizedUsername = normalizeUsername(form.username);
+      const rawDigits = form.phone.replace(/\D/g, '');
+      const canonicalPhone = form.phone.startsWith('+') ? form.phone : `${countryCode}${rawDigits}`;
+
       const payload = {
         username: normalizedUsername,
         name: form.name.trim(),
         age: parseInt(form.age, 10),
         gender: form.gender,
-        phone: form.phone,
+        phone: canonicalPhone,
         password: form.password,
       };
 
@@ -220,20 +224,36 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">{t('auth:phone')} *</label>
-              <input
-                type="tel"
-                className={`w-full border rounded px-3 py-2 ${
-                  touched.phone && !phoneValid ? 'border-red-500' : 'border-gray-300'
-                }`}
-                name="phone"
-                value={form.phone}
-                onChange={onChange}
-                onBlur={onBlur}
-                placeholder={t('auth:phonePlaceholder', '10-15 digit phone number')}
-                autoComplete="tel"
-                inputMode="numeric"
-              />
+              <label className="block text-sm font-medium mb-1" htmlFor="phone">
+                {t('auth:phone')} *
+              </label>
+              <div className="flex gap-2">
+                <select
+                  aria-label="Country Code"
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value)}
+                  className="w-28 px-2 py-2 border rounded border-gray-300 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="+1">+1 (US)</option>
+                  <option value="+82">+82 (KR)</option>
+                  <option value="+44">+44 (UK)</option>
+                  <option value="+91">+91 (IN)</option>
+                </select>
+                <input
+                  id="phone"
+                  type="tel"
+                  className={`flex-1 border rounded px-3 py-2 ${
+                    touched.phone && !phoneValid ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  name="phone"
+                  value={form.phone}
+                  onChange={onChange}
+                  onBlur={onBlur}
+                  placeholder={t('auth:phonePlaceholder', '10-15 digit phone number')}
+                  autoComplete="tel"
+                  inputMode="numeric"
+                />
+              </div>
               {touched.phone && !phoneValid && (
                 <p className="text-xs text-red-600 mt-1">{t('auth:errors.phoneInvalid', 'Enter a valid 10-15 digit phone number')}</p>
               )}

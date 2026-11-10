@@ -96,6 +96,12 @@ describe('Account Settings route', () => {
 });
 
 describe('Account privacy controls', () => {
+  // jsdom has no object URL support, so vi.spyOn cannot wrap these; save and restore them by hand.
+  const originalObjectUrlFns = {
+    createObjectURL: Object.getOwnPropertyDescriptor(URL, 'createObjectURL'),
+    revokeObjectURL: Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL'),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     URL.createObjectURL = vi.fn(() => 'blob:health-export');
@@ -109,7 +115,13 @@ describe('Account privacy controls', () => {
     });
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    for (const [name, descriptor] of Object.entries(originalObjectUrlFns)) {
+      if (descriptor) Object.defineProperty(URL, name, descriptor);
+      else delete URL[name];
+    }
+  });
 
   it('downloads the signed-in user export and reports success', async () => {
     const user = userEvent.setup();
@@ -140,5 +152,12 @@ describe('Account privacy controls', () => {
     await user.click(screen.getByRole('button', { name: 'Download my data' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('We could not export your data.');
+  });
+});
+// Runs after the privacy controls suite, so a leaked stub would be visible here.
+describe('Account test cleanup', () => {
+  it('leaves URL object helpers as jsdom provides them', () => {
+    expect(vi.isMockFunction(URL.createObjectURL)).toBe(false);
+    expect(vi.isMockFunction(URL.revokeObjectURL)).toBe(false);
   });
 });

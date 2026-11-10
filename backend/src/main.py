@@ -48,6 +48,10 @@ class Settings(BaseSettings):
         description="Comma-separated browser origins permitted for CORS (Vite :5173/5174, Dockerized UI :3000).",
     )
     ALLOWED_ORIGIN_REGEX: str | None = Field(default=None)
+    INTEGRATIONS_ENABLED: bool = Field(
+        default=False,
+        description="Offer connected-health integrations. Core features never depend on them.",
+    )
 
 settings = Settings()
 
@@ -97,7 +101,15 @@ from .models import (
     MedicationDose,
     MedicationDoseCreate,
     MedicationDoseResponse,
+    ConnectionStatus,
+    IntegrationConnection,
+    IntegrationConnectionCreate,
+    IntegrationConnectionResponse,
+    IntegrationProviderInfo,
+    IntegrationProvidersData,
+    ImportedMeasurement,
 )
+from .integrations import PROVIDERS, get_provider, unsupported_types
 from .risk_calculator import calculate_health_risk
 from .health_summary import build_health_summary
 
@@ -190,6 +202,8 @@ async def lifespan(app: FastAPI):
             HealthRiskAssessment,
             Prescription,
             MedicationDose,
+            IntegrationConnection,
+            ImportedMeasurement,
         ],
     )
     print("Database connection established.")
@@ -991,3 +1005,124 @@ async def get_medication_doses(
         ]
     )
 
+
+@app.get(
+    "/api/v1/integrations/providers",
+    response_model=SuccessResponse[IntegrationProvidersData],
+    tags=["Integrations"],
+)
+async def list_integration_providers(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    providers = []
+    if settings.INTEGRATIONS_ENABLED:
+        providers = [
+            IntegrationProviderInfo(
+                id=provider.id,
+                name=provider.name,
+                supported_types=list(provider.supported_types),
+                limitations=provider.limitations,
+            )
+            for provider in PROVIDERS.values()
+        ]
+    return SuccessResponse(
+        data=IntegrationProvidersData(
+            enabled=settings.INTEGRATIONS_ENABLED,
+            providers=providers,
+        )
+    )
+
+
+@app.get(
+    "/api/v1/users/me/connections",
+    response_model=SuccessResponse[list[IntegrationConnectionResponse]],
+    tags=["Integrations"],
+)
+async def list_own_connections(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    # Not gated by consent or the feature flag: users must always be able to see what is connected.
+    connections = await IntegrationConnection.find(
+        IntegrationConnection.user_id == current_user.id,
+    ).sort(+IntegrationConnection.connected_at).to_list()
+
+    return SuccessResponse(
+        data=[
+            IntegrationConnectionResponse.model_validate(connection)
+            for connection in connections
+        ]
+    )
+
+
+@app.post(
+    "/api/v1/users/me/connections",
+    response_model=SuccessResponse[IntegrationConnectionResponse],
+    tags=["Integrations"],
+)
+async def grant_connection(
+    connection_data: IntegrationConnectionCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    if not settings.INTEGRATIONS_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "INTEGRATIONS_DISABLED",
+                "message": "Connected-health integrations are not enabled",
+            },
+        )
+
+    provider = get_provider(connection_data.provider)
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "UNKNOWN_PROVIDER",
+                "message": f"Unknown provider '{connection_data.provider}'",
+            },
+        )
+
+    unsupported = unsupported_types(provider, connection_data.granted_types)
+    if unsupported:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "UNSUPPORTED_MEASUREMENT_TYPE",
+                "message": f"{provider.name} does not support the requested measurement types",
+                "details": [measurement_type.value for measurement_type in unsupported],
+            },
+        )
+
+    now = datetime.now(timezone.utc)
+    connection = await IntegrationConnection.find_one(
+        IntegrationConnection.user_id == current_user.id,
+        IntegrationConnection.provider == provider.id,
+    )
+
+    # A new grant replaces the previous one, so permissions always match the user's latest choice.
+    if connection:
+        connection.granted_types = connection_data.granted_types
+        connection.status = ConnectionStatus.connected
+        connection.connected_at = now
+        connection.disconnected_at = None
+        connection.updated_at = now
+        await connection.save()
+    else:
+        connection = IntegrationConnection(
+            user_id=current_user.id,
+            provider=provider.id,
+            granted_types=connection_data.granted_types,
+            connected_at=now,
+            updated_at=now,
+        )
+        try:
+            await connection.insert()
+        except DuplicateKeyError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This provider is already being connected",
+            )
+
+    return SuccessResponse(
+        data=IntegrationConnectionResponse.model_validate(connection)
+    )

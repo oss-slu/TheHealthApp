@@ -498,3 +498,100 @@ class MedicationDoseResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# --- Connected-health integrations (#202) ---
+class MeasurementType(str, Enum):
+    heart_rate = "heart_rate"
+    blood_pressure_systolic = "blood_pressure_systolic"
+    blood_pressure_diastolic = "blood_pressure_diastolic"
+    body_weight = "body_weight"
+    blood_glucose = "blood_glucose"
+    steps = "steps"
+
+
+class ConnectionStatus(str, Enum):
+    connected = "connected"
+    disconnected = "disconnected"
+
+
+class IntegrationConnection(Document):
+    """A user's explicit, read-only permission for one provider to import the listed measurement types."""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    provider: str
+    granted_types: list[MeasurementType]
+    status: ConnectionStatus = ConnectionStatus.connected
+    connected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    disconnected_at: Optional[datetime] = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    def allows(self, measurement_type: MeasurementType) -> bool:
+        return (
+            self.status == ConnectionStatus.connected
+            and measurement_type in self.granted_types
+        )
+
+    class Settings:
+        name = "integration_connections"
+        indexes = [
+            IndexModel([("user_id", 1), ("provider", 1)], unique=True),
+        ]
+
+
+class ImportedMeasurement(Document):
+    """A single imported value. Provenance fields record where and when it came from."""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    connection_id: uuid.UUID
+    provider: str
+    source_record_id: Optional[str] = None
+    measurement_type: MeasurementType
+    value: float
+    unit: str
+    recorded_at: datetime
+    imported_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "imported_measurements"
+        indexes = [
+            IndexModel([("user_id", 1), ("measurement_type", 1), ("recorded_at", -1)]),
+            IndexModel([("user_id", 1), ("connection_id", 1)]),
+        ]
+
+
+class IntegrationProviderInfo(BaseModel):
+    id: str
+    name: str
+    supported_types: list[MeasurementType]
+    limitations: str
+
+
+class IntegrationProvidersData(BaseModel):
+    enabled: bool
+    providers: list[IntegrationProviderInfo]
+
+
+class IntegrationConnectionCreate(BaseModel):
+    provider: str
+    granted_types: list[MeasurementType] = Field(min_length=1)
+
+    @field_validator("granted_types")
+    @classmethod
+    def deduplicate_types(cls, value: list[MeasurementType]) -> list[MeasurementType]:
+        return list(dict.fromkeys(value))
+
+
+class IntegrationConnectionResponse(BaseModel):
+    id: uuid.UUID
+    provider: str
+    granted_types: list[MeasurementType]
+    status: ConnectionStatus
+    connected_at: datetime
+    disconnected_at: Optional[datetime] = None
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

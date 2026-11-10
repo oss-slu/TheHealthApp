@@ -705,6 +705,31 @@ async def test_update_medication_reminder_settings(client, test_user):
 
 
 @pytest.mark.anyio
+async def test_update_medication_reminder_rejects_null_time(
+    client, test_user
+):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Null Reminder Time Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"reminder_time": "09:30"},
+    )
+
+    response = await client.patch(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"reminder_time": None},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.anyio
 async def test_pause_and_resume_medication_reminder(client, test_user):
     prescription = Prescription(
         user_id=test_user.id,

@@ -532,11 +532,11 @@ class MedicationReminderUpdate(BaseModel):
     enabled: Optional[bool] = None
     paused: Optional[bool] = None
 
-    @field_validator("reminder_time")
+    @field_validator("reminder_time", mode="before")
     @classmethod
     def validate_reminder_time(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
-            return value
+            raise ValueError("Reminder time cannot be null")
 
         import re
 

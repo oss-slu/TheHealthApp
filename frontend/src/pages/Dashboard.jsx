@@ -29,6 +29,7 @@ const DashboardMetricCard = ({
   status = 'neutral',
   statusLabel,
   description,
+  isPlaceholder = false,
   className = '',
 }) => {
   return (
@@ -45,6 +46,11 @@ const DashboardMetricCard = ({
         <span className="text-2xl font-bold text-slate-900 tracking-tight">{value}</span>
         {unit && <span className="text-xs text-slate-500 font-medium">{unit}</span>}
       </div>
+      {isPlaceholder && (
+        <span className="inline-block mt-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+          Sample / Placeholder
+        </span>
+      )}
       {description && <p className="text-xs text-slate-500 mt-2">{description}</p>}
     </div>
   );
@@ -130,6 +136,7 @@ const Dashboard = () => {
             title={t('dashboard:framinghamCardTitle', 'Cardiovascular Risk')}
             value="Low"
             status="good"
+            isPlaceholder={true}
             statusLabel={t('dashboard:normalRisk', 'Normal')}
             description={t('dashboard:framinghamCardDesc', 'Based on your latest Framingham cardiovascular assessment data.')}
           />
@@ -138,6 +145,7 @@ const Dashboard = () => {
             value="120/80"
             unit="mmHg"
             status="good"
+            isPlaceholder={true}
             statusLabel={t('dashboard:optimal', 'Optimal')}
             description={t('dashboard:bpDesc', 'Measured within recommended resting levels.')}
           />
@@ -146,6 +154,7 @@ const Dashboard = () => {
             value="30"
             unit="mins"
             status="good"
+            isPlaceholder={true}
             statusLabel={t('dashboard:onTrack', 'On Track')}
             description={t('dashboard:activityDesc', 'Active aerobic target completed today.')}
           />

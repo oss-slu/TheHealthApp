@@ -50,7 +50,7 @@ describe('Signup', () => {
     it('renders gender dropdown with options', () => {
       renderSignup();
 
-      const genderSelect = screen.getByRole('combobox');
+      const genderSelect = document.querySelector('select[name="gender"]');
       expect(genderSelect).toBeInTheDocument();
     });
   });
@@ -126,13 +126,14 @@ describe('Signup', () => {
 
   describe('Form Submission', () => {
     const fillValidForm = async (user) => {
-      await user.type(screen.getByLabelText(/username/i), 'john_doe');
-      await user.type(screen.getByLabelText(/full name/i), 'John Doe');
-      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
-      await user.selectOptions(screen.getByRole('combobox'), 'male');
-      await user.type(screen.getByPlaceholderText(/phone number/i), '1234567890');
-      await user.type(screen.getByLabelText(/^password$/i), 'Password123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'Password123');
+    await user.type(screen.getByLabelText(/username/i), 'john_doe');
+    await user.type(screen.getByLabelText(/full name/i), 'John Doe');
+    fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
+    const genderSelect = document.querySelector('select[name="gender"]');
+    await user.selectOptions(genderSelect, 'male');
+    await user.type(screen.getByPlaceholderText(/phone number/i), '1234567890');
+    await user.type(screen.getByLabelText(/^password$/i), 'Password123');
+    await user.type(screen.getByLabelText(/confirm password/i), 'Password123');
     };
 
     it('enables submit button when form is valid', async () => {
@@ -159,7 +160,7 @@ describe('Signup', () => {
           name: 'John Doe',
           date_of_birth: '2000-01-01',
           gender: 'male',
-          phone: '1234567890',
+          phone: '+11234567890',
           password: 'Password123',
         });
       });
@@ -207,10 +208,11 @@ describe('Signup', () => {
       mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
       renderSignup();
 
-      await user.type(screen.getByLabelText(/username/i), 'john_doe');
-      await user.type(screen.getByLabelText(/full name/i), 'John Doe');
-      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
-      await user.selectOptions(screen.getByRole('combobox'), 'male');
+    await user.type(screen.getByLabelText(/username/i), 'john_doe');
+    await user.type(screen.getByLabelText(/full name/i), 'John Doe');
+    fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
+    const genderSelect = document.querySelector('select[name="gender"]');
+    await user.selectOptions(genderSelect, 'male');
       
       // Try to type letters - they should be stripped
       const phoneInput = screen.getByPlaceholderText(/phone number/i);
@@ -223,7 +225,7 @@ describe('Signup', () => {
       await waitFor(() => {
         expect(mockSignup).toHaveBeenCalledWith(
           expect.objectContaining({
-            phone: '1234567890',
+            phone: '+11234567890',
           })
         );
       });

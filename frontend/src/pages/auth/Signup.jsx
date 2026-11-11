@@ -235,9 +235,10 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
                   className="w-28 px-2 py-2 border rounded border-gray-300 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="+1">+1 (US)</option>
-                  <option value="+82">+82 (KR)</option>
-                  <option value="+44">+44 (UK)</option>
+                  <option value="+34">+34 (ES)</option>
                   <option value="+91">+91 (IN)</option>
+                  <option value="+86">+86 (CN)</option>
+                  <option value="+971">+971 (AE)</option>
                 </select>
                 <input
                   id="phone"

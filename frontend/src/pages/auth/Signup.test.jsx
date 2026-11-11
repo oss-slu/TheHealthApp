@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fireEvent } from '@testing-library/react';
 import {
   renderWithProviders,
   screen,
@@ -32,6 +33,8 @@ describe('Signup', () => {
 
       expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/date of birth/i)).toHaveAttribute('type', 'date');
+      expect(screen.queryByLabelText(/^age/i)).not.toBeInTheDocument();
       expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /sign up/i })).toBeInTheDocument();
@@ -75,15 +78,27 @@ describe('Signup', () => {
       expect(screen.getByText(/name must be at least 2 characters/i)).toBeInTheDocument();
     });
 
-    it('shows error for invalid age', async () => {
+    it('requires a date of birth', async () => {
       const user = userEvent.setup();
       renderSignup();
 
-      const ageInput = screen.getByPlaceholderText(/age/i);
-      await user.type(ageInput, '10');
+      screen.getByLabelText(/date of birth/i).focus();
       await user.tab();
 
-      expect(screen.getByText(/age must be between 13 and 120/i)).toBeInTheDocument();
+      expect(screen.getByText(/date of birth is required/i)).toBeInTheDocument();
+    });
+
+    it('rejects a date of birth for someone younger than 13', async () => {
+      renderSignup();
+
+      const today = new Date();
+      const underageDate = `${today.getFullYear() - 12}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const dateInput = screen.getByLabelText(/date of birth/i);
+      fireEvent.change(dateInput, { target: { value: underageDate } });
+      fireEvent.blur(dateInput);
+
+      expect(screen.getByText(/date of birth must correspond to an age between 13 and 120/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /sign up/i })).toBeDisabled();
     });
 
     it('shows error for mismatched passwords', async () => {
@@ -113,7 +128,7 @@ describe('Signup', () => {
     const fillValidForm = async (user) => {
       await user.type(screen.getByLabelText(/username/i), 'john_doe');
       await user.type(screen.getByLabelText(/full name/i), 'John Doe');
-      await user.type(screen.getByPlaceholderText(/age/i), '25');
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
       await user.selectOptions(screen.getByRole('combobox'), 'male');
       await user.type(screen.getByPlaceholderText(/phone number/i), '1234567890');
       await user.type(screen.getByLabelText(/^password$/i), 'Password123');
@@ -142,7 +157,7 @@ describe('Signup', () => {
         expect(mockSignup).toHaveBeenCalledWith({
           username: 'john_doe',
           name: 'John Doe',
-          age: 25,
+          date_of_birth: '2000-01-01',
           gender: 'male',
           phone: '1234567890',
           password: 'Password123',
@@ -163,24 +178,29 @@ describe('Signup', () => {
       expect(screen.getByText(/please wait/i)).toBeInTheDocument();
     });
 
-    it('shows error message on signup failure', async () => {
-      const user = userEvent.setup();
-      mockSignup.mockRejectedValueOnce({
-        messageKey: 'errors.generic',
-        message: 'Username taken',
-        status: 400,
-      });
-      renderSignup();
-
-      await fillValidForm(user);
-      await user.click(screen.getByRole('button', { name: /sign up/i }));
-
-      await waitFor(() => {
-        // Error box appears with red styling
-        const errorBox = document.querySelector('.bg-red-50');
-        expect(errorBox).toBeInTheDocument();
-      });
+  it('shows duplicate username conflict error message', async () => {
+    const user = userEvent.setup();
+    mockSignup.mockRejectedValueOnce({
+      code: 'DUPLICATE_USERNAME',
+      message: 'Username is already in use',
     });
+    renderSignup();
+
+    await user.type(screen.getByLabelText(/username/i), 'existing_user');
+    await user.type(screen.getByPlaceholderText(/enter your full name/i), 'John Doe');
+    fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
+    await user.selectOptions(screen.getByRole('combobox'), 'male');
+    await user.type(screen.getByPlaceholderText(/10-15 digit phone number/i), '1234567890');
+    await user.type(screen.getByPlaceholderText(/^enter password$/i), 'Password123!');
+    await user.type(screen.getByPlaceholderText(/^confirm password$/i), 'Password123!');
+    const submitButton = screen.getByRole('button', { name: /sign up|signup/i });
+    expect(submitButton).toBeEnabled();
+    await user.click(submitButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/username is already in use/i)).toBeInTheDocument();
+    });
+  });
 
     it('strips phone number of non-numeric characters', async () => {
       const user = userEvent.setup();
@@ -189,7 +209,7 @@ describe('Signup', () => {
 
       await user.type(screen.getByLabelText(/username/i), 'john_doe');
       await user.type(screen.getByLabelText(/full name/i), 'John Doe');
-      await user.type(screen.getByPlaceholderText(/age/i), '25');
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
       await user.selectOptions(screen.getByRole('combobox'), 'male');
       
       // Try to type letters - they should be stripped

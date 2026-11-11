@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import PageShell from '../components/PageShell';
+import apiClient from '../api/client';
 
 const BADGE_STYLES = {
   good: 'bg-emerald-50 text-emerald-800 border-emerald-200',
@@ -59,7 +60,23 @@ const DashboardMetricCard = ({
 const Dashboard = () => {
   const { t } = useTranslation(['dashboard', 'modules', 'questionnaire', 'common']);
   const location = useLocation();
-  const questionnaireComplete = location.state?.questionnaireComplete;
+
+  const [questionnaireComplete, setQuestionnaireComplete] = useState(
+    location.state?.questionnaireComplete || false
+  );
+
+  useEffect(() => {
+    const checkQuestionnaireStatus = async () => {
+      try {
+        const response = await apiClient.get('/questionnaire/status');
+        setQuestionnaireComplete(response.completed);
+      } catch (error) {
+        console.error('Failed to check questionnaire status:', error);
+      }
+    };
+
+    checkQuestionnaireStatus();
+  }, []);
 
   return (
     <PageShell title="dashboard:title">
@@ -87,8 +104,28 @@ const Dashboard = () => {
               label={t('dashboard:accountStatusActive', 'Account: Active')}
             />
           </div>
+<p className="text-teal-100 text-sm leading-relaxed">
+                {t('dashboard:questionnaireDescription', 'Complete your comprehensive daily health survey to update your wellness status and personalized care guidance.')}
+              </p>
+            </div>
+            <div className="shrink-0 flex flex-col sm:flex-row gap-3">
+              <Link
+                to="/questionnaire"
+                className="inline-flex items-center justify-center px-6 py-3.5 bg-white text-teal-900 font-bold text-sm rounded-xl shadow-md hover:bg-teal-50 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-teal-700"
+              >
+                {t('dashboard:completeQuestionnaire', 'Start Questionnaire')} →
+              </Link>
+              <Link
+                to="/health-summary"
+                className="inline-flex items-center justify-center px-4 py-3.5 bg-teal-800/60 hover:bg-teal-800 text-white font-medium text-sm rounded-xl border border-teal-500/50 transition-colors"
+              >
+                {t('dashboard:viewSummary', 'Health Summary')}
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
+
 
       {/* 2. Primary Daily Action Hero Card */}
       <section className="mb-8" aria-labelledby="primary-action-heading">

@@ -10,7 +10,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
       class="health-skip-link sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-[var(--radius-md)] focus:bg-[var(--surface-elevated)] focus:px-4 focus:py-2 focus:shadow-lg"
       href="#main-content"
     >
-      skipToContent
+      common:skipToContent
     </a>
     <header
       class="health-header sticky top-0 z-30 border-b backdrop-blur-md"
@@ -47,11 +47,11 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
             <span
               class="font-display truncate text-xl font-bold tracking-tight text-[var(--color-brand-800)] sm:text-2xl"
             >
-              appName
+              common:appName
             </span>
           </a>
           <nav
-            aria-label="primaryNav"
+            aria-label="common:primaryNav"
             class="hidden items-center gap-2 md:flex"
           >
             <a
@@ -73,11 +73,11 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
             >
               <button
                 aria-expanded="false"
-                aria-label="backgroundTheme"
+                aria-label="common:backgroundTheme"
                 class="rounded-[var(--radius-md)] border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
                 type="button"
               >
-                themes.calm
+                common:themes.calm
               </button>
             </div>
             <div
@@ -85,7 +85,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
             >
               <button
                 aria-expanded="false"
-                aria-label="language"
+                aria-label="common:language"
                 class="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--surface-border)] text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
                 type="button"
               >
@@ -96,7 +96,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
           <button
             aria-controls="«r6»"
             aria-expanded="false"
-            aria-label="openMenu"
+            aria-label="common:openMenu"
             class="inline-flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--surface-border)] p-2 text-[var(--text-primary)] md:hidden"
             type="button"
           >
@@ -131,7 +131,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
           <h1
             class="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]"
           >
-            title
+            dashboard:title
           </h1>
         </div>
         <div
@@ -150,23 +150,23 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
               <p
                 class="text-xs font-bold uppercase tracking-[0.14em] text-teal-100/90"
               >
-                primaryActionLabel
+                dashboard:primaryActionLabel
               </p>
               <h2
                 class="mt-2 font-display text-2xl font-bold sm:text-3xl"
                 id="dashboard-primary-heading"
               >
-                healthQuestionnaire
+                dashboard:healthQuestionnaire
               </h2>
               <p
                 class="mt-3 max-w-2xl text-sm text-teal-50/90 sm:text-base"
               >
-                questionnaireDescription
+                dashboard:questionnaireDescription
               </p>
               <span
                 class="mt-6 inline-flex items-center gap-2 text-sm font-bold"
               >
-                completeQuestionnaire
+                dashboard:completeQuestionnaire
                 <span
                   aria-hidden="true"
                   class="transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
@@ -186,7 +186,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                 class="font-display text-xl font-semibold"
                 id="dashboard-status-heading"
               >
-                healthStatus
+                dashboard:healthStatus
               </h2>
             </div>
             <div
@@ -200,17 +200,17 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                 <p
                   class="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]"
                 >
-                  profileMetricLabel
+                  dashboard:profileMetricLabel
                 </p>
                 <p
                   class="mt-2 font-display text-2xl font-semibold text-[var(--text-primary)]"
                 >
-                  pleaseWait
+                  dashboard:profileIncomplete
                 </p>
                 <p
                   class="mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium status-warn"
                 >
-                  promptAssess
+                  dashboard:promptAssess
                 </p>
               </div>
               <div
@@ -221,17 +221,17 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                 <p
                   class="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]"
                 >
-                  nextStepLabel
+                  dashboard:nextStepLabel
                 </p>
                 <p
                   class="mt-2 font-display text-2xl font-semibold text-[var(--text-primary)]"
                 >
-                  nextStepQuestionnaire
+                  dashboard:nextStepQuestionnaire
                 </p>
                 <p
                   class="mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium status-info"
                 >
-                  nextStepHint
+                  dashboard:nextStepHint
                 </p>
               </div>
             </div>
@@ -246,12 +246,12 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                 class="font-display text-xl font-semibold"
                 id="dashboard-tools-heading"
               >
-                toolsHeading
+                dashboard:toolsHeading
               </h2>
               <p
                 class="mt-1 text-sm text-[var(--text-secondary)]"
               >
-                toolsSubtitle
+                dashboard:toolsSubtitle
               </p>
             </div>
             <ul
@@ -277,7 +277,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                   <span
                     class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
                   >
-                    viewDetails →
+                    dashboard:viewDetails →
                   </span>
                 </a>
               </li>
@@ -300,7 +300,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                   <span
                     class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
                   >
-                    viewDetails →
+                    dashboard:viewDetails →
                   </span>
                 </a>
               </li>
@@ -323,7 +323,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                   <span
                     class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
                   >
-                    viewDetails →
+                    dashboard:viewDetails →
                   </span>
                 </a>
               </li>
@@ -346,7 +346,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                   <span
                     class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
                   >
-                    viewDetails →
+                    dashboard:viewDetails →
                   </span>
                 </a>
               </li>
@@ -369,7 +369,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                   <span
                     class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
                   >
-                    viewDetails →
+                    dashboard:viewDetails →
                   </span>
                 </a>
               </li>
@@ -382,7 +382,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
               class="mb-4 font-display text-xl font-semibold"
               id="dashboard-activity-heading"
             >
-              recentAssessments
+              dashboard:recentAssessments
             </h2>
             <div
               class="surface-muted px-5 py-8 text-center "
@@ -392,12 +392,12 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
               <h3
                 class="font-display text-lg font-semibold text-[var(--text-primary)]"
               >
-                noRecent
+                dashboard:noRecent
               </h3>
               <p
                 class="mt-2 text-sm text-[var(--text-secondary)] max-w-md mx-auto"
               >
-                activityEmptyDesc
+                dashboard:activityEmptyDesc
               </p>
               <div
                 class="mt-4 flex justify-center"
@@ -407,7 +407,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                   data-discover="true"
                   href="/questionnaire"
                 >
-                  completeQuestionnaire
+                  dashboard:completeQuestionnaire
                 </a>
               </div>
             </div>
@@ -424,7 +424,7 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
         <p
           class="text-center text-[var(--text-secondary)] text-sm"
         >
-          © 2026 appName. allRightsReserved
+          © 2026 common:appName. common:allRightsReserved
         </p>
       </div>
     </footer>

@@ -1,6 +1,5 @@
 import React, { startTransition, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import i18n from '../i18n.js';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/useTheme';
@@ -9,7 +8,7 @@ import { THEMES } from '../context/theme';
 const LANG_CODES = ['en', 'hi', 'es', 'ar', 'zh'];
 
 const PageShell = ({ children, title, showNav = true, variant = 'default' }) => {
-  const { t } = useTranslation(['common', 'auth', 'dashboard', 'modules', 'summary']);
+  const { t, i18n } = useTranslation(['common', 'auth', 'dashboard', 'modules', 'summary']);
   const [langOpen, setLangOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);

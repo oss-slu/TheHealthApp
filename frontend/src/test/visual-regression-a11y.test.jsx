@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Dashboard from '../pages/Dashboard';
 
@@ -165,13 +165,16 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
   });
 
   describe('5. Visual Regression DOM Snapshots', () => {
-    it('matches visual DOM snapshot for mobile and desktop views', () => {
+    it('matches visual DOM snapshot for mobile and desktop views', async () => {
       const { asFragment } = render(
         <MemoryRouter initialEntries={['/dashboard']}>
           <Dashboard />
         </MemoryRouter>
       );
 
+      await waitFor(() => {
+        expect(screen.getByText('dashboard:profileIncomplete')).toBeInTheDocument();
+      });
       expect(asFragment()).toMatchSnapshot();
     });
   });

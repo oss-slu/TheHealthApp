@@ -20,8 +20,8 @@ services:
   # FastAPI Backend Service
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: healthapp_fastapi_backend
     restart: always
     ports:

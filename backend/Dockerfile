@@ -16,15 +16,16 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy dependency files
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
 # Install Python dependencies
 # Note: Using build-essential requires the pip install step to happen AFTER build-essential is installed.
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
-COPY src ./src
-COPY .env .env
+COPY backend/src ./src
+COPY backend/.env .env
+COPY shared/health_measurements.json ./shared/health_measurements.json
 
 # Expose FastAPI port
 EXPOSE 8000

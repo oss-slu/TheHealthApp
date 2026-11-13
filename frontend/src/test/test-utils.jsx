@@ -5,6 +5,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
+import commonEn from '../../public/locales/en/common.json';
 import framinghamEn from '../../public/locales/en/framingham.json';
 import summaryEn from '../../public/locales/en/summary.json';
 import modulesEn from '../../public/locales/en/modules.json';
@@ -21,6 +22,7 @@ testI18n.use(initReactI18next).init({
   resources: {
     en: {
       common: {
+        ...commonEn,
         appName: 'Health Support',
         language: 'Language',
         pleaseWait: 'Please wait...',

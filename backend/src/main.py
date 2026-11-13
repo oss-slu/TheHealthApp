@@ -1,3 +1,4 @@
+import base64
 import os
 import uuid
 import bcrypt
@@ -84,6 +85,7 @@ from .models import (
     ConsentSubmit,
     ConsentStatusData,
     user_has_valid_consent,
+    CURRENT_CONSENT_VERSION,
     age_from_date_of_birth,
     Questionnaire,
     QuestionnaireSubmit,
@@ -391,6 +393,92 @@ async def forgot_password(payload: ForgotPasswordRequest):
 @app.get("/api/v1/users/me", response_model=SuccessResponse[UserResponse], tags=["User"])
 async def get_own_profile(current_user: Annotated[User, Depends(get_current_user)]):
     return SuccessResponse(data=current_user)
+
+
+def _export_profile_photo(photo_url: str | None) -> dict | None:
+    """Embed the stored profile photo so the export does not depend on the server staying reachable."""
+    if not photo_url:
+        return None
+    photo = {"url": photo_url, "content_type": None, "data_base64": None}
+    if not photo_url.startswith("/uploads/"):
+        return photo
+    path = (BASE_DIR / photo_url.lstrip("/")).resolve()
+    if path.parent != UPLOAD_DIR.resolve() or not path.is_file():
+        return photo
+    content_types = {extension: content_type for content_type, extension in ALLOWED_PHOTO_TYPES.items()}
+    photo["content_type"] = content_types.get(path.suffix.lower())
+    photo["data_base64"] = base64.b64encode(path.read_bytes()).decode("ascii")
+    return photo
+
+
+@app.get("/api/v1/users/me/data-export", tags=["User"], summary="Export the current user's stored data")
+async def export_own_data(current_user: Annotated[User, Depends(get_current_user)]):
+    questionnaires = await Questionnaire.find({"user_id": current_user.id}).sort("created_at").to_list()
+    risk_assessments = await HealthRiskAssessment.find({"user_id": current_user.id}).sort("created_at").to_list()
+
+    export = {
+        "schema_version": "1.1",
+        "exported_at": datetime.now(timezone.utc),
+        "profile": {
+            "username": current_user.username,
+            "name": current_user.name,
+            "date_of_birth": current_user.date_of_birth,
+            "age": current_user.age,
+            "gender": current_user.gender,
+            "phone": current_user.phone,
+            "photo_url": current_user.photo_url,
+            "photo": _export_profile_photo(current_user.photo_url),
+            "created_at": current_user.created_at,
+            "updated_at": current_user.updated_at,
+        },
+        "consent": {
+            "consent_given": current_user.consent_given,
+            "data_usage": current_user.data_usage,
+            "marketing": current_user.marketing,
+            "version": current_user.consent_version,
+            "recorded_at": current_user.consent_timestamp,
+            "current_policy_version": CURRENT_CONSENT_VERSION,
+            "valid_for_current_policy": user_has_valid_consent(current_user),
+        },
+        "questionnaires": [
+            {
+                "id": str(record.id),
+                "submitted_at": record.created_at,
+                "updated_at": record.updated_at,
+                "first_name": record.first_name,
+                "last_name": record.last_name,
+                "date_of_birth": record.date_of_birth,
+                "gender": record.gender,
+                "email": record.email,
+                "phone": record.phone,
+                "existing_conditions": record.existing_conditions,
+                "allergies": record.allergies,
+                "current_medications": record.current_medications,
+                "family_history": record.family_history,
+                "exercise_frequency": record.exercise_frequency,
+                "diet_type": record.diet_type,
+                "smoking_status": record.smoking_status,
+                "alcohol_consumption": record.alcohol_consumption,
+                "sleep_hours": record.sleep_hours,
+                "stress_level": record.stress_level,
+            }
+            for record in questionnaires
+        ],
+        "risk_assessments": [
+            {
+                "id": str(record.id),
+                "assessed_at": record.created_at,
+                "result": record.result.model_dump(mode="json"),
+            }
+            for record in risk_assessments
+        ],
+    }
+    return JSONResponse(
+        content=jsonable_encoder(export),
+        headers={
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 @app.post("/api/v1/consent", response_model=SuccessResponse[UserResponse], tags=["Consent"])

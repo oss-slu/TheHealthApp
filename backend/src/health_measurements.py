@@ -1,100 +1,26 @@
 """Supported manual health measurement definitions and validation rules."""
-
-from decimal import Decimal, InvalidOperation
+import json
 from datetime import date
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 
-# These definitions must match the contract in:
-# docs/manual-health-measurements.md
+# The authoritative measurement definitions are in:
+# shared/health_measurements.json
 
-METRIC_RULES = {
-    "blood_pressure_systolic": {
-        "unit": "mmHg",
-        "minimum": 40,
-        "maximum": 300,
-        "decimal_places": 0,
-    },
-    "blood_pressure_diastolic": {
-        "unit": "mmHg",
-        "minimum": 20,
-        "maximum": 200,
-        "decimal_places": 0,
-    },
-    "weight": {
-        "units": {
-            "kg": {
-                "minimum": 0.1,
-                "maximum": 1000,
-                "decimal_places": 1,
-            },
-            "lb": {
-                "minimum": 0.2,
-                "maximum": 2204.6,
-                "decimal_places": 1,
-            },
-        }
-    },
-    "heart_rate": {
-        "unit": "bpm",
-        "minimum": 20,
-        "maximum": 300,
-        "decimal_places": 0,
-    },
-    "blood_glucose": {
-        "units": {
-            "mg/dL": {
-                "minimum": 1,
-                "maximum": 2000,
-                "decimal_places": 1,
-            },
-            "mmol/L": {
-                "minimum": 0.1,
-                "maximum": 111.1,
-                "decimal_places": 1,
-            },
-        }
-    },
-    "total_cholesterol": {
-        "units": {
-            "mg/dL": {
-                "minimum": 1,
-                "maximum": 1500,
-                "decimal_places": 1,
-            },
-            "mmol/L": {
-                "minimum": 0.03,
-                "maximum": 38.8,
-                "decimal_places": 2,
-            },
-        }
-    },
-    "sleep_duration": {
-        "unit": "hours",
-        "minimum": 0,
-        "maximum": 24,
-        "decimal_places": 1,
-    },
-    "mood": {
-        "unit": "scale",
-        "minimum": 1,
-        "maximum": 5,
-        "decimal_places": 0,
-    },
-    "stress": {
-        "unit": "scale",
-        "minimum": 1,
-        "maximum": 5,
-        "decimal_places": 0,
-    },
-}
+# Load the shared health measurement contract.
+CONTRACT_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "shared"
+    / "health_measurements.json"
+)
 
-TEXT_METRIC_RULES = {
-    "symptoms": {
-        "maximum_length": 1000,
-    }
-}
+with CONTRACT_PATH.open(encoding="utf-8") as contract_file:
+    HEALTH_MEASUREMENT_CONTRACT = json.load(contract_file)
 
-MAX_NOTES_LENGTH = 1000
+METRIC_RULES = HEALTH_MEASUREMENT_CONTRACT["metrics"]
+TEXT_METRIC_RULES = HEALTH_MEASUREMENT_CONTRACT["text_metrics"]
+MAX_NOTES_LENGTH = HEALTH_MEASUREMENT_CONTRACT["maximum_notes_length"]
 
 
 def validate_measurement_value(

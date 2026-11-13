@@ -1,101 +1,23 @@
+
 // Supported manual health measurement definitions.
-// Keep these rules synchronized with backend/src/health_measurements.py
-// and docs/manual-health-measurements.md.
+// Rules are loaded from the shared contract used by the backend.
 
-export const METRIC_RULES = {
-  blood_pressure_systolic: {
-    unit: 'mmHg',
-    minimum: 40,
-    maximum: 300,
-    decimalPlaces: 0,
-  },
-  blood_pressure_diastolic: {
-    unit: 'mmHg',
-    minimum: 20,
-    maximum: 200,
-    decimalPlaces: 0,
-  },
-  weight: {
-    units: {
-      kg: {
-        minimum: 0.1,
-        maximum: 1000,
-        decimalPlaces: 1,
-      },
-      lb: {
-        minimum: 0.2,
-        maximum: 2204.6,
-        decimalPlaces: 1,
-      },
-    },
-  },
-  heart_rate: {
-    unit: 'bpm',
-    minimum: 20,
-    maximum: 300,
-    decimalPlaces: 0,
-  },
-  blood_glucose: {
-    units: {
-      'mg/dL': {
-        minimum: 1,
-        maximum: 2000,
-        decimalPlaces: 1,
-      },
-      'mmol/L': {
-        minimum: 0.1,
-        maximum: 111.1,
-        decimalPlaces: 1,
-      },
-    },
-  },
-  total_cholesterol: {
-    units: {
-      'mg/dL': {
-        minimum: 1,
-        maximum: 1500,
-        decimalPlaces: 1,
-      },
-      'mmol/L': {
-        minimum: 0.03,
-        maximum: 38.8,
-        decimalPlaces: 2,
-      },
-    },
-  },
-  sleep_duration: {
-    unit: 'hours',
-    minimum: 0,
-    maximum: 24,
-    decimalPlaces: 1,
-  },
-  mood: {
-    unit: 'scale',
-    minimum: 1,
-    maximum: 5,
-    decimalPlaces: 0,
-  },
-  stress: {
-    unit: 'scale',
-    minimum: 1,
-    maximum: 5,
-    decimalPlaces: 0,
-  },
-};
+import HEALTH_MEASUREMENT_CONTRACT from '@shared/health_measurements.json';
 
-export const TEXT_METRIC_RULES = {
-  symptoms: {
-    maximumLength: 1000,
-  },
-};
+export const METRIC_RULES = HEALTH_MEASUREMENT_CONTRACT.metrics;
+export const TEXT_METRIC_RULES = HEALTH_MEASUREMENT_CONTRACT.text_metrics;
+export const MAX_NOTES_LENGTH =
+  HEALTH_MEASUREMENT_CONTRACT.maximum_notes_length;
 
-export const MAX_NOTES_LENGTH = 1000;
+function validationError(code, params = {}) {
+  return { code, params };
+}
 
 export function validateMeasurementValue(metric, value, unit) {
   const rule = METRIC_RULES[metric];
 
   if (!rule) {
-    return `Unsupported measurement metric: ${metric}`;
+    return validationError('unsupported_metric', { metric });
   }
 
   const unitRule = rule.units
@@ -105,29 +27,31 @@ export function validateMeasurementValue(metric, value, unit) {
       : null;
 
   if (!unitRule) {
-    return `Unsupported unit for ${metric}: ${unit}`;
+    return validationError('unsupported_unit', { metric, unit });
   }
 
-  if (
-    typeof value !== 'number' ||
-    !Number.isFinite(value)
-  ) {
-    return 'Measurement value must be a finite number.';
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return validationError('invalid_number');
   }
 
-  if (
-    value < unitRule.minimum ||
-    value > unitRule.maximum
-  ) {
-    return `${metric} must be between ${unitRule.minimum} and ${unitRule.maximum} ${unit}.`;
+  if (value < unitRule.minimum || value > unitRule.maximum) {
+    return validationError('out_of_range', {
+      metric,
+      minimum: unitRule.minimum,
+      maximum: unitRule.maximum,
+      unit,
+    });
   }
 
   const decimalPlaces = String(value).includes('e')
     ? Math.max(0, -(Number(value).toExponential().split('e')[1]))
     : (String(value).split('.')[1] || '').length;
 
-  if (decimalPlaces > unitRule.decimalPlaces) {
-    return `${metric} supports at most ${unitRule.decimalPlaces} decimal places.`;
+  if (decimalPlaces > unitRule.decimal_places) {
+    return validationError('too_many_decimals', {
+      metric,
+      maximum: unitRule.decimal_places,
+    });
   }
 
   return null;
@@ -155,7 +79,7 @@ export function validateBloodPressure(systolic, diastolic) {
   }
 
   if (systolic <= diastolic) {
-    return 'Systolic pressure must be greater than diastolic pressure.';
+    return validationError('systolic_not_greater_than_diastolic');
   }
 
   return null;
@@ -165,15 +89,18 @@ export function validateTextMeasurement(metric, value) {
   const rule = TEXT_METRIC_RULES[metric];
 
   if (!rule) {
-    return `Unsupported text measurement: ${metric}`;
+    return validationError('unsupported_text_metric', { metric });
   }
 
   if (typeof value !== 'string' || !value.trim()) {
-    return 'This field cannot be blank.';
+    return validationError('blank_value');
   }
 
-  if (value.length > rule.maximumLength) {
-    return `${metric} cannot exceed ${rule.maximumLength} characters.`;
+  if (value.length > rule.maximum_length) {
+    return validationError('too_long', {
+      metric,
+      maximum: rule.maximum_length,
+    });
   }
 
   return null;
@@ -185,11 +112,13 @@ export function validateMeasurementNotes(notes) {
     notes !== undefined &&
     typeof notes !== 'string'
   ) {
-    return 'Notes must be text.';
+    return validationError('invalid_type');
   }
 
   if (notes && notes.length > MAX_NOTES_LENGTH) {
-    return `Notes cannot exceed ${MAX_NOTES_LENGTH} characters.`;
+    return validationError('too_long', {
+      maximum: MAX_NOTES_LENGTH,
+    });
   }
 
   return null;
@@ -200,7 +129,7 @@ export function validateMeasurementDate(value, today = new Date()) {
     typeof value !== 'string' ||
     !/^\d{4}-\d{2}-\d{2}$/.test(value)
   ) {
-    return 'Measurement date must be a valid ISO date.';
+    return validationError('invalid_date');
   }
 
   const parsedDate = new Date(`${value}T00:00:00Z`);
@@ -209,7 +138,7 @@ export function validateMeasurementDate(value, today = new Date()) {
     Number.isNaN(parsedDate.getTime()) ||
     parsedDate.toISOString().slice(0, 10) !== value
   ) {
-    return 'Measurement date must be a valid ISO date.';
+    return validationError('invalid_date');
   }
 
   const todayString = [
@@ -219,7 +148,7 @@ export function validateMeasurementDate(value, today = new Date()) {
   ].join('-');
 
   if (value > todayString) {
-    return 'Measurement date cannot be in the future.';
+    return validationError('future_date');
   }
 
   return null;

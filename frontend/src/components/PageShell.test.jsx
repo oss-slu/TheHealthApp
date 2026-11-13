@@ -1,94 +1,131 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import {
+  renderWithProviders,
+  renderWithRTL,
+  screen,
+  createAuthenticatedContext,
+  userEvent,
+} from '../test/test-utils';
 import PageShell from './PageShell';
-import * as authHook from '../hooks/useAuth';
 
-describe('PageShell Navigation & Accessibility (Issue #157)', () => {
-  const mockLogout = vi.fn().mockResolvedValue();
-
+describe('PageShell navigation and accessibility', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  const renderShell = ({ isAuthenticated = false, initialPath = '/dashboard' } = {}) => {
-    vi.spyOn(authHook, 'useAuth').mockReturnValue({
-      isAuthenticated,
-      logout: mockLogout,
-    });
-
-    return render(
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route
-            path="*"
-            element={
-              <PageShell title="Test Title">
-                <div>Content</div>
-              </PageShell>
-            }
-          />
-        </Routes>
-      </MemoryRouter>
+  it('renders signed-out navigation', () => {
+    renderWithProviders(
+      <PageShell title="Test Title">
+        <div>Content</div>
+      </PageShell>
     );
-  };
 
-  describe('Signed-out Navigation', () => {
-    it('renders login and signup links when user is not authenticated', () => {
-      renderShell({ isAuthenticated: false });
-
-      expect(screen.getByRole('link', { name: /login/i })).toHaveAttribute('href', '/auth/login');
-      expect(screen.getByRole('link', { name: /sign up/i })).toHaveAttribute('href', '/auth/signup');
-      expect(screen.queryByRole('link', { name: /health summary/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /logout/i })).not.toBeInTheDocument();
-    });
+    expect(screen.getByRole('link', { name: /login/i })).toHaveAttribute('href', '/auth/login');
+    expect(screen.getByRole('link', { name: /sign up/i })).toHaveAttribute('href', '/auth/signup');
+    expect(screen.queryByRole('link', { name: /health summary/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /logout/i })).not.toBeInTheDocument();
   });
 
-  describe('Signed-in Navigation', () => {
-    it('renders dashboard, health summary, and risk assessment links pointing to /modules/framingham-risk', () => {
-      renderShell({ isAuthenticated: true });
+  it('renders authenticated navigation, including the risk assessment', () => {
+    renderWithProviders(
+      <PageShell title="Test Title">
+        <div>Content</div>
+      </PageShell>,
+      { authContext: createAuthenticatedContext() }
+    );
 
-      expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/dashboard');
-      expect(screen.getByRole('link', { name: /health summary/i })).toHaveAttribute('href', '/health-summary');
-
-      const riskLink = screen.getByRole('link', { name: /risk assessment/i });
-      expect(riskLink).toHaveAttribute('href', '/modules/framingham-risk');
-      expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
-    });
-
-    it('highlights active navigation item', () => {
-      renderShell({ isAuthenticated: true, initialPath: '/modules/framingham-risk' });
-
-      const riskLink = screen.getByRole('link', { name: /risk assessment/i });
-      expect(riskLink.className).toContain('bg-teal-100');
-    });
-
-    it('calls logout on logout button click', () => {
-      renderShell({ isAuthenticated: true });
-
-      const logoutBtn = screen.getByRole('button', { name: /logout/i });
-      fireEvent.click(logoutBtn);
-      expect(mockLogout).toHaveBeenCalledTimes(1);
-    });
+    expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: /health summary/i })).toHaveAttribute('href', '/health-summary');
+    expect(screen.getByRole('link', { name: /risk assessment/i })).toHaveAttribute(
+      'href',
+      '/modules/framingham-risk'
+    );
+    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
   });
 
-  describe('Mobile Navigation & Accessibility', () => {
-    it('toggles mobile menu with aria-expanded and aria-controls attributes', () => {
-      renderShell({ isAuthenticated: true });
+  it('highlights the active navigation item and calls logout', async () => {
+    const logout = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageShell title="Test Title">
+        <div>Content</div>
+      </PageShell>,
+      {
+        route: '/modules/framingham-risk',
+        authContext: createAuthenticatedContext({ logout }),
+      }
+    );
 
-      const toggleBtn = screen.getByRole('button', { name: /toggle navigation menu/i });
-      expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');
-      expect(toggleBtn).toHaveAttribute('aria-controls', 'mobile-navigation-drawer');
+    expect(screen.getByRole('link', { name: /risk assessment/i })).toHaveClass(
+      'bg-[var(--color-brand-100)]'
+    );
+    await user.click(screen.getByRole('button', { name: /logout/i }));
+    expect(logout).toHaveBeenCalledTimes(1);
+  });
 
-      fireEvent.click(toggleBtn);
-      expect(toggleBtn).toHaveAttribute('aria-expanded', 'true');
-      const drawer = document.getElementById('mobile-navigation-drawer');
-      expect(drawer).toBeInTheDocument();
+  it('renders the skip link and main landmark', () => {
+    renderWithProviders(
+      <PageShell title="dashboard:title">
+        <p>Body</p>
+      </PageShell>,
+      { authContext: createAuthenticatedContext() }
+    );
 
-      fireEvent.click(toggleBtn);
-      expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');
-      expect(document.getElementById('mobile-navigation-drawer')).not.toBeInTheDocument();
-    });
+    expect(screen.getByRole('link', { name: /skip to content/i })).toHaveAttribute(
+      'href',
+      '#main-content'
+    );
+    expect(screen.getAllByText('Health Support').length).toBeGreaterThan(0);
+    expect(document.getElementById('main-content')).toBeInTheDocument();
+    expect(screen.getByTestId('app-shell')).toBeInTheDocument();
+  });
+
+  it('toggles the mobile navigation with accessible controls', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageShell showNav>
+        <p>Body</p>
+      </PageShell>,
+      { authContext: createAuthenticatedContext() }
+    );
+
+    const menuButton = screen.getByRole('button', { name: /open menu/i });
+    const menuId = menuButton.getAttribute('aria-controls');
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+    expect(menuId).toBeTruthy();
+
+    await user.click(menuButton);
+    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+    expect(document.getElementById(menuId)).toBeInTheDocument();
+
+    await user.click(menuButton);
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('allows switching the background theme', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageShell>
+        <p>Body</p>
+      </PageShell>,
+      { authContext: createAuthenticatedContext() }
+    );
+
+    await user.click(screen.getByRole('button', { name: /background theme/i }));
+    await user.click(screen.getByRole('option', { name: /clinical/i }));
+    expect(document.documentElement.getAttribute('data-theme')).toBe('clinical');
+  });
+
+  it('supports RTL language chrome', () => {
+    renderWithRTL(
+      <PageShell title="dashboard:title">
+        <p>محتوى</p>
+      </PageShell>,
+      { authContext: createAuthenticatedContext() }
+    );
+
+    expect(document.documentElement.dir).toBe('rtl');
+    expect(screen.getByText('دعم الصحة')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /تخطي إلى المحتوى/i })).toBeInTheDocument();
   });
 });

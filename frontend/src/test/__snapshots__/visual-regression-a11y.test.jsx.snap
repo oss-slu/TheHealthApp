@@ -3,25 +3,32 @@
 exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verifications > 5. Visual Regression DOM Snapshots > matches visual DOM snapshot for mobile and desktop views 1`] = `
 <DocumentFragment>
   <div
-    class="health-app-shell min-h-screen flex flex-col bg-slate-50/50"
+    class="health-app-shell min-h-screen flex flex-col"
+    data-testid="app-shell"
   >
+    <a
+      class="health-skip-link sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-[var(--radius-md)] focus:bg-[var(--surface-elevated)] focus:px-4 focus:py-2 focus:shadow-lg"
+      href="#main-content"
+    >
+      common:skipToContent
+    </a>
     <header
-      class="health-header sticky top-0 z-30 border-b border-teal-100/60 bg-white/90 backdrop-blur-md shadow-sm"
+      class="health-header sticky top-0 z-30 border-b backdrop-blur-md"
     >
       <div
-        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
       >
         <div
-          class="flex justify-between items-center h-16"
+          class="flex h-16 items-center justify-between gap-3"
         >
           <a
-            class="flex items-center gap-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500 rounded-lg p-1"
+            class="flex min-w-0 items-center gap-2.5"
             data-discover="true"
             href="/"
           >
             <span
               aria-hidden="true"
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-500/25"
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-brand-600)] text-white"
             >
               <svg
                 class="h-5 w-5"
@@ -37,71 +44,83 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                 />
               </svg>
             </span>
-            <h1
-              class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-teal-800 to-emerald-800 bg-clip-text text-transparent"
+            <span
+              class="font-display truncate text-xl font-bold tracking-tight text-[var(--color-brand-800)] sm:text-2xl"
             >
-              The Health App
-            </h1>
+              common:appName
+            </span>
           </a>
-          <div
-            class="flex items-center space-x-3 sm:space-x-6"
+          <nav
+            aria-label="common:primaryNav"
+            class="hidden items-center gap-2 md:flex"
           >
-            <div
-              class="hidden md:flex items-center space-x-6"
+            <a
+              class="rounded-[var(--radius-md)] px-3 py-2 text-sm font-semibold transition-colors text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+              data-discover="true"
+              href="/auth/login"
             >
-              <a
-                class="px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-600 hover:text-teal-800 hover:bg-teal-50/80"
-                data-discover="true"
-                href="/auth/login"
+              Login
+            </a>
+            <a
+              class="rounded-[var(--radius-md)] px-3 py-2 text-sm font-semibold transition-colors text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+              data-discover="true"
+              href="/auth/signup"
+            >
+              Sign Up
+            </a>
+            <div
+              class="relative"
+            >
+              <button
+                aria-expanded="false"
+                aria-label="common:backgroundTheme"
+                class="rounded-[var(--radius-md)] border border-[var(--surface-border)] px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
+                type="button"
               >
-                Login
-              </a>
-              <a
-                class="px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-600 hover:text-teal-800 hover:bg-teal-50/80"
-                data-discover="true"
-                href="/auth/signup"
-              >
-                Sign Up
-              </a>
+                common:themes.calm
+              </button>
             </div>
             <div
               class="relative"
             >
               <button
-                aria-label="Select Language"
-                class="border border-gray-200 rounded-full w-9 h-9 flex items-center justify-center text-sm hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
+                aria-expanded="false"
+                aria-label="common:language"
+                class="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--surface-border)] text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]"
                 type="button"
               >
-                🌐
+                EN
               </button>
             </div>
-            <button
-              aria-controls="mobile-navigation-drawer"
-              aria-expanded="false"
-              aria-label="Toggle navigation menu"
-              class="md:hidden p-2 rounded-md text-gray-600 hover:text-teal-800 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
-              type="button"
+          </nav>
+          <button
+            aria-controls="«r6»"
+            aria-expanded="false"
+            aria-label="common:openMenu"
+            class="inline-flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--surface-border)] p-2 text-[var(--text-primary)] md:hidden"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
             >
-              <svg
-                class="h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M4 6h16M4 12h16M4 18h16"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                />
-              </svg>
-            </button>
-          </div>
+              <path
+                d="M4 6h16M4 12h16M4 18h16"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
         </div>
       </div>
     </header>
     <main
-      class="flex-1 w-full max-w-7xl mx-auto py-6 sm:px-6 lg:px-8"
+      class="mx-auto w-full max-w-7xl flex-1 py-6 sm:px-6 lg:px-8"
+      id="main-content"
     >
       <div
         class="px-4 py-6 sm:px-0"
@@ -109,231 +128,303 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
         <div
           class="mb-6"
         >
-          <h2
-            class="text-2xl font-bold text-gray-900 tracking-tight"
+          <h1
+            class="font-display text-3xl font-bold tracking-tight text-[var(--text-primary)]"
           >
-            title
-          </h2>
+            dashboard:title
+          </h1>
         </div>
         <div
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          class="space-y-10"
+          data-testid="dashboard-root"
         >
-          <a
-            class="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer text-white"
-            data-discover="true"
-            href="/questionnaire"
+          <section
+            aria-labelledby="dashboard-primary-heading"
+            data-testid="dashboard-primary"
+          >
+            <a
+              class="group relative block overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-brand-700)] px-6 py-8 text-[var(--text-inverse)] shadow-[var(--shadow-surface)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+              data-discover="true"
+              href="/questionnaire"
+            >
+              <p
+                class="text-xs font-bold uppercase tracking-[0.14em] text-teal-100/90"
+              >
+                dashboard:primaryActionLabel
+              </p>
+              <h2
+                class="mt-2 font-display text-2xl font-bold sm:text-3xl"
+                id="dashboard-primary-heading"
+              >
+                dashboard:healthQuestionnaire
+              </h2>
+              <p
+                class="mt-3 max-w-2xl text-sm text-teal-50/90 sm:text-base"
+              >
+                dashboard:questionnaireDescription
+              </p>
+              <span
+                class="mt-6 inline-flex items-center gap-2 text-sm font-bold"
+              >
+                dashboard:completeQuestionnaire
+                <span
+                  aria-hidden="true"
+                  class="transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+                >
+                  →
+                </span>
+              </span>
+            </a>
+          </section>
+          <section
+            aria-labelledby="dashboard-status-heading"
           >
             <div
-              class="flex items-center justify-between mb-4"
+              class="mb-4 flex items-end justify-between gap-3"
             >
-              <h3
-                class="text-lg font-semibold"
+              <h2
+                class="font-display text-xl font-semibold"
+                id="dashboard-status-heading"
               >
-                healthQuestionnaire
-              </h3>
-              <svg
-                class="w-8 h-8 opacity-80"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                />
-              </svg>
+                dashboard:healthStatus
+              </h2>
             </div>
-            <p
-              class="text-blue-100 mb-4"
+            <div
+              class="grid grid-cols-1 gap-4 sm:grid-cols-2"
             >
-              questionnaireDescription
-            </p>
-            <span
-              class="text-white font-medium flex items-center"
-            >
-              completeQuestionnaire →
-            </span>
-          </a>
-          <a
-            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-            data-discover="true"
-            href="/health-summary"
-          >
-            <h3
-              class="text-lg font-semibold text-gray-900 mb-4"
-            >
-              Personal health summary
-            </h3>
-            <p
-              class="text-gray-600 mb-4"
-            >
-              Review and export your health information.
-            </p>
-            <span
-              class="text-teal-700 font-medium"
-            >
-              Open summary →
-            </span>
-          </a>
-          <div
-            class="bg-white p-6 rounded-lg shadow-md"
-          >
-            <h3
-              class="text-lg font-semibold text-gray-900 mb-4"
-            >
-              recentAssessments
-            </h3>
-            <p
-              class="text-gray-600"
-            >
-              noRecent
-            </p>
-          </div>
-          <div
-            class="bg-white p-6 rounded-lg shadow-md"
-          >
-            <h3
-              class="text-lg font-semibold text-gray-900 mb-4"
-            >
-              healthStatus
-            </h3>
-            <p
-              class="text-gray-600"
-            >
-              promptAssess
-            </p>
-          </div>
-          <div
-            class="bg-white p-6 rounded-lg shadow-md"
-          >
-            <h3
-              class="text-lg font-semibold text-gray-900 mb-4"
-            >
-              reminders
-            </h3>
-            <p
-              class="text-gray-600"
-            >
-              noReminders
-            </p>
-          </div>
-          <a
-            class="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer text-white"
-            data-discover="true"
-            href="/modules/framingham-risk"
+              <div
+                class="surface-elevated p-4 "
+                data-status="warn"
+                data-testid="metric"
+              >
+                <p
+                  class="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]"
+                >
+                  dashboard:profileMetricLabel
+                </p>
+                <p
+                  class="mt-2 font-display text-2xl font-semibold text-[var(--text-primary)]"
+                >
+                  dashboard:profileIncomplete
+                </p>
+                <p
+                  class="mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium status-warn"
+                >
+                  dashboard:promptAssess
+                </p>
+              </div>
+              <div
+                class="surface-elevated p-4 "
+                data-status="info"
+                data-testid="metric"
+              >
+                <p
+                  class="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]"
+                >
+                  dashboard:nextStepLabel
+                </p>
+                <p
+                  class="mt-2 font-display text-2xl font-semibold text-[var(--text-primary)]"
+                >
+                  dashboard:nextStepQuestionnaire
+                </p>
+                <p
+                  class="mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-medium status-info"
+                >
+                  dashboard:nextStepHint
+                </p>
+              </div>
+            </div>
+          </section>
+          <section
+            aria-labelledby="dashboard-tools-heading"
           >
             <div
-              class="flex items-center justify-between mb-4"
+              class="mb-4"
+            >
+              <h2
+                class="font-display text-xl font-semibold"
+                id="dashboard-tools-heading"
+              >
+                dashboard:toolsHeading
+              </h2>
+              <p
+                class="mt-1 text-sm text-[var(--text-secondary)]"
+              >
+                dashboard:toolsSubtitle
+              </p>
+            </div>
+            <ul
+              class="grid grid-cols-1 gap-4 md:grid-cols-2"
+              data-testid="dashboard-tools"
+            >
+              <li>
+                <a
+                  class="surface-elevated flex h-full flex-col p-5 transition-colors hover:border-[var(--color-brand-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                  data-discover="true"
+                  href="/health-summary"
+                >
+                  <h3
+                    class="font-display text-lg font-semibold text-[var(--text-primary)]"
+                  >
+                    summary:navLabel
+                  </h3>
+                  <p
+                    class="mt-2 flex-1 text-sm text-[var(--text-secondary)]"
+                  >
+                    summary:dashboardDescription
+                  </p>
+                  <span
+                    class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
+                  >
+                    dashboard:viewDetails →
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="surface-elevated flex h-full flex-col p-5 transition-colors hover:border-[var(--color-brand-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                  data-discover="true"
+                  href="/modules/framingham-risk"
+                >
+                  <h3
+                    class="font-display text-lg font-semibold text-[var(--text-primary)]"
+                  >
+                    dashboard:framinghamCardTitle
+                  </h3>
+                  <p
+                    class="mt-2 flex-1 text-sm text-[var(--text-secondary)]"
+                  >
+                    dashboard:framinghamCardDesc
+                  </p>
+                  <span
+                    class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
+                  >
+                    dashboard:viewDetails →
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="surface-elevated flex h-full flex-col p-5 transition-colors hover:border-[var(--color-brand-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                  data-discover="true"
+                  href="/modules/heart-risk"
+                >
+                  <h3
+                    class="font-display text-lg font-semibold text-[var(--text-primary)]"
+                  >
+                    modules:heartRisk
+                  </h3>
+                  <p
+                    class="mt-2 flex-1 text-sm text-[var(--text-secondary)]"
+                  >
+                    modules:cardioRiskAssessmentDescription
+                  </p>
+                  <span
+                    class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
+                  >
+                    dashboard:viewDetails →
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="surface-elevated flex h-full flex-col p-5 transition-colors hover:border-[var(--color-brand-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                  data-discover="true"
+                  href="/modules/prescription"
+                >
+                  <h3
+                    class="font-display text-lg font-semibold text-[var(--text-primary)]"
+                  >
+                    modules:prescription
+                  </h3>
+                  <p
+                    class="mt-2 flex-1 text-sm text-[var(--text-secondary)]"
+                  >
+                    modules:medicalDescription
+                  </p>
+                  <span
+                    class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
+                  >
+                    dashboard:viewDetails →
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="surface-elevated flex h-full flex-col p-5 transition-colors hover:border-[var(--color-brand-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                  data-discover="true"
+                  href="/modules/tba"
+                >
+                  <h3
+                    class="font-display text-lg font-semibold text-[var(--text-primary)]"
+                  >
+                    modules:tba
+                  </h3>
+                  <p
+                    class="mt-2 flex-1 text-sm text-[var(--text-secondary)]"
+                  >
+                    modules:tbaDescription
+                  </p>
+                  <span
+                    class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
+                  >
+                    dashboard:viewDetails →
+                  </span>
+                </a>
+              </li>
+            </ul>
+          </section>
+          <section
+            aria-labelledby="dashboard-activity-heading"
+          >
+            <h2
+              class="mb-4 font-display text-xl font-semibold"
+              id="dashboard-activity-heading"
+            >
+              dashboard:recentAssessments
+            </h2>
+            <div
+              class="surface-muted px-5 py-8 text-center "
+              data-testid="empty-state"
+              role="status"
             >
               <h3
-                class="text-lg font-semibold"
+                class="font-display text-lg font-semibold text-[var(--text-primary)]"
               >
-                framinghamCardTitle
+                dashboard:noRecent
               </h3>
-              <svg
-                aria-hidden="true"
-                class="w-8 h-8 opacity-90"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              <p
+                class="mt-2 text-sm text-[var(--text-secondary)] max-w-md mx-auto"
               >
-                <path
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                />
-              </svg>
+                dashboard:activityEmptyDesc
+              </p>
+              <div
+                class="mt-4 flex justify-center"
+              >
+                <a
+                  class="rounded-[var(--radius-md)] bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white"
+                  data-discover="true"
+                  href="/questionnaire"
+                >
+                  dashboard:completeQuestionnaire
+                </a>
+              </div>
             </div>
-            <p
-              class="text-indigo-100 mb-4"
-            >
-              framinghamCardDesc
-            </p>
-            <span
-              class="text-white font-medium flex items-center"
-            >
-              viewDetails →
-            </span>
-          </a>
-          <a
-            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-            data-discover="true"
-            href="/modules/heart-risk"
-          >
-            <h3
-              class="text-lg font-semibold text-gray-900 mb-4"
-            >
-              heartRisk
-            </h3>
-            <p
-              class="text-gray-600 mb-4"
-            >
-              This assessment helps evaluate your risk for heart disease and other cardiovascular conditions.
-            </p>
-            <span
-              class="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              View Details →
-            </span>
-          </a>
-          <a
-            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-            data-discover="true"
-            href="/modules/prescription"
-          >
-            <h3
-              class="text-lg font-semibold text-gray-900 mb-4"
-            >
-              prescription
-            </h3>
-            <p
-              class="text-gray-600 mb-4"
-            >
-              Manage and view your medical prescriptions here.
-            </p>
-            <span
-              class="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              View Details →
-            </span>
-          </a>
-          <a
-            class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-            data-discover="true"
-            href="/modules/tba"
-          >
-            <h3
-              class="text-lg font-semibold text-gray-900 mb-4"
-            >
-              tba
-            </h3>
-            <p
-              class="text-gray-600 mb-4"
-            >
-              Connect with healthcare professionals and get personalized support for your health needs.
-            </p>
-            <span
-              class="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              View Details →
-            </span>
-          </a>
+          </section>
         </div>
       </div>
     </main>
     <footer
-      class="health-footer mt-auto border-t border-teal-100/80 bg-white/90 backdrop-blur-sm"
+      class="health-footer mt-auto border-t"
     >
       <div
-        class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8"
+        class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8"
       >
         <p
-          class="text-center text-sm text-teal-800/70"
+          class="text-center text-[var(--text-secondary)] text-sm"
         >
-          © 2026 TheHealthApp. All rights reserved.
+          © 2026 common:appName. common:allRightsReserved
         </p>
       </div>
     </footer>

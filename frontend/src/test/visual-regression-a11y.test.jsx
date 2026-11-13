@@ -1,8 +1,14 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Dashboard from '../pages/Dashboard';
+
+vi.mock('../api/client', () => ({
+  default: {
+    get: vi.fn().mockResolvedValue({ completed: false }),
+  },
+}));
 
 describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verifications', () => {
   beforeEach(() => {
@@ -45,7 +51,7 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
 
       const responsiveGrid = container.querySelector('.grid');
       expect(responsiveGrid).toBeInTheDocument();
-      expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument();
+      expect(screen.getAllByRole('heading', { level: 2 }).length).toBeGreaterThan(0);
     });
 
     it('renders dashboard correctly at desktop viewport dimensions (1280px)', () => {
@@ -56,7 +62,7 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
         </MemoryRouter>
       );
 
-      const responsiveGrid = container.querySelector('.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3');
+      const responsiveGrid = container.querySelector('.grid-cols-1.md\\:grid-cols-2');
       expect(responsiveGrid).toBeInTheDocument();
       expect(screen.getByRole('main') || container.firstChild).toBeInTheDocument();
     });
@@ -159,13 +165,16 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
   });
 
   describe('5. Visual Regression DOM Snapshots', () => {
-    it('matches visual DOM snapshot for mobile and desktop views', () => {
+    it('matches visual DOM snapshot for mobile and desktop views', async () => {
       const { asFragment } = render(
         <MemoryRouter initialEntries={['/dashboard']}>
           <Dashboard />
         </MemoryRouter>
       );
 
+      await waitFor(() => {
+        expect(screen.getByText('dashboard:profileIncomplete')).toBeInTheDocument();
+      });
       expect(asFragment()).toMatchSnapshot();
     });
   });

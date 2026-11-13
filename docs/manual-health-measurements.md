@@ -43,6 +43,8 @@ Symptoms are recorded as user-provided text. Empty or whitespace-only entries ar
 
 ## 2. Shared Validation Rules
 
+The authoritative validation rules are defined in `shared/health_measurements.json`. Both the frontend and backend load their metric definitions from this shared contract to prevent differences in supported metrics, units, value ranges, and decimal precision. Changes to measurement rules should be made in the shared contract rather than separately in frontend or backend code.
+
 Frontend and backend validation must agree on:
 
 - Supported metric identifiers.

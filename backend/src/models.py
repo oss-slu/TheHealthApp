@@ -592,6 +592,18 @@ class IntegrationConnectionResponse(BaseModel):
     connected_at: datetime
     disconnected_at: Optional[datetime] = None
     updated_at: datetime
+    imported_count: int = 0
 
     class Config:
         from_attributes = True
+
+
+class ConnectionDisconnectRequest(BaseModel):
+    delete_imported_data: bool = False
+
+
+class ConnectionActionResult(BaseModel):
+    """Result of disconnecting a provider or deleting its imported data."""
+
+    connection: IntegrationConnectionResponse
+    deleted_count: int

@@ -80,6 +80,7 @@ from .models import (
     SuccessResponse,
     RevokedToken,
     HealthRiskAssessment,
+    HealthEvent,
     HealthRiskInput,
     HealthRiskOutput,
     ConsentSubmit,
@@ -190,6 +191,7 @@ async def lifespan(app: FastAPI):
             HealthRiskAssessment,
             Prescription,
             MedicationDose,
+            HealthEvent,
         ],
     )
     print("Database connection established.")

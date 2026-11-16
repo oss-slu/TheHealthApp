@@ -643,3 +643,10 @@ class HealthEventResponse(BaseModel):
     detail_reference: HealthEventReference
 
     model_config = ConfigDict(from_attributes=True)
+
+class HealthTimelineResponse(BaseModel):
+    events: list[HealthEventResponse]
+    total: int = Field(..., ge=0)
+    limit: int = Field(..., ge=1, le=100)
+    offset: int = Field(..., ge=0)
+    has_more: bool

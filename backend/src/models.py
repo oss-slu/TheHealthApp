@@ -549,7 +549,32 @@ class HealthEventReference(BaseModel):
     entity_type: str = Field(min_length=1, max_length=50)
     entity_id: uuid.UUID
 
+def _validate_event_timestamp(value: datetime) -> datetime:
+    """Require timezone-aware timestamps and normalize them to UTC."""
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("occurred_at must include a timezone")
+    return value.astimezone(timezone.utc)
 
+
+def _validate_event_details(
+    category: HealthEventCategory,
+    source: HealthEventSource,
+    detail_reference: HealthEventReference,
+) -> None:
+    """Validate that an event's category, source, and reference agree."""
+    expected_category = HEALTH_EVENT_SOURCE_CATEGORIES[source]
+    if category != expected_category:
+        raise ValueError(
+            f"Source '{source.value}' is not valid "
+            f"for category '{category.value}'"
+        )
+
+    expected_reference_type = HEALTH_EVENT_SOURCE_REFERENCE_TYPES[source]
+    if detail_reference.entity_type != expected_reference_type:
+        raise ValueError(
+            f"Source '{source.value}' requires a detail reference "
+            f"of type '{expected_reference_type}'"
+        )
 
 class HealthEvent(Document):
     """Common, user-owned event record for the personal health timeline."""
@@ -567,28 +592,15 @@ class HealthEvent(Document):
     @field_validator("occurred_at")
     @classmethod
     def validate_occurred_at(cls, value):
-        if value.tzinfo is None or value.utcoffset() is None:
-            raise ValueError("occurred_at must include a timezone")
-        return value.astimezone(timezone.utc)
+        return _validate_event_timestamp(value)
 
     @model_validator(mode="after")
     def validate_category_source(self):
-        expected_category = HEALTH_EVENT_SOURCE_CATEGORIES[self.source]
-        if self.category != expected_category:
-            raise ValueError(
-                f"Source '{self.source.value}' is not valid "
-                f"for category '{self.category.value}'"
-            )
-
-        expected_reference_type = HEALTH_EVENT_SOURCE_REFERENCE_TYPES[
-            self.source
-        ]
-        if self.detail_reference.entity_type != expected_reference_type:
-            raise ValueError(
-                f"Source '{self.source.value}' requires a detail reference "
-                f"of type '{expected_reference_type}'"
-            )
-
+        _validate_event_details(
+            self.category,
+            self.source,
+            self.detail_reference,
+        )
         return self
 
     class Settings:
@@ -610,28 +622,15 @@ class HealthEventCreate(BaseModel):
     @field_validator("occurred_at")
     @classmethod
     def validate_occurred_at(cls, value):
-        if value.tzinfo is None or value.utcoffset() is None:
-            raise ValueError("occurred_at must include a timezone")
-        return value.astimezone(timezone.utc)
+        return _validate_event_timestamp(value)
 
     @model_validator(mode="after")
     def validate_category_source(self):
-        expected_category = HEALTH_EVENT_SOURCE_CATEGORIES[self.source]
-        if self.category != expected_category:
-            raise ValueError(
-                f"Source '{self.source.value}' is not valid "
-                f"for category '{self.category.value}'"
-            )
-
-        expected_reference_type = HEALTH_EVENT_SOURCE_REFERENCE_TYPES[
-            self.source
-        ]
-        if self.detail_reference.entity_type != expected_reference_type:
-            raise ValueError(
-                f"Source '{self.source.value}' requires a detail reference "
-                f"of type '{expected_reference_type}'"
-            )
-
+        _validate_event_details(
+            self.category,
+            self.source,
+            self.detail_reference,
+        )
         return self
 
 

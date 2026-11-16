@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import PageShell from '../components/PageShell';
+import { EmptyState, Metric } from '../components/ui';
 import apiClient from '../api/client';
 
 const BADGE_STYLES = {
@@ -57,240 +58,187 @@ const DashboardMetricCard = ({
   );
 };
 
-const Dashboard = () => {
-  const { t } = useTranslation(['dashboard', 'modules', 'questionnaire', 'common']);
-  const location = useLocation();
+const TOOLS = [
+  {
+    path: '/health-summary',
+    titleKey: 'summary:navLabel',
+    descKey: 'summary:dashboardDescription',
+  },
+  {
+    path: '/modules/framingham-risk',
+    titleKey: 'dashboard:framinghamCardTitle',
+    descKey: 'dashboard:framinghamCardDesc',
+  },
+  {
+    path: '/modules/heart-risk',
+    titleKey: 'modules:heartRisk',
+    descKey: 'modules:cardioRiskAssessmentDescription',
+  },
+  {
+    path: '/modules/prescription',
+    titleKey: 'modules:prescription',
+    descKey: 'modules:medicalDescription',
+  },
+  {
+    path: '/modules/tba',
+    titleKey: 'modules:tba',
+    descKey: 'modules:tbaDescription',
+  },
+];
 
+const Dashboard = () => {
+  const { t } = useTranslation(['dashboard', 'modules', 'questionnaire', 'common', 'summary']);
+  const location = useLocation();
+  const [loadingStatus, setLoadingStatus] = useState(true);
   const [questionnaireComplete, setQuestionnaireComplete] = useState(
-    location.state?.questionnaireComplete || false
+    Boolean(location.state?.questionnaireComplete)
   );
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkQuestionnaireStatus = async () => {
       try {
         const response = await apiClient.get('/questionnaire/status');
-        setQuestionnaireComplete(response.completed);
+        if (!cancelled) {
+          setQuestionnaireComplete(Boolean(response.completed));
+        }
       } catch (error) {
         console.error('Failed to check questionnaire status:', error);
+      } finally {
+        if (!cancelled) setLoadingStatus(false);
       }
     };
 
     checkQuestionnaireStatus();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const primaryHref = questionnaireComplete ? '/modules/framingham-risk' : '/questionnaire';
+  const primaryTitle = questionnaireComplete
+    ? t('dashboard:primaryActionCompleteTitle')
+    : t('dashboard:healthQuestionnaire');
+  const primaryDescription = questionnaireComplete
+    ? t('dashboard:primaryActionCompleteDesc')
+    : t('dashboard:questionnaireDescription');
+  const primaryCta = questionnaireComplete
+    ? t('dashboard:startFramingham')
+    : t('dashboard:completeQuestionnaire');
 
   return (
     <PageShell title="dashboard:title">
-      {/* Questionnaire Completion Banner */}
-      {questionnaireComplete && (
-        <div className="mb-6 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 p-4 shadow-sm flex items-center justify-between">
-          <p className="font-medium">{t('questionnaire:success.message', 'Questionnaire completed successfully!')}</p>
-        </div>
-      )}
-
-      {/* 1. Header / Greeting Area (Explicit Account Status) */}
-      <section className="mb-8" aria-labelledby="dashboard-greeting">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-100 p-6 rounded-2xl shadow-sm">
-          <div>
-            <h2 id="dashboard-greeting" className="text-2xl sm:text-3xl font-extrabold text-teal-950 tracking-tight">
-              {t('dashboard:greeting', 'Welcome back!')}
-            </h2>
-            <p className="text-sm text-teal-800/80 mt-1">
-              {t('dashboard:subtitle', 'Track your health vitals, daily actions, and assessments all in one place.')}
+<div className="space-y-10" data-testid="dashboard-root">
+        <section aria-labelledby="dashboard-primary-heading" data-testid="dashboard-primary">
+          <Link
+            to={primaryHref}
+            className="group relative block overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-brand-700)] px-6 py-8 text-[var(--text-inverse)] shadow-[var(--shadow-surface)] transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-100/90">
+              {t('dashboard:primaryActionLabel')}
             </p>
+            <h2 id="dashboard-primary-heading" className="mt-2 font-display text-2xl font-bold sm:text-3xl">
+              {primaryTitle}
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm text-teal-50/90 sm:text-base">{primaryDescription}</p>
+            <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold">
+              {primaryCta}
+              <span
+                aria-hidden
+                className="transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+              >
+                →
+              </span>
+            </span>
+          </Link>
+        </section>
+
+        <section aria-labelledby="dashboard-status-heading">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <h2 id="dashboard-status-heading" className="font-display text-xl font-semibold">
+              {t('dashboard:healthStatus')}
+            </h2>
           </div>
-          <div>
-            <DashboardBadge
-              status="neutral"
-              label={t('dashboard:accountStatusActive', 'Account: Active')}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Metric
+              label={t('dashboard:profileMetricLabel')}
+              value={
+                loadingStatus
+                  ? t('common:pleaseWait')
+                  : questionnaireComplete
+                    ? t('dashboard:profileComplete')
+                    : t('dashboard:profileIncomplete')
+              }
+              status={questionnaireComplete ? 'ok' : 'warn'}
+              hint={
+                questionnaireComplete
+                  ? t('dashboard:profileCompleteHint')
+                  : t('dashboard:promptAssess')
+              }
+            />
+            <Metric
+              label={t('dashboard:nextStepLabel')}
+              value={
+                questionnaireComplete
+                  ? t('dashboard:nextStepAssess')
+                  : t('dashboard:nextStepQuestionnaire')
+              }
+              status="info"
+              hint={t('dashboard:nextStepHint')}
             />
           </div>
-<p className="text-teal-100 text-sm leading-relaxed">
-                {t('dashboard:questionnaireDescription', 'Complete your comprehensive daily health survey to update your wellness status and personalized care guidance.')}
-              </p>
-            </div>
-            <div className="shrink-0 flex flex-col sm:flex-row gap-3">
-              <Link
-                to="/questionnaire"
-                className="inline-flex items-center justify-center px-6 py-3.5 bg-white text-teal-900 font-bold text-sm rounded-xl shadow-md hover:bg-teal-50 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-teal-700"
-              >
-                {t('dashboard:completeQuestionnaire', 'Start Questionnaire')} →
-              </Link>
-              <Link
-                to="/health-summary"
-                className="inline-flex items-center justify-center px-4 py-3.5 bg-teal-800/60 hover:bg-teal-800 text-white font-medium text-sm rounded-xl border border-teal-500/50 transition-colors"
-              >
-                {t('dashboard:viewSummary', 'Health Summary')}
-              </Link>
-            </div>
+        </section>
+
+        <section aria-labelledby="dashboard-tools-heading">
+          <div className="mb-4">
+            <h2 id="dashboard-tools-heading" className="font-display text-xl font-semibold">
+              {t('dashboard:toolsHeading')}
+            </h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">{t('dashboard:toolsSubtitle')}</p>
           </div>
-        </div>
-      </section>
+          <ul className="grid grid-cols-1 gap-4 md:grid-cols-2" data-testid="dashboard-tools">
+            {TOOLS.map((tool) => (
+              <li key={tool.path}>
+                <Link
+                  to={tool.path}
+                  className="surface-elevated flex h-full flex-col p-5 transition-colors hover:border-[var(--color-brand-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                >
+                  <h3 className="font-display text-lg font-semibold text-[var(--text-primary)]">
+                    {t(tool.titleKey, tool.titleKey)}
+                  </h3>
+                  <p className="mt-2 flex-1 text-sm text-[var(--text-secondary)]">
+                    {t(tool.descKey, tool.descKey)}
+                  </p>
+                  <span className="mt-4 text-sm font-semibold text-[var(--color-brand-700)]">
+                    {t('dashboard:viewDetails')} →
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-
-      {/* 2. Primary Daily Action Hero Card */}
-      <section className="mb-8" aria-labelledby="primary-action-heading">
-        <h3 id="primary-action-heading" className="text-lg font-bold text-slate-900 mb-3">
-          {t('dashboard:primaryActionTitle', 'Primary Daily Health Action')}
-        </h3>
-        <div className="bg-gradient-to-br from-teal-600 via-teal-700 to-emerald-800 rounded-2xl p-6 sm:p-8 text-white shadow-md hover:shadow-lg transition-all">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-xl">
-              <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide uppercase text-teal-100">
-                {t('dashboard:recommendedToday', 'Recommended for today')}
-              </span>
-              <h4 className="text-xl sm:text-2xl font-bold">
-                {t('dashboard:healthQuestionnaire', 'Health Questionnaire')}
-              </h4>
-              <p className="text-teal-100 text-sm leading-relaxed">
-                {t('dashboard:questionnaireDescription', 'Complete your comprehensive daily health survey to update your wellness status and personalized care guidance.')}
-              </p>
-            </div>
-            <div className="shrink-0 flex flex-col sm:flex-row gap-3">
+        <section aria-labelledby="dashboard-activity-heading">
+          <h2 id="dashboard-activity-heading" className="mb-4 font-display text-xl font-semibold">
+            {t('dashboard:recentAssessments')}
+          </h2>
+          <EmptyState
+            title={t('dashboard:noRecent')}
+            description={t('dashboard:activityEmptyDesc')}
+            action={
               <Link
-                to="/questionnaire"
-                className="inline-flex items-center justify-center px-6 py-3.5 bg-white text-teal-900 font-bold text-sm rounded-xl shadow-md hover:bg-teal-50 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-teal-700"
+                to={questionnaireComplete ? '/modules/framingham-risk' : '/questionnaire'}
+                className="rounded-[var(--radius-md)] bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white"
               >
-                {t('dashboard:completeQuestionnaire', 'Start Questionnaire')} →
+                {questionnaireComplete
+                  ? t('dashboard:startFramingham')
+                  : t('dashboard:completeQuestionnaire')}
               </Link>
-              <Link
-                to="/health-summary"
-                className="inline-flex items-center justify-center px-4 py-3.5 bg-teal-800/60 hover:bg-teal-800 text-white font-medium text-sm rounded-xl border border-teal-500/50 transition-colors"
-              >
-                {t('dashboard:viewSummary', 'Health Summary')}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Health Status & Vitals */}
-      <section className="mb-8" aria-labelledby="health-status-heading">
-        <h3 id="health-status-heading" className="text-lg font-bold text-slate-900 mb-3">
-          {t('dashboard:healthStatus', 'Health Status')}
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <DashboardMetricCard
-            title={t('dashboard:framinghamCardTitle', 'Cardiovascular Risk')}
-            value="Low"
-            status="good"
-            isPlaceholder={true}
-            statusLabel={t('dashboard:normalRisk', 'Normal')}
-            description={t('dashboard:framinghamCardDesc', 'Based on your latest Framingham cardiovascular assessment data.')}
+            }
           />
-          <DashboardMetricCard
-            title={t('dashboard:bloodPressure', 'Blood Pressure')}
-            value="120/80"
-            unit="mmHg"
-            status="good"
-            isPlaceholder={true}
-            statusLabel={t('dashboard:optimal', 'Optimal')}
-            description={t('dashboard:bpDesc', 'Measured within recommended resting levels.')}
-          />
-          <DashboardMetricCard
-            title={t('dashboard:activityLevel', 'Daily Movement')}
-            value="30"
-            unit="mins"
-            status="good"
-            isPlaceholder={true}
-            statusLabel={t('dashboard:onTrack', 'On Track')}
-            description={t('dashboard:activityDesc', 'Active aerobic target completed today.')}
-          />
-        </div>
-      </section>
-
-      {/* 4. Recent Activity & Empty State */}
-      <section className="mb-8" aria-labelledby="recent-activity-heading">
-        <h3 id="recent-activity-heading" className="text-lg font-bold text-slate-900 mb-3">
-          {t('dashboard:recentAssessments', 'Recent Assessments & Activity')}
-        </h3>
-        <div
-          role="region"
-          aria-live="polite"
-          className="flex flex-col items-center justify-center p-8 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50"
-        >
-          <div className="text-3xl mb-3" aria-hidden="true">📋</div>
-          <h4 className="text-base font-semibold mb-1 text-slate-800">
-            {t('dashboard:noRecent', 'No recent health assessments')}
-          </h4>
-          <p className="text-sm max-w-sm text-slate-600 mb-4">
-            {t('dashboard:promptAssess', 'You have not submitted any recent diagnostic assessments. Complete a risk evaluation to track your progress.')}
-          </p>
-          <Link
-            to="/modules/framingham-risk"
-            className="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
-          >
-            {t('dashboard:evaluateNow', 'Evaluate Risk Now')}
-          </Link>
-        </div>
-      </section>
-
-      {/* 5. Health Services & Modules */}
-      <section aria-labelledby="all-modules-heading">
-        <h3 id="all-modules-heading" className="text-lg font-bold text-slate-900 mb-3">
-          {t('dashboard:exploreModules', 'Health Services & Modules')}
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link
-            to="/modules/framingham-risk"
-            className="group bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-400 transition-all"
-          >
-            <div className="h-10 w-10 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-              FR
-            </div>
-            <h4 className="font-semibold text-slate-900 text-sm group-hover:text-teal-700 transition-colors">
-              {t('dashboard:framinghamCardTitle', 'Framingham Risk')}
-            </h4>
-            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-              {t('dashboard:framinghamCardDesc', 'Calculate 10-year cardiovascular risk scores.')}
-            </p>
-          </Link>
-
-          <Link
-            to="/modules/heart-risk"
-            className="group bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-400 transition-all"
-          >
-            <div className="h-10 w-10 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-              HR
-            </div>
-            <h4 className="font-semibold text-slate-900 text-sm group-hover:text-teal-700 transition-colors">
-              {t('modules:heartRisk', 'Heart Risk')}
-            </h4>
-            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-              {t('modules:cardioRiskAssessmentDescription', 'Evaluate cardiovascular risk conditions.')}
-            </p>
-          </Link>
-
-          <Link
-            to="/modules/prescription"
-            className="group bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-400 transition-all"
-          >
-            <div className="h-10 w-10 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-              Rx
-            </div>
-            <h4 className="font-semibold text-slate-900 text-sm group-hover:text-teal-700 transition-colors">
-              {t('modules:prescription', 'Prescriptions')}
-            </h4>
-            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-              {t('modules:medicalDescription', 'Manage and view active medical prescriptions.')}
-            </p>
-          </Link>
-
-          <Link
-            to="/modules/tba"
-            className="group bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-400 transition-all"
-          >
-            <div className="h-10 w-10 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold mb-3 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-              CS
-            </div>
-            <h4 className="font-semibold text-slate-900 text-sm group-hover:text-teal-700 transition-colors">
-              {t('modules:tba', 'Consultation')}
-            </h4>
-            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-              {t('modules:tbaDescription', 'Connect with healthcare professionals.')}
-            </p>
-          </Link>
-        </div>
-      </section>
+        </section>
+      </div>
     </PageShell>
   );
 };

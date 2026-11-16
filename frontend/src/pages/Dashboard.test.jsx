@@ -1,94 +1,157 @@
-import React from 'react';
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  renderWithProviders,
+  renderWithRTL,
+  screen,
+  createAuthenticatedContext,
+} from '../test/test-utils';
 import Dashboard from './Dashboard';
+import apiClient from '../api/client';
 
-describe('Dashboard Page Component (Issue #159 / PR #235)', () => {
+vi.mock('../api/client', () => ({
+  default: {
+    get: vi.fn(),
+  },
+}));
+
+describe('Dashboard', () => {
   beforeEach(() => {
-    document.documentElement.dir = 'ltr';
-    document.documentElement.lang = 'en';
+    apiClient.get.mockResolvedValue({ completed: false });
   });
 
-  const renderDashboard = (initialState = {}) => {
-    return render(
-      <MemoryRouter initialEntries={[{ pathname: '/dashboard', state: initialState }]}>
-        <Dashboard />
-      </MemoryRouter>
-    );
+  const renderDashboard = (options = {}) => {
+    return renderWithProviders(<Dashboard />, {
+      authContext: createAuthenticatedContext(),
+      ...options,
+    });
   };
 
-  it('renders greeting and subtitle in the structured header area', () => {
-    renderDashboard();
-    const greetingHeading = screen.getByRole('heading', { level: 2, name: /welcome back/i });
-    expect(greetingHeading).toBeInTheDocument();
-    expect(screen.getByText(/track your health vitals, daily actions/i)).toBeInTheDocument();
+  describe('Hierarchy', () => {
+    it('renders dashboard title as page heading', () => {
+      renderDashboard();
+      expect(screen.getByRole('heading', { level: 1, name: /dashboard/i })).toBeInTheDocument();
+    });
+
+    it('renders a clear primary action', () => {
+      renderDashboard();
+      const primary = screen.getByTestId('dashboard-primary');
+      expect(primary).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /health questionnaire/i })).toHaveAttribute(
+        'href',
+        '/questionnaire'
+      );
+      expect(screen.getByText(/start here/i)).toBeInTheDocument();
+    });
+
+    it('does not render placeholder-only reminder cards', () => {
+      renderDashboard();
+      expect(screen.queryByText(/^Reminders$/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/no reminders/i)).not.toBeInTheDocument();
+    });
+
+    it('renders interactive health tools', () => {
+      renderDashboard();
+      expect(screen.getByText('Health tools')).toBeInTheDocument();
+      expect(screen.getByText('Heart Risk Assessment')).toBeInTheDocument();
+      expect(screen.getByText('Prescription Manager')).toBeInTheDocument();
+      expect(screen.getAllByText(/health support/i).length).toBeGreaterThan(0);
+      expect(screen.getByText('Framingham Risk Assessment')).toBeInTheDocument();
+    });
+
+    it('uses EmptyState for activity instead of empty decorative cards', () => {
+      renderDashboard();
+      expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+      expect(screen.getByText(/no recent assessments yet/i)).toBeInTheDocument();
+    });
+
+    it('renders status metrics with token-driven status', () => {
+      renderDashboard();
+      const metrics = screen.getAllByTestId('metric');
+      expect(metrics.length).toBeGreaterThanOrEqual(2);
+      expect(metrics[0]).toHaveAttribute('data-status');
+    });
   });
 
-  it('renders explicit account status indicator badge', () => {
-    renderDashboard();
-    const statusBadges = screen.getAllByRole('status');
-    const accountBadge = statusBadges.find((badge) => /account: active/i.test(badge.textContent));
-    expect(accountBadge).toBeDefined();
-    expect(accountBadge).toBeInTheDocument();
+  describe('Module Navigation', () => {
+    it('framingham link points to correct path', () => {
+      renderDashboard();
+      const framinghamLink = screen.getByRole('link', { name: /framingham/i });
+      expect(framinghamLink).toHaveAttribute('href', '/modules/framingham-risk');
+    });
+
+    it('heart risk link points to correct path', () => {
+      renderDashboard();
+      const heartRiskLink = screen.getByRole('link', { name: /heart risk/i });
+      expect(heartRiskLink).toHaveAttribute('href', '/modules/heart-risk');
+    });
+
+    it('prescription link points to correct path', () => {
+      renderDashboard();
+      const prescriptionLink = screen.getByRole('link', { name: /prescription/i });
+      expect(prescriptionLink).toHaveAttribute('href', '/modules/prescription');
+    });
+
+    it('health support link points to correct path', () => {
+      renderDashboard();
+      const tbaLink = screen.getByRole('link', { name: /health support.*view details/i });
+      expect(tbaLink).toHaveAttribute('href', '/modules/tba');
+    });
   });
 
-  it('renders primary daily health action card with questionnaire and summary links', () => {
-    renderDashboard();
-    const links = screen.getAllByRole('link');
-    const questionnaireLink = links.find((link) => link.getAttribute('href') === '/questionnaire');
-    expect(questionnaireLink).toBeDefined();
-    expect(questionnaireLink).toBeInTheDocument();
+  describe('Completed questionnaire primary action', () => {
+    it('promotes Framingham when questionnaire is complete', async () => {
+      apiClient.get.mockResolvedValue({ completed: true });
+      renderDashboard();
 
-    const summaryLink = links.find((link) => link.getAttribute('href') === '/health-summary');
-    expect(summaryLink).toBeDefined();
-    expect(summaryLink).toBeInTheDocument();
+      expect(
+        await screen.findByRole('link', { name: /continue your heart health journey/i })
+      ).toHaveAttribute('href', '/modules/framingham-risk');
+    });
   });
 
-  it('renders recent assessments empty state with informative next-action link', () => {
-    renderDashboard();
-    expect(screen.getByText(/no recent health assessments/i)).toBeInTheDocument();
-    expect(screen.getByText(/complete a risk evaluation to track your progress/i)).toBeInTheDocument();
+  describe('RTL Layout', () => {
+    it('renders correctly in RTL mode', () => {
+      renderWithRTL(<Dashboard />, {
+        authContext: createAuthenticatedContext(),
+      });
+      expect(screen.getByRole('heading', { name: /لوحة التحكم/i })).toBeInTheDocument();
+    });
 
-    const links = screen.getAllByRole('link');
-    const evaluateLink = links.find((link) => link.getAttribute('href') === '/modules/framingham-risk');
-    expect(evaluateLink).toBeDefined();
-    expect(evaluateLink).toBeInTheDocument();
+    it('has RTL direction set on document', () => {
+      renderWithRTL(<Dashboard />, {
+        authContext: createAuthenticatedContext(),
+      });
+      expect(document.documentElement.dir).toBe('rtl');
+    });
   });
 
-  it('preserves reachability and accessible routes for all diagnostic modules', () => {
-    renderDashboard();
-    const links = screen.getAllByRole('link');
-
-    const framinghamLink = links.find((link) => link.getAttribute('href') === '/modules/framingham-risk');
-    expect(framinghamLink).toBeDefined();
-
-    const heartRiskLink = links.find((link) => link.getAttribute('href') === '/modules/heart-risk');
-    expect(heartRiskLink).toBeDefined();
-
-    const prescriptionLink = links.find((link) => link.getAttribute('href') === '/modules/prescription');
-    expect(prescriptionLink).toBeDefined();
-
-    const consultationLink = links.find((link) => link.getAttribute('href') === '/modules/tba');
-    expect(consultationLink).toBeDefined();
+  describe('Responsive Layout', () => {
+    it('renders tools in a responsive grid', () => {
+      renderDashboard();
+      const tools = screen.getByTestId('dashboard-tools');
+      expect(tools).toHaveClass('grid');
+      expect(tools).toHaveClass('grid-cols-1');
+    });
   });
 
-  it('renders localized dashboard strings in Arabic locale without crashing', () => {
-    document.documentElement.dir = 'rtl';
-    document.documentElement.lang = 'ar';
+  describe('Accessibility', () => {
+    it('has proper heading hierarchy', () => {
+      renderDashboard();
+      expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+      expect(screen.getAllByRole('heading', { level: 2 }).length).toBeGreaterThan(0);
+    });
 
-    const { container } = renderDashboard();
+    it('module cards are accessible links', () => {
+      renderDashboard();
+      const moduleLinks = screen.getAllByRole('link');
+      expect(moduleLinks.length).toBeGreaterThanOrEqual(5);
+    });
 
-    expect(document.documentElement.dir).toBe('rtl');
-    expect(document.documentElement.lang).toBe('ar');
-    expect(container.firstChild).toBeInTheDocument();
-
-    const links = screen.getAllByRole('link');
-    expect(links.length).toBeGreaterThan(0);
-  });
-
-  it('renders completion banner when returning with questionnaireComplete state', () => {
-    renderDashboard({ questionnaireComplete: true });
-    expect(screen.getByText(/questionnaire completed successfully!/i)).toBeInTheDocument();
+    it('primary action is keyboard-focusable link', () => {
+      renderDashboard();
+      const primaryLink = screen.getByTestId('dashboard-primary').querySelector('a');
+      expect(primaryLink).toBeTruthy();
+      expect(primaryLink.tabIndex).toBeGreaterThanOrEqual(0);
+    });
   });
 });

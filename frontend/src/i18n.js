@@ -17,6 +17,15 @@ i18n
     react: { useSuspense: false }
   });
 
-document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+function applyDocumentLocale(lng) {
+  document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.lang = lng || 'en';
+}
+
+applyDocumentLocale(savedLang);
+
+i18n.on('languageChanged', (lng) => {
+  applyDocumentLocale(lng);
+});
 
 export default i18n;

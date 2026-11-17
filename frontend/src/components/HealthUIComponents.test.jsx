@@ -47,10 +47,35 @@ describe('Health UI Components (Issue #158 - PR Feedback)', () => {
 
       const card = screen.getByRole('region', { name: /blood pressure/i });
       expect(card).toBeInTheDocument();
+      expect(card).toHaveAccessibleName('Blood Pressure');
+      expect(card).toHaveAccessibleDescription('120/80 mmHg Optimal Normal resting rate');
       expect(screen.getByText('120/80')).toBeInTheDocument();
       expect(screen.getByText('mmHg')).toBeInTheDocument();
       expect(screen.getByText('Optimal')).toBeInTheDocument();
       expect(screen.getByText('Normal resting rate')).toBeInTheDocument();
+    });
+
+    it('verifies accessible name and description of an interactive card include metric value, unit, status, and description', () => {
+      const handleClick = vi.fn();
+      render(
+        <HealthMetricCard
+          title="Blood Pressure"
+          value="120/80"
+          unit="mmHg"
+          status="good"
+          statusLabel="Optimal"
+          description="Normal resting rate"
+          onClick={handleClick}
+        />
+      );
+
+      const button = screen.getByRole('button', { name: /blood pressure/i });
+      expect(button).toBeInTheDocument();
+      expect(button).toHaveAccessibleName('Blood Pressure');
+      expect(button).toHaveAccessibleDescription('120/80 mmHg Optimal Normal resting rate');
+
+      fireEvent.keyDown(button, { key: 'Enter', code: 'Enter' });
+      expect(handleClick).toHaveBeenCalledTimes(1);
     });
 
     it('triggers action on Space key activation in addition to Enter', () => {
@@ -82,6 +107,12 @@ describe('Health UI Components (Issue #158 - PR Feedback)', () => {
 
       rerender(<HealthStateView type="loading" loadingLabel="جارٍ تحميل المحتوى" />);
       expect(screen.getByRole('progressbar', { name: 'جارٍ تحميل المحتوى' })).toBeInTheDocument();
+    });
+
+    it('does not produce an unnamed region when loading state has no title', () => {
+      render(<HealthStateView type="loading" loadingLabel="Loading content" />);
+      expect(screen.queryByRole('region')).not.toBeInTheDocument();
+      expect(screen.getByRole('progressbar', { name: 'Loading content' })).toBeInTheDocument();
     });
 
     it('renders error state with assertive alert role and handles retry callback', () => {
@@ -118,6 +149,22 @@ describe('Health UI Components (Issue #158 - PR Feedback)', () => {
       const region = screen.getByRole('region', { name: /no records found/i });
       expect(region).toHaveAttribute('aria-live', 'polite');
       expect(screen.getByText('Start by adding your first reading.')).toBeInTheDocument();
+    });
+
+    it('does not produce an unnamed region for untitled empty and error states', () => {
+      const { rerender } = render(
+        <HealthStateView type="empty" message="No records found" />
+      );
+      expect(screen.queryByRole('region')).not.toBeInTheDocument();
+      expect(screen.getByText('No records found')).toBeInTheDocument();
+
+      rerender(
+        <HealthStateView type="error" message="Unable to load content" />
+      );
+      expect(screen.queryByRole('region')).not.toBeInTheDocument();
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveAttribute('aria-live', 'assertive');
+      expect(screen.getByText('Unable to load content')).toBeInTheDocument();
     });
   });
 });

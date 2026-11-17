@@ -12,10 +12,11 @@ const HealthStateView = ({
   const isError = type === 'error';
   const isLoading = type === 'loading';
   const titleId = useId();
+  const role = isError ? 'alert' : title ? 'region' : undefined;
 
   return (
     <div
-      role={isError ? 'alert' : 'region'}
+      role={role}
       aria-live={isError ? 'assertive' : 'polite'}
       aria-labelledby={title ? titleId : undefined}
       className={`flex flex-col items-center justify-center p-8 text-center rounded-xl border border-dashed ${

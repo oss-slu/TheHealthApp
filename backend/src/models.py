@@ -1,9 +1,10 @@
 import uuid
+import re
 from beanie import Document, Indexed
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 from enum import Enum
 from datetime import date, datetime, timezone
-from typing import Optional, Annotated, Generic, TypeVar
+from typing import Optional, Annotated, Generic, TypeVar, Any
 from pymongo import IndexModel
 
 # --- Consent (must match frontend CURRENT_CONSENT_VERSION) ---
@@ -30,6 +31,22 @@ def validate_date_of_birth(date_of_birth: date) -> date:
     if age < 13 or age > 120:
         raise ValueError("Date of birth must correspond to an age between 13 and 120")
     return date_of_birth
+
+
+def normalize_phone(phone: Any) -> Any:
+    """Normalize phone number by removing formatting characters while preserving a leading '+'.
+
+    Leaves non-string values unchanged so Pydantic can report validation errors.
+    """
+    if not isinstance(phone, str):
+        return phone
+    stripped = phone.strip()
+    if not stripped:
+        return stripped
+    has_plus = stripped.startswith("+")
+    rest = stripped[1:] if has_plus else stripped
+    cleaned = re.sub(r'[\s\-().+]', '', rest)
+    return f"+{cleaned}" if has_plus else cleaned
 
 
 # --- Database Model ---
@@ -111,6 +128,11 @@ class UserCreate(BaseModel):
     phone: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]
     password: str
 
+    @field_validator('phone', mode='before')
+    @classmethod
+    def normalize_phone_value(cls, v: Any) -> Any:
+        return normalize_phone(v)
+
     @field_validator('date_of_birth')
     @classmethod
     def validate_birth_date(cls, value: date) -> date:
@@ -127,6 +149,11 @@ class UserUpdate(BaseModel):
     name: Optional[Annotated[str, StringConstraints(min_length=2, max_length=50)]] = None
     date_of_birth: Optional[date] = None
     phone: Optional[Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]] = None
+
+    @field_validator('phone', mode='before')
+    @classmethod
+    def normalize_phone_value(cls, v: Any) -> Any:
+        return normalize_phone(v)
 
     @field_validator('date_of_birth')
     @classmethod

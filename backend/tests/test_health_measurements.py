@@ -3,8 +3,12 @@ import math
 import pytest
 
 from src.health_measurements import (
+    CONTRACT_PATH,
+    DATE_RULE,
+    HEALTH_MEASUREMENT_CONTRACT,
     METRIC_RULES,
     TEXT_METRIC_RULES,
+    _find_contract_path,
     validate_blood_pressure,
     validate_measurement_date,
     validate_measurement_notes,
@@ -16,6 +20,20 @@ from datetime import date, timedelta
 
 def test_all_numeric_metrics_have_validation_rules():
     assert len(METRIC_RULES) == 9
+
+
+def test_shared_contract_loading_and_date_rules():
+    assert CONTRACT_PATH.is_file()
+    assert len(METRIC_RULES) == 9
+    assert DATE_RULE["format"] == "YYYY-MM-DD"
+    assert DATE_RULE["pattern"] == r"^\d{4}-\d{2}-\d{2}$"
+    assert DATE_RULE["allow_future"] is False
+
+
+def test_find_contract_path_finds_valid_contract():
+    resolved_path = _find_contract_path()
+    assert resolved_path.is_file()
+    assert resolved_path.name == "health_measurements.json"
 
 
 @pytest.mark.parametrize(
@@ -166,3 +184,29 @@ def test_measurement_date_accepts_iso_string():
 def test_measurement_date_rejects_invalid_string():
     with pytest.raises(ValueError, match="valid ISO date"):
         validate_measurement_date("not-a-date")
+
+
+def test_measurement_date_rejects_compact_date():
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        validate_measurement_date("20261104")
+
+
+def test_measurement_date_rejects_slash_formatted_date():
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        validate_measurement_date("11/04/2026")
+
+
+def test_measurement_date_rejects_calendar_invalid_date():
+    with pytest.raises(ValueError, match="valid ISO date"):
+        validate_measurement_date("2026-02-30")
+
+
+def test_measurement_date_rejects_future_iso_string():
+    with pytest.raises(ValueError, match="cannot be in the future"):
+        validate_measurement_date((date.today() + timedelta(days=1)).isoformat())
+
+
+@pytest.mark.parametrize("invalid_value", [12345, True, False, None, [], {}])
+def test_measurement_date_rejects_non_date_types(invalid_value):
+    with pytest.raises(ValueError, match="valid date"):
+        validate_measurement_date(invalid_value)

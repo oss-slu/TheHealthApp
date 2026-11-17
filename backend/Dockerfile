@@ -24,7 +24,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY backend/src ./src
-COPY backend/.env .env
 COPY shared/health_measurements.json ./shared/health_measurements.json
 
 # Expose FastAPI port

@@ -8,6 +8,13 @@ export const METRIC_RULES = HEALTH_MEASUREMENT_CONTRACT.metrics;
 export const TEXT_METRIC_RULES = HEALTH_MEASUREMENT_CONTRACT.text_metrics;
 export const MAX_NOTES_LENGTH =
   HEALTH_MEASUREMENT_CONTRACT.maximum_notes_length;
+export const DATE_RULE =
+  HEALTH_MEASUREMENT_CONTRACT.date_rule ||
+  HEALTH_MEASUREMENT_CONTRACT.date_validation ||
+  {};
+export const DATE_RULES = DATE_RULE;
+
+const DATE_REGEX = new RegExp(DATE_RULE.pattern || '^\\d{4}-\\d{2}-\\d{2}$');
 
 function validationError(code, params = {}) {
   return { code, params };
@@ -127,7 +134,7 @@ export function validateMeasurementNotes(notes) {
 export function validateMeasurementDate(value, today = new Date()) {
   if (
     typeof value !== 'string' ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+    !DATE_REGEX.test(value)
   ) {
     return validationError('invalid_date');
   }
@@ -141,14 +148,16 @@ export function validateMeasurementDate(value, today = new Date()) {
     return validationError('invalid_date');
   }
 
-  const todayString = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0'),
-  ].join('-');
+  if (DATE_RULE.allow_future === false) {
+    const todayString = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, '0'),
+      String(today.getDate()).padStart(2, '0'),
+    ].join('-');
 
-  if (value > todayString) {
-    return validationError('future_date');
+    if (value > todayString) {
+      return validationError('future_date');
+    }
   }
 
   return null;

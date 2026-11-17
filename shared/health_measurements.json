@@ -85,5 +85,10 @@
       "maximum_length": 1000
     }
   },
-  "maximum_notes_length": 1000
+  "maximum_notes_length": 1000,
+  "date_rule": {
+    "format": "YYYY-MM-DD",
+    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+    "allow_future": false
+  }
 }

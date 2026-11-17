@@ -1,5 +1,6 @@
 """Supported manual health measurement definitions and validation rules."""
 import json
+import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -8,12 +9,23 @@ from pathlib import Path
 # The authoritative measurement definitions are in:
 # shared/health_measurements.json
 
+def _find_contract_path() -> Path:
+    candidates = [
+        Path(__file__).resolve().parents[2] / "shared" / "health_measurements.json",
+        Path(__file__).resolve().parents[1] / "shared" / "health_measurements.json",
+        Path.cwd() / "shared" / "health_measurements.json",
+        Path("/app/shared/health_measurements.json"),
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(
+        f"Health measurement contract not found. Searched: {[str(c) for c in candidates]}"
+    )
+
+
 # Load the shared health measurement contract.
-CONTRACT_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "shared"
-    / "health_measurements.json"
-)
+CONTRACT_PATH = _find_contract_path()
 
 with CONTRACT_PATH.open(encoding="utf-8") as contract_file:
     HEALTH_MEASUREMENT_CONTRACT = json.load(contract_file)
@@ -21,6 +33,15 @@ with CONTRACT_PATH.open(encoding="utf-8") as contract_file:
 METRIC_RULES = HEALTH_MEASUREMENT_CONTRACT["metrics"]
 TEXT_METRIC_RULES = HEALTH_MEASUREMENT_CONTRACT["text_metrics"]
 MAX_NOTES_LENGTH = HEALTH_MEASUREMENT_CONTRACT["maximum_notes_length"]
+DATE_RULE = (
+    HEALTH_MEASUREMENT_CONTRACT.get("date_rule")
+    or HEALTH_MEASUREMENT_CONTRACT.get("date_validation")
+    or {}
+)
+DATE_RULES = DATE_RULE
+DATE_FORMAT = DATE_RULE.get("format", "YYYY-MM-DD")
+DATE_PATTERN = re.compile(DATE_RULE.get("pattern", r"^\d{4}-\d{2}-\d{2}$"))
+ALLOW_FUTURE_DATES = DATE_RULE.get("allow_future", False)
 
 
 def validate_measurement_value(
@@ -116,16 +137,22 @@ def validate_measurement_notes(notes: str | None) -> None:
         )
 
 def validate_measurement_date(value: date | str) -> None:
-    """Reject invalid measurement dates and dates in the future."""
+    """Reject invalid measurement dates, malformed formats, and dates in the future."""
 
-    if isinstance(value, str):
-        try:
-            value = date.fromisoformat(value)
-        except ValueError:
-            raise ValueError("Measurement date must be a valid ISO date.")
-
-    if not isinstance(value, date):
+    if isinstance(value, bool) or not isinstance(value, (date, str)):
         raise ValueError("Measurement date must be a valid date.")
 
-    if value > date.today():
+    if isinstance(value, str):
+        if not DATE_PATTERN.match(value):
+            raise ValueError(
+                f"Measurement date must be a valid ISO date in {DATE_FORMAT} format."
+            )
+        try:
+            parsed_date = date.fromisoformat(value)
+        except ValueError:
+            raise ValueError("Measurement date must be a valid ISO date.")
+    else:
+        parsed_date = value
+
+    if not ALLOW_FUTURE_DATES and parsed_date > date.today():
         raise ValueError("Measurement date cannot be in the future.")

@@ -10,6 +10,7 @@ import {
   validateMeasurementValue,
   validateTextMeasurement,
   MAX_NOTES_LENGTH,
+  DATE_RULE,
 } from './healthMeasurements';
 
 describe('health measurement definitions', () => {
@@ -23,6 +24,13 @@ describe('health measurement definitions', () => {
 
   it('defines the shared notes limit', () => {
     expect(MAX_NOTES_LENGTH).toBe(1000);
+  });
+
+  it('loads the shared date validation rule from the contract', () => {
+    expect(DATE_RULE).toBeDefined();
+    expect(DATE_RULE.format).toBe('YYYY-MM-DD');
+    expect(DATE_RULE.pattern).toBe('^\\d{4}-\\d{2}-\\d{2}$');
+    expect(DATE_RULE.allow_future).toBe(false);
   });
 });
 
@@ -224,6 +232,23 @@ describe('validateMeasurementDate', () => {
       'invalid_date'
     );
   });
+
+  it('rejects compact dates without hyphens', () => {
+    expect(validateMeasurementDate('20261104', today)).toEqual({
+      code: 'invalid_date',
+      params: {},
+    });
+  });
+
+  it.each([null, undefined, 20261104, {}, []])(
+    'rejects non-string date values: %s',
+    (value) => {
+      expect(validateMeasurementDate(value, today)).toEqual({
+        code: 'invalid_date',
+        params: {},
+      });
+    }
+  );
 
   it('rejects an empty date', () => {
     expect(validateMeasurementDate('', today).code).toBe('invalid_date');

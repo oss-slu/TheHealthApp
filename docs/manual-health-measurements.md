@@ -58,7 +58,11 @@ Frontend and backend validation must agree on:
 
 All numeric values must be finite numbers. NaN and infinite values are invalid.
 
-Measurement dates must use the ISO 8601 date format (YYYY-MM-DD) and cannot be in the future. Optional notes may contain up to 1,000 characters.
+Measurement dates must strictly follow the ISO 8601 extended calendar date format (`YYYY-MM-DD`) and cannot be in the future, as governed by `date_rule` in `shared/health_measurements.json`. Compact dates (e.g., `20261104`) and dates formatted with slashes are rejected. Optional notes may contain up to 1,000 characters.
+
+Docker builds for both backend and frontend must use the repository root context so that the shared contract `shared/health_measurements.json` is available:
+- Backend: `docker build -f backend/Dockerfile .`
+- Frontend: `docker build -f frontend/Dockerfile .`
 
 Values outside supported entry ranges must be rejected before storage.
 

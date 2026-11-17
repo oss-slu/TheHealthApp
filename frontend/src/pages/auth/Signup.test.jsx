@@ -248,59 +248,62 @@ describe('Signup', () => {
       {
         scenario: 'default +1 local input',
         country: null,
-        phoneInput: '1234567890',
+        phoneValue: '1234567890',
         expectedPhone: '+11234567890',
       },
       {
         scenario: 'selecting +34 with 9-digit local number',
         country: '+34',
-        phoneInput: '912345678',
+        phoneValue: '912345678',
         expectedPhone: '+34912345678',
       },
       {
         scenario: 'selecting +971 with 9-digit local number',
         country: '+971',
-        phoneInput: '501234567',
+        phoneValue: '501234567',
         expectedPhone: '+971501234567',
       },
       {
         scenario: 'formatted local input',
         country: null,
-        phoneInput: '(555) 123-4567',
+        phoneValue: '(555) 123-4567',
         expectedPhone: '+15551234567',
       },
       {
         scenario: 'pasted +15551234567 unchanged without duplicate +1',
         country: null,
-        phoneInput: '+15551234567',
+        phoneValue: '+15551234567',
         expectedPhone: '+15551234567',
       },
       {
         scenario: 'pasted +34912345678 unchanged without prepending dropdown country code',
         country: null,
-        phoneInput: '+34912345678',
+        phoneValue: '+34912345678',
         expectedPhone: '+34912345678',
       },
       {
         scenario: 'pasted E.164 values with surrounding whitespace',
         country: null,
-        phoneInput: '  +34 912345678  ',
+        phoneValue: '  +34 912345678  ',
         expectedPhone: '+34912345678',
       },
-    ])('submits $scenario as canonical phone payload', async ({ country, phoneInput, expectedPhone }) => {
+    ])('submits $scenario as canonical phone payload', async ({ country, phoneValue, expectedPhone }) => {
       const user = userEvent.setup();
       mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
       renderSignup();
-
       await fillBaseForm(user);
+
       if (country) {
         const countrySelect = screen.getByRole('combobox', { name: /country code/i });
         await user.selectOptions(countrySelect, country);
       }
-      const phoneEl = screen.getByPlaceholderText(/phone number/i);
-      fireEvent.change(phoneEl, { target: { name: 'phone', value: phoneInput } });
-      expect(screen.getByRole('button', { name: /sign up/i })).toBeEnabled();
-      await user.click(screen.getByRole('button', { name: /sign up/i }));
+
+      const phoneInput = screen.getByPlaceholderText(/local phone number|phone number/i);
+      fireEvent.change(phoneInput, { target: { name: 'phone', value: phoneValue } });
+
+      const submitBtn = screen.getByRole('button', { name: /sign up|signup/i });
+      expect(submitBtn).toBeEnabled();
+      await user.click(submitBtn);
 
       await waitFor(() => {
         expect(mockSignup).toHaveBeenCalledWith(
@@ -320,14 +323,14 @@ describe('Signup', () => {
       renderSignup();
 
       const countrySelect = screen.getByRole('combobox', { name: /country code/i });
-      const phoneInput = screen.getByPlaceholderText(/phone number/i);
+      const phoneInput = screen.getByPlaceholderText(/local phone number|phone number/i);
 
       await user.selectOptions(countrySelect, country);
       await user.type(phoneInput, invalidNumber);
       await user.tab();
 
       expect(screen.getByText(/enter a valid phone number for the selected country/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /sign up/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /sign up|signup/i })).toBeDisabled();
     });
 
     it('uses the active translation for Country Code accessible label in RTL/Arabic', () => {
@@ -335,7 +338,6 @@ describe('Signup', () => {
         locale: 'ar',
         dir: 'rtl',
       });
-
       expect(screen.getByRole('combobox', { name: /رمز الدولة/i })).toBeInTheDocument();
     });
   });

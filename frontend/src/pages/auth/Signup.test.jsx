@@ -120,7 +120,7 @@ describe('Signup', () => {
       await user.type(phoneInput, '123');
       await user.tab();
 
-      expect(screen.getByText(/enter a valid 10-15 digit phone number/i)).toBeInTheDocument();
+      expect(screen.getByText(/enter a valid phone number for the selected country/i)).toBeInTheDocument();
     });
   });
 
@@ -192,7 +192,7 @@ describe('Signup', () => {
     fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
     const genderSelect = document.querySelector('select[name="gender"]');
     await user.selectOptions(genderSelect, 'male');
-    await user.type(screen.getByPlaceholderText(/10-15 digit phone number/i), '1234567890');
+    await user.type(screen.getByPlaceholderText(/local phone number|phone number/i), '1234567890');
     await user.type(screen.getByPlaceholderText(/^enter password$/i), 'Password123!');
     await user.type(screen.getByPlaceholderText(/^confirm password$/i), 'Password123!');
     const submitButton = screen.getByRole('button', { name: /sign up|signup/i });
@@ -230,6 +230,198 @@ describe('Signup', () => {
           })
         );
       });
+    });
+  });
+
+  describe('International phone formatting & normalization', () => {
+    const fillBaseForm = async (user) => {
+      await user.type(screen.getByLabelText(/username/i), 'john_doe');
+      await user.type(screen.getByLabelText(/full name/i), 'John Doe');
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
+      const genderSelect = document.querySelector('select[name="gender"]');
+      await user.selectOptions(genderSelect, 'male');
+      await user.type(screen.getByLabelText(/^password$/i), 'Password123');
+      await user.type(screen.getByLabelText(/confirm password/i), 'Password123');
+    };
+
+    it('submits default +1 local input as canonical +11234567890', async () => {
+      const user = userEvent.setup();
+      mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
+      renderSignup();
+
+      await fillBaseForm(user);
+      const phoneInput = screen.getByPlaceholderText(/phone number/i);
+      await user.type(phoneInput, '1234567890');
+      await user.click(screen.getByRole('button', { name: /sign up/i }));
+
+      await waitFor(() => {
+        expect(mockSignup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            phone: '+11234567890',
+          })
+        );
+      });
+    });
+
+    it('submits +34 with 9-digit local number as +34912345678', async () => {
+      const user = userEvent.setup();
+      mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
+      renderSignup();
+
+      await fillBaseForm(user);
+      const countrySelect = screen.getByRole('combobox', { name: /country code/i });
+      await user.selectOptions(countrySelect, '+34');
+      const phoneInput = screen.getByPlaceholderText(/phone number/i);
+      await user.type(phoneInput, '912345678');
+      await user.click(screen.getByRole('button', { name: /sign up/i }));
+
+      await waitFor(() => {
+        expect(mockSignup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            phone: '+34912345678',
+          })
+        );
+      });
+    });
+
+    it('submits +971 with 9-digit local number as +971501234567', async () => {
+      const user = userEvent.setup();
+      mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
+      renderSignup();
+
+      await fillBaseForm(user);
+      const countrySelect = screen.getByRole('combobox', { name: /country code/i });
+      await user.selectOptions(countrySelect, '+971');
+      const phoneInput = screen.getByPlaceholderText(/phone number/i);
+      await user.type(phoneInput, '501234567');
+      await user.click(screen.getByRole('button', { name: /sign up/i }));
+
+      await waitFor(() => {
+        expect(mockSignup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            phone: '+971501234567',
+          })
+        );
+      });
+    });
+
+    it('normalizes formatted local input correctly', async () => {
+      const user = userEvent.setup();
+      mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
+      renderSignup();
+
+      await fillBaseForm(user);
+      const phoneInput = screen.getByPlaceholderText(/phone number/i);
+      await user.type(phoneInput, '(555) 123-4567');
+      await user.click(screen.getByRole('button', { name: /sign up/i }));
+
+      await waitFor(() => {
+        expect(mockSignup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            phone: '+15551234567',
+          })
+        );
+      });
+    });
+
+    it('submits pasted +15551234567 unchanged without duplicate +1', async () => {
+      const user = userEvent.setup();
+      mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
+      renderSignup();
+
+      await fillBaseForm(user);
+      const phoneInput = screen.getByPlaceholderText(/phone number/i);
+      fireEvent.change(phoneInput, { target: { name: 'phone', value: '+15551234567' } });
+      expect(screen.getByRole('button', { name: /sign up/i })).toBeEnabled();
+      await user.click(screen.getByRole('button', { name: /sign up/i }));
+
+      await waitFor(() => {
+        expect(mockSignup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            phone: '+15551234567',
+          })
+        );
+      });
+    });
+
+    it('submits pasted +34912345678 unchanged without prepending dropdown country code', async () => {
+      const user = userEvent.setup();
+      mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
+      renderSignup();
+
+      await fillBaseForm(user);
+      const phoneInput = screen.getByPlaceholderText(/phone number/i);
+      fireEvent.change(phoneInput, { target: { name: 'phone', value: '+34912345678' } });
+      expect(screen.getByRole('button', { name: /sign up/i })).toBeEnabled();
+      await user.click(screen.getByRole('button', { name: /sign up/i }));
+
+      await waitFor(() => {
+        expect(mockSignup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            phone: '+34912345678',
+          })
+        );
+      });
+    });
+
+    it('handles pasted E.164 values with surrounding whitespace correctly', async () => {
+      const user = userEvent.setup();
+      mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
+      renderSignup();
+
+      await fillBaseForm(user);
+      const phoneInput = screen.getByPlaceholderText(/phone number/i);
+      fireEvent.change(phoneInput, { target: { name: 'phone', value: '  +34 912345678  ' } });
+      expect(screen.getByRole('button', { name: /sign up/i })).toBeEnabled();
+      await user.click(screen.getByRole('button', { name: /sign up/i }));
+
+      await waitFor(() => {
+        expect(mockSignup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            phone: '+34912345678',
+          })
+        );
+      });
+    });
+
+    it('rejects invalid local lengths per country', async () => {
+      const user = userEvent.setup();
+      renderSignup();
+
+      const countrySelect = screen.getByRole('combobox', { name: /country code/i });
+      const phoneInput = screen.getByPlaceholderText(/phone number/i);
+
+      // Spain (+34) requires 9 digits; 8 digits should be rejected
+      await user.selectOptions(countrySelect, '+34');
+      await user.type(phoneInput, '91234567');
+      await user.tab();
+      expect(screen.getByText(/enter a valid phone number for the selected country/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /sign up/i })).toBeDisabled();
+
+      // UAE (+971) requires 9 digits; 8 digits should be rejected
+      await user.selectOptions(countrySelect, '+971');
+      await user.clear(phoneInput);
+      await user.type(phoneInput, '50123456');
+      await user.tab();
+      expect(screen.getByText(/enter a valid phone number for the selected country/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /sign up/i })).toBeDisabled();
+
+      // US (+1) requires 10 digits; 9 digits should be rejected
+      await user.selectOptions(countrySelect, '+1');
+      await user.clear(phoneInput);
+      await user.type(phoneInput, '555123456');
+      await user.tab();
+      expect(screen.getByText(/enter a valid phone number for the selected country/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /sign up/i })).toBeDisabled();
+    });
+
+    it('uses the active translation for Country Code accessible label in RTL/Arabic', () => {
+      renderWithProviders(<Signup onAuthSuccess={mockOnAuthSuccess} />, {
+        locale: 'ar',
+        dir: 'rtl',
+      });
+
+      expect(screen.getByRole('combobox', { name: /رمز الدولة/i })).toBeInTheDocument();
     });
   });
 

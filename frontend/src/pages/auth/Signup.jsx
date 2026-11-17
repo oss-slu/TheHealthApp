@@ -11,14 +11,7 @@ import {
   validateUsername,
 } from '../../utils/validation';
 import { formatDateForInput, isValidDateOfBirth } from '../../utils/dateOfBirth';
-
-const COUNTRY_PHONE_LENGTHS = {
-  '+1': { min: 10, max: 10 },    // US / Canada
-  '+34': { min: 9, max: 9 },     // Spain
-  '+91': { min: 10, max: 10 },   // India
-  '+86': { min: 11, max: 11 },   // China
-  '+971': { min: 9, max: 9 },    // UAE
-};
+import { parsePhoneNumber } from '../../utils/phoneFormatting';
 
 const Signup = ({ onAuthSuccess = () => {} }) => {
   const { t } = useTranslation(['auth', 'common', 'errors']);
@@ -56,11 +49,11 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
     [form.dateOfBirth],
   );
   const genderValid = ['male', 'female', 'other', 'na'].includes(form.gender);
-  const phoneValid = useMemo(() => {
-    const rawDigits = form.phone.replace(/\D/g, '');
-    const rule = COUNTRY_PHONE_LENGTHS[countryCode] || { min: 9, max: 15 };
-    return rawDigits.length >= rule.min && rawDigits.length <= rule.max;
-  }, [form.phone, countryCode]);
+  const phoneValidation = useMemo(
+    () => parsePhoneNumber(form.phone, countryCode),
+    [form.phone, countryCode]
+  );
+  const phoneValid = phoneValidation.isValid;
 
   const passwordValid = useMemo(
     () => validatePassword(form.password),
@@ -73,17 +66,18 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   const onChange = (e) => {
     const { name, value } = e.target;
     if (error) setError(null);
-    // Restrict phone field to numbers only
     if (name === 'phone') {
-      const sanitizedValue = value.startsWith('+')
-        ? '+' + value.slice(1).replace(/\D/g, '')
-        : value.replace(/\D/g, '');
+      const sanitizedValue = value.replace(/[^\d+\s\-().]/g, '');
       setForm((prev) => ({ ...prev, [name]: sanitizedValue }));
+      const parsed = parsePhoneNumber(sanitizedValue, countryCode);
+      if (parsed.isInternational && parsed.matchedSupportedCountry && parsed.countryCode !== countryCode) {
+        setCountryCode(parsed.countryCode);
+      }
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
   };
-  
+
   const onBlur = (e) => {
     const { name } = e.target;
     setTouched((prev) => ({ ...prev, [name]: true }));
@@ -109,19 +103,16 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
 
     try {
       const normalizedUsername = normalizeUsername(form.username);
-      let canonicalPhone = form.phone.trim();
-      if (canonicalPhone.startsWith('+')) {
-        canonicalPhone = '+' + canonicalPhone.slice(1).replace(/\D/g, '');
-      } else {
-        const rawDigits = canonicalPhone.replace(/\D/g, '');
-        canonicalPhone = `${countryCode}${rawDigits}`;
+      const parsedPhone = parsePhoneNumber(form.phone, countryCode);
+      if (!parsedPhone.isValid) {
+        return;
       }
       const payload = {
         username: normalizedUsername,
         name: form.name.trim(),
         date_of_birth: form.dateOfBirth,
         gender: form.gender,
-        phone: canonicalPhone,
+        phone: parsedPhone.canonical,
         password: form.password,
       };
 
@@ -266,6 +257,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
               <div className="flex gap-2">
                 <select
                   aria-label={t('auth:countryCode', 'Country Code')}
+                  name="countryCode"
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
                   className="w-28 px-2 py-2 border rounded border-gray-300 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -286,13 +278,13 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
                   value={form.phone}
                   onChange={onChange}
                   onBlur={onBlur}
-                  placeholder={t('auth:phonePlaceholder', '10-15 digit phone number')}
+                  placeholder={t('auth:phonePlaceholder', 'Local phone number')}
                   autoComplete="tel"
                   inputMode="numeric"
                 />
               </div>
               {touched.phone && !phoneValid && (
-                <p className="text-xs text-red-600 mt-1">{t('auth:errors.phoneInvalid', 'Enter a valid 10-15 digit phone number')}</p>
+                <p className="text-xs text-red-600 mt-1">{t('auth:errors.phoneInvalid', 'Enter a valid phone number for the selected country')}</p>
               )}
             </div>
 

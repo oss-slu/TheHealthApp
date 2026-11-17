@@ -1,7 +1,7 @@
 """Supported manual health measurement definitions and validation rules."""
 import json
 import re
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -83,7 +83,10 @@ def validate_measurement_value(
             f"{metric} must be between {minimum} and {maximum} {unit}."
         )
 
-    decimal_places = max(0, -numeric_value.as_tuple().exponent)
+    # Normalize to strip trailing zeroes so whole-valued floats (e.g. 72.0)
+    # or redundant trailing decimals do not count as fractional precision.
+    normalized_value = numeric_value.normalize()
+    decimal_places = max(0, -normalized_value.as_tuple().exponent)
 
     if decimal_places > unit_rule["decimal_places"]:
         raise ValueError(
@@ -92,7 +95,9 @@ def validate_measurement_value(
         )
 
 
-def validate_blood_pressure(systolic: int, diastolic: int) -> None:
+def validate_blood_pressure(
+    systolic: int | float, diastolic: int | float
+) -> None:
     """Validate the relationship between systolic and diastolic pressure."""
 
     validate_measurement_value(
@@ -136,7 +141,7 @@ def validate_measurement_notes(notes: str | None) -> None:
             f"Notes cannot exceed {MAX_NOTES_LENGTH} characters."
         )
 
-def validate_measurement_date(value: date | str) -> None:
+def validate_measurement_date(value: date | datetime | str) -> None:
     """Reject invalid measurement dates, malformed formats, and dates in the future."""
 
     if isinstance(value, bool) or not isinstance(value, (date, str)):
@@ -151,8 +156,15 @@ def validate_measurement_date(value: date | str) -> None:
             parsed_date = date.fromisoformat(value)
         except ValueError:
             raise ValueError("Measurement date must be a valid ISO date.")
+    elif isinstance(value, datetime):
+        parsed_date = value.date()
     else:
         parsed_date = value
 
-    if not ALLOW_FUTURE_DATES and parsed_date > date.today():
-        raise ValueError("Measurement date cannot be in the future.")
+    if not ALLOW_FUTURE_DATES:
+        try:
+            is_future = parsed_date > date.today()
+        except TypeError:
+            raise ValueError("Measurement date must be a valid date.")
+        if is_future:
+            raise ValueError("Measurement date cannot be in the future.")

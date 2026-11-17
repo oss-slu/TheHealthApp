@@ -228,7 +228,7 @@ The Dockerfile uses a **multi-stage build**:
 
 1. **Stage 1 (builder)**: 
    - Uses Node.js to install dependencies and build the app
-   - Creates optimized production build in `/app/dist`
+   - Creates optimized production build in `/app/frontend/dist`
 
 2. **Stage 2 (nginx)**:
    - Uses lightweight Nginx Alpine image

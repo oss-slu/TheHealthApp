@@ -122,6 +122,18 @@ describe('validateMeasurementValue', () => {
     ).toBe('too_many_decimals');
   });
 
+  it('accepts whole-valued floats for zero-decimal metrics', () => {
+    expect(validateMeasurementValue('heart_rate', 72.0, 'bpm')).toBeNull();
+    expect(validateMeasurementValue('mood', 3.0, 'scale')).toBeNull();
+    expect(validateMeasurementValue('stress', 2.0, 'scale')).toBeNull();
+    expect(
+      validateMeasurementValue('blood_pressure_systolic', 120.0, 'mmHg')
+    ).toBeNull();
+    expect(
+      validateMeasurementValue('blood_pressure_diastolic', 80.0, 'mmHg')
+    ).toBeNull();
+  });
+
   it('accepts values at the minimum and maximum boundaries', () => {
     expect(validateMeasurementValue('heart_rate', 20, 'bpm')).toBeNull();
     expect(validateMeasurementValue('heart_rate', 300, 'bpm')).toBeNull();
@@ -131,6 +143,15 @@ describe('validateMeasurementValue', () => {
 describe('validateBloodPressure', () => {
   it('accepts valid blood pressure values', () => {
     expect(validateBloodPressure(120, 80)).toBeNull();
+  });
+
+  it('accepts whole-valued float blood pressure values', () => {
+    expect(validateBloodPressure(120.0, 80.0)).toBeNull();
+  });
+
+  it('rejects fractional blood pressure values', () => {
+    expect(validateBloodPressure(120.5, 80.0).code).toBe('too_many_decimals');
+    expect(validateBloodPressure(120.0, 80.5).code).toBe('too_many_decimals');
   });
 
   it('rejects systolic equal to diastolic', () => {

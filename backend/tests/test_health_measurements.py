@@ -16,7 +16,7 @@ from src.health_measurements import (
     validate_text_measurement,
 )
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 def test_all_numeric_metrics_have_validation_rules():
     assert len(METRIC_RULES) == 9
@@ -115,6 +115,31 @@ def test_excess_decimal_places_are_rejected():
         validate_measurement_value("weight", 70.55, "kg")
 
 
+def test_whole_valued_floats_accepted_for_zero_decimal_metrics():
+    # heart_rate: 72.0 is accepted, 72.5 is rejected
+    validate_measurement_value("heart_rate", 72.0, "bpm")
+    with pytest.raises(ValueError, match="decimal places"):
+        validate_measurement_value("heart_rate", 72.5, "bpm")
+
+    # blood pressure: whole-valued floats accepted, fractional rejected
+    validate_measurement_value("blood_pressure_systolic", 120.0, "mmHg")
+    validate_measurement_value("blood_pressure_diastolic", 80.0, "mmHg")
+    validate_blood_pressure(120.0, 80.0)
+    with pytest.raises(ValueError, match="decimal places"):
+        validate_blood_pressure(120.5, 80.0)
+    with pytest.raises(ValueError, match="decimal places"):
+        validate_blood_pressure(120.0, 80.5)
+
+    # mood and stress: whole-valued floats accepted, fractional rejected
+    validate_measurement_value("mood", 3.0, "scale")
+    with pytest.raises(ValueError, match="decimal places"):
+        validate_measurement_value("mood", 3.5, "scale")
+
+    validate_measurement_value("stress", 2.0, "scale")
+    with pytest.raises(ValueError, match="decimal places"):
+        validate_measurement_value("stress", 2.5, "scale")
+
+
 def test_blood_pressure_accepts_valid_values():
     validate_blood_pressure(120, 80)
 
@@ -210,3 +235,14 @@ def test_measurement_date_rejects_future_iso_string():
 def test_measurement_date_rejects_non_date_types(invalid_value):
     with pytest.raises(ValueError, match="valid date"):
         validate_measurement_date(invalid_value)
+
+
+def test_measurement_date_accepts_and_normalizes_datetime():
+    validate_measurement_date(datetime.now())
+    validate_measurement_date(datetime.now() - timedelta(days=1))
+    validate_measurement_date(datetime(2020, 1, 1, 12, 0, 0))
+
+
+def test_measurement_date_rejects_future_datetime():
+    with pytest.raises(ValueError, match="cannot be in the future"):
+        validate_measurement_date(datetime.now() + timedelta(days=2))

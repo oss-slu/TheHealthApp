@@ -8,3 +8,8 @@ const HEALTH_STATUS_CLASSES = {
 export function getHealthStatusClasses(status) {
   return HEALTH_STATUS_CLASSES[status] || HEALTH_STATUS_CLASSES.neutral;
 }
+
+export const getHealthStatusClass = getHealthStatusClasses;
+export const HEALTH_STATUS_STYLES = HEALTH_STATUS_CLASSES;
+
+export default getHealthStatusClasses;

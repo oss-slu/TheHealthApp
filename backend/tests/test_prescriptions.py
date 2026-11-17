@@ -894,3 +894,79 @@ async def test_cannot_get_reminder_for_another_users_prescription(
     )
 
     assert response.status_code == 404
+
+
+def test_medication_reminder_index_configuration():
+    indexes = MedicationReminder.Settings.indexes
+    compound_index = next(
+        (
+            idx
+            for idx in indexes
+            if idx.document.get("unique") is True
+            and tuple(idx.document.get("key", {}).items())
+            == (("user_id", 1), ("prescription_id", 1))
+        ),
+        None,
+    )
+    assert compound_index is not None
+
+
+@pytest.mark.anyio
+async def test_cannot_create_duplicate_reminder_for_same_prescription(
+    client, test_user
+):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Duplicate Reminder Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    url = f"/api/v1/prescriptions/{prescription.id}/reminder"
+    payload = {"reminder_time": "08:00"}
+
+    first_res = await client.post(url, json=payload)
+    assert first_res.status_code == 201
+
+    second_res = await client.post(url, json=payload)
+    assert second_res.status_code == 409
+    assert second_res.json()["detail"] == "A reminder already exists for this prescription"
+
+
+@pytest.mark.anyio
+async def test_database_duplicate_reminder_creation_returns_409(
+    client, test_user
+):
+    from unittest.mock import patch
+
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Database Duplicate Reminder Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    url = f"/api/v1/prescriptions/{prescription.id}/reminder"
+    payload = {"reminder_time": "08:00"}
+
+    first_res = await client.post(url, json=payload)
+    assert first_res.status_code == 201
+
+    with patch.object(MedicationReminder, "find_one", return_value=None):
+        second_res = await client.post(url, json=payload)
+
+    assert second_res.status_code == 409
+    assert second_res.json()["detail"] == "A reminder already exists for this prescription"
+
+
+@pytest.mark.anyio
+async def test_medication_reminder_database_index_present(test_db):
+    info = await test_db["medication_reminders"].index_information()
+    found = any(
+        idx.get("unique") is True
+        and idx.get("key") == [("user_id", 1), ("prescription_id", 1)]
+        for idx in info.values()
+    )
+    assert found

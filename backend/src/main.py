@@ -951,7 +951,13 @@ async def create_medication_reminder(
         created_at=now,
         updated_at=now,
     )
-    await reminder.insert()
+    try:
+        await reminder.insert()
+    except DuplicateKeyError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A reminder already exists for this prescription",
+        )
 
     return SuccessResponse(
         data=MedicationReminderResponse.model_validate(reminder)

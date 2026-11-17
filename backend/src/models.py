@@ -512,6 +512,15 @@ class MedicationReminder(Document):
 
     class Settings:
         name = "medication_reminders"
+        indexes = [
+            IndexModel(
+                [
+                    ("user_id", 1),
+                    ("prescription_id", 1),
+                ],
+                unique=True,
+            )
+        ]
 
 
 class MedicationReminderCreate(BaseModel):

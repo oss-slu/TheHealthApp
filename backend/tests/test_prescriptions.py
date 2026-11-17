@@ -931,14 +931,14 @@ async def test_cannot_create_duplicate_reminder_for_same_prescription(
 
     second_res = await client.post(url, json=payload)
     assert second_res.status_code == 409
-    assert second_res.json()["detail"] == "A reminder already exists for this prescription"
+    assert second_res.json()["error"]["message"] == "A reminder already exists for this prescription"
 
 
 @pytest.mark.anyio
 async def test_database_duplicate_reminder_creation_returns_409(
     client, test_user
 ):
-    from unittest.mock import patch
+    from unittest.mock import AsyncMock, patch
 
     prescription = Prescription(
         user_id=test_user.id,
@@ -954,11 +954,12 @@ async def test_database_duplicate_reminder_creation_returns_409(
     first_res = await client.post(url, json=payload)
     assert first_res.status_code == 201
 
-    with patch.object(MedicationReminder, "find_one", return_value=None):
+    with patch.object(MedicationReminder, "find_one", new_callable=AsyncMock) as mock_find:
+        mock_find.return_value = None
         second_res = await client.post(url, json=payload)
 
     assert second_res.status_code == 409
-    assert second_res.json()["detail"] == "A reminder already exists for this prescription"
+    assert second_res.json()["error"]["message"] == "A reminder already exists for this prescription"
 
 
 @pytest.mark.anyio

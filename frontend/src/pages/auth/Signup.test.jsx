@@ -190,7 +190,8 @@ describe('Signup', () => {
     await user.type(screen.getByLabelText(/username/i), 'existing_user');
     await user.type(screen.getByPlaceholderText(/enter your full name/i), 'John Doe');
     fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
-    await user.selectOptions(screen.getByRole('combobox'), 'male');
+    const genderSelect = document.querySelector('select[name="gender"]');
+    await user.selectOptions(genderSelect, 'male');
     await user.type(screen.getByPlaceholderText(/10-15 digit phone number/i), '1234567890');
     await user.type(screen.getByPlaceholderText(/^enter password$/i), 'Password123!');
     await user.type(screen.getByPlaceholderText(/^confirm password$/i), 'Password123!');

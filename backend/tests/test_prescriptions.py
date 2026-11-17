@@ -705,6 +705,48 @@ async def test_update_medication_reminder_settings(client, test_user):
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"reminder_time": None},
+        {"enabled": None},
+        {"paused": None},
+    ],
+)
+async def test_update_medication_reminder_rejects_null_fields_and_preserves_state(
+    client, test_user, payload
+):
+    prescription = Prescription(
+        user_id=test_user.id,
+        medication_name="Null Reminder Field Medication",
+        dosage="10mg",
+        frequency="Once daily",
+    )
+    await prescription.insert()
+
+    create_res = await client.post(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json={"reminder_time": "09:30"},
+    )
+    assert create_res.status_code == 201
+
+    patch_res = await client.patch(
+        f"/api/v1/prescriptions/{prescription.id}/reminder",
+        json=payload,
+    )
+    assert patch_res.status_code == 422
+
+    get_res = await client.get(
+        f"/api/v1/prescriptions/{prescription.id}/reminder"
+    )
+    assert get_res.status_code == 200
+    stored = get_res.json()["data"]
+    assert stored["reminder_time"] == "09:30"
+    assert stored["enabled"] is False
+    assert stored["paused"] is False
+
+
+@pytest.mark.anyio
 async def test_update_medication_reminder_rejects_null_time(
     client, test_user
 ):

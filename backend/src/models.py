@@ -544,6 +544,20 @@ class MedicationReminderUpdate(BaseModel):
             raise ValueError("Reminder time must use HH:MM format")
         return value
 
+    @field_validator("enabled", mode="before")
+    @classmethod
+    def validate_enabled(cls, value: Optional[bool]) -> Optional[bool]:
+        if value is None:
+            raise ValueError("Enabled cannot be null")
+        return value
+
+    @field_validator("paused", mode="before")
+    @classmethod
+    def validate_paused(cls, value: Optional[bool]) -> Optional[bool]:
+        if value is None:
+            raise ValueError("Paused cannot be null")
+        return value
+
 
 class MedicationReminderResponse(BaseModel):
     id: uuid.UUID

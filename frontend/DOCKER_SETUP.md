@@ -14,13 +14,15 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 git clone https://github.com/oss-slu/TheHealthApp.git
-cd TheHealthApp/frontend
+cd TheHealthApp
 ```
 
 ### 2. Build the Docker Image
 
+The frontend build requires the shared health contracts located in `shared/`, so the Docker build must be executed from the repository root:
+
 ```bash
-docker build -t health-app-frontend .
+docker build -f frontend/Dockerfile -t health-app-frontend .
 ```
 
 This command:
@@ -104,8 +106,8 @@ When you make changes to the code, you need to rebuild:
 docker stop health-app-frontend
 docker rm health-app-frontend
 
-# Rebuild the image
-docker build -t health-app-frontend .
+# Rebuild the image from repository root
+docker build -f frontend/Dockerfile -t health-app-frontend .
 
 # Run new container
 docker run -d -p 8080:80 --name health-app-frontend health-app-frontend
@@ -129,11 +131,11 @@ This runs on `http://localhost:5173` with hot-reload enabled.
 
 ### Option 2: Docker for Testing Production Build
 
-Use Docker when you want to test the production build:
+Use Docker when you want to test the production build (run from repository root):
 
 ```bash
 # Build and run
-docker build -t health-app-frontend .
+docker build -f frontend/Dockerfile -t health-app-frontend .
 docker run -d -p 8080:80 --name health-app-frontend health-app-frontend
 ```
 
@@ -177,8 +179,8 @@ If you encounter issues, rebuild from scratch:
 docker rm -f health-app-frontend
 docker rmi health-app-frontend
 
-# Rebuild
-docker build -t health-app-frontend .
+# Rebuild from repository root
+docker build -f frontend/Dockerfile -t health-app-frontend .
 docker run -d -p 8080:80 --name health-app-frontend health-app-frontend
 ```
 
@@ -196,8 +198,8 @@ docker ps
 ### Build Fails
 
 If the build fails:
-1. Check you're in the correct directory (`frontend/`)
-2. Ensure `package.json` exists
+1. Check you're in the repository root directory (`TheHealthApp/`) and passing `-f frontend/Dockerfile .`
+2. Ensure `frontend/package.json` and `shared/health_measurements.json` exist
 3. Check Docker has enough resources (Docker Desktop > Settings > Resources)
 4. View build logs for specific errors
 
@@ -226,7 +228,7 @@ The Dockerfile uses a **multi-stage build**:
 
 1. **Stage 1 (builder)**: 
    - Uses Node.js to install dependencies and build the app
-   - Creates optimized production build in `/app/dist`
+   - Creates optimized production build in `/app/frontend/dist`
 
 2. **Stage 2 (nginx)**:
    - Uses lightweight Nginx Alpine image
@@ -244,9 +246,9 @@ Currently, the frontend uses default API endpoints. To customize:
    VITE_API_BASE_URL=http://your-api-url
    ```
 
-2. Rebuild the Docker image:
+2. Rebuild the Docker image from repository root:
    ```bash
-   docker build -t health-app-frontend .
+   docker build -f frontend/Dockerfile -t health-app-frontend .
    ```
 
 ## Sharing with Team
@@ -293,7 +295,7 @@ ngrok http 8080
 
 5. **Tag your images** for version control:
    ```bash
-   docker build -t health-app-frontend:v1.0 .
+   docker build -f frontend/Dockerfile -t health-app-frontend:v1.0 .
    ```
 
 6. **Use docker-compose** for multi-container setups (if needed)
@@ -341,8 +343,8 @@ If you encounter issues:
 ## Quick Reference Card
 
 ```bash
-# Build
-docker build -t health-app-frontend .
+# Build (from repository root)
+docker build -f frontend/Dockerfile -t health-app-frontend .
 
 # Run
 docker run -d -p 8080:80 --name health-app-frontend health-app-frontend
@@ -360,6 +362,6 @@ docker rm -f health-app-frontend
 docker logs health-app-frontend
 
 # Rebuild
-docker stop health-app-frontend && docker rm health-app-frontend && docker build -t health-app-frontend . && docker run -d -p 8080:80 --name health-app-frontend health-app-frontend
+docker stop health-app-frontend && docker rm health-app-frontend && docker build -f frontend/Dockerfile -t health-app-frontend . && docker run -d -p 8080:80 --name health-app-frontend health-app-frontend
 ```
 

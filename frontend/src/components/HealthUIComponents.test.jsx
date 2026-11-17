@@ -96,6 +96,50 @@ describe('Health UI Components (Issue #158 - PR Feedback)', () => {
       fireEvent.keyDown(buttonCard, { key: ' ', code: 'Space' });
       expect(handleClick).toHaveBeenCalledTimes(2);
     });
+
+    it('renders a non-clickable card without title using accessible fallback name without empty heading', () => {
+      render(
+        <HealthMetricCard
+          value="120/80"
+          unit="mmHg"
+          status="good"
+          statusLabel="Optimal"
+          description="Normal resting rate"
+        />
+      );
+
+      const card = screen.getByRole('region', { name: '120/80 mmHg Optimal' });
+      expect(card).toBeInTheDocument();
+      expect(card).toHaveAccessibleName('120/80 mmHg Optimal');
+      expect(card).not.toHaveAttribute('aria-labelledby');
+      expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+      expect(card).toHaveAccessibleDescription('120/80 mmHg Optimal Normal resting rate');
+    });
+
+    it('renders a clickable card without title with accessible name and keyboard activation', () => {
+      const handleClick = vi.fn();
+      render(
+        <HealthMetricCard
+          value="98"
+          unit="%"
+          status="good"
+          statusLabel="Normal"
+          onClick={handleClick}
+        />
+      );
+
+      const button = screen.getByRole('button', { name: '98 % Normal' });
+      expect(button).toBeInTheDocument();
+      expect(button).toHaveAccessibleName('98 % Normal');
+      expect(button).not.toHaveAttribute('aria-labelledby');
+      expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+
+      fireEvent.keyDown(button, { key: 'Enter', code: 'Enter' });
+      expect(handleClick).toHaveBeenCalledTimes(1);
+
+      fireEvent.keyDown(button, { key: ' ', code: 'Space' });
+      expect(handleClick).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('HealthStateView', () => {

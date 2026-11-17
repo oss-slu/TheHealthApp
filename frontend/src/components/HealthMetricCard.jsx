@@ -1,6 +1,14 @@
 import React, { useId } from 'react';
 import HealthBadge from './HealthBadge';
 
+/**
+ * HealthMetricCard renders a health metric card as a landmark region or an interactive button.
+ *
+ * Note: A `title` should normally be provided to establish proper visual hierarchy and
+ * accessible naming. When `title` is omitted, the component falls back to a descriptive
+ * accessible name derived from available metric data (value, unit, status) to prevent
+ * rendering an unnamed region or button.
+ */
 const HealthMetricCard = ({
   title,
   value,
@@ -18,6 +26,19 @@ const HealthMetricCard = ({
   const unitId = unit ? `${idPrefix}-unit` : undefined;
   const statusId = statusLabel ? `${idPrefix}-status` : undefined;
   const descId = description ? `${idPrefix}-desc` : undefined;
+
+  const hasTitle = typeof title === 'string' && title.trim().length > 0;
+
+  // Build a meaningful fallback accessible label from available metric data
+  const fallbackLabel = !hasTitle
+    ? [
+        value !== undefined && value !== null ? String(value) : '',
+        unit,
+        statusLabel || (status && status !== 'neutral' ? status : ''),
+      ]
+        .filter(Boolean)
+        .join(' ') || 'Health metric'
+    : undefined;
 
   const describedByIds =
     [valueId, unitId, statusId, descId].filter(Boolean).join(' ') || undefined;
@@ -37,7 +58,8 @@ const HealthMetricCard = ({
             }
           : undefined
       }
-      aria-labelledby={titleId}
+      aria-labelledby={hasTitle ? titleId : undefined}
+      aria-label={hasTitle ? undefined : fallbackLabel}
       aria-describedby={describedByIds}
       className={`p-5 bg-white rounded-xl border border-slate-200 shadow-sm transition-all ${
         isClickable
@@ -45,12 +67,16 @@ const HealthMetricCard = ({
           : ''
       } ${className}`}
     >
-      <div className="flex justify-between items-start gap-2 mb-2">
-        <h3 id={titleId} className="text-sm font-medium text-slate-600 truncate">
-          {title}
-        </h3>
-        {statusLabel && <HealthBadge id={statusId} status={status} label={statusLabel} />}
-      </div>
+      {(hasTitle || statusLabel) && (
+        <div className="flex justify-between items-start gap-2 mb-2">
+          {hasTitle && (
+            <h3 id={titleId} className="text-sm font-medium text-slate-600 truncate">
+              {title}
+            </h3>
+          )}
+          {statusLabel && <HealthBadge id={statusId} status={status} label={statusLabel} />}
+        </div>
+      )}
       <div className="flex items-baseline gap-1 my-1">
         <span id={valueId} className="text-2xl font-bold text-slate-900 tracking-tight">{value}</span>
         {unit && (

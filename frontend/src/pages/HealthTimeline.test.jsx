@@ -15,35 +15,52 @@ vi.mock('../services/healthTimelineService', () => ({
   },
 }));
 
+const createEvent = ({
+  id = 'event-1',
+  category = 'assessment',
+  source = 'health_risk_assessment',
+  date = '2026-11-18T14:00:00.000Z',
+} = {}) => ({
+  id,
+  category,
+  source,
+  occurred_at: date,
+  created_at: date,
+  detail_reference: {
+    entity_type: category,
+    entity_id: `record-${id}`,
+  },
+});
+
+const createResponse = ({
+  events = [],
+  total = events.length,
+  offset = 0,
+  has_more = false,
+} = {}) => ({
+  events,
+  total,
+  limit: 20,
+  offset,
+  has_more,
+});
+
+const renderTimeline = () =>
+  renderWithProviders(<HealthTimeline />, {
+    authContext: createAuthenticatedContext(),
+  });
+
 describe('HealthTimeline', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('displays health events with dates and related links', async () => {
-    healthTimelineService.getTimeline.mockResolvedValue({
-      events: [
-        {
-          id: 'event-1',
-          category: 'assessment',
-          source: 'health_risk_assessment',
-          occurred_at: '2026-11-18T14:00:00.000Z',
-          created_at: '2026-11-18T14:00:00.000Z',
-          detail_reference: {
-            entity_type: 'assessment',
-            entity_id: 'record-1',
-          },
-        },
-      ],
-      total: 1,
-      limit: 20,
-      offset: 0,
-      has_more: false,
-    });
+    healthTimelineService.getTimeline.mockResolvedValue(
+      createResponse({ events: [createEvent()] })
+    );
 
-    renderWithProviders(<HealthTimeline />, {
-      authContext: createAuthenticatedContext(),
-    });
+    renderTimeline();
 
     expect(
       await screen.findByText('Health risk assessment')
@@ -61,18 +78,10 @@ describe('HealthTimeline', () => {
     });
   });
 
-    it('displays an accessible empty state when there are no events', async () => {
-    healthTimelineService.getTimeline.mockResolvedValue({
-      events: [],
-      total: 0,
-      limit: 20,
-      offset: 0,
-      has_more: false,
-    });
+  it('displays an accessible empty state when there are no events', async () => {
+    healthTimelineService.getTimeline.mockResolvedValue(createResponse());
 
-    renderWithProviders(<HealthTimeline />, {
-      authContext: createAuthenticatedContext(),
-    });
+    renderTimeline();
 
     expect(
       await screen.findByText('No health activity yet')
@@ -88,23 +97,17 @@ describe('HealthTimeline', () => {
     );
   });
 
-    it('displays an error and retries loading the timeline', async () => {
+  it('displays an error and retries loading the timeline', async () => {
     healthTimelineService.getTimeline
       .mockRejectedValueOnce(new Error('Network error'))
-      .mockResolvedValueOnce({
-        events: [],
-        total: 0,
-        limit: 20,
-        offset: 0,
-        has_more: false,
-      });
+      .mockResolvedValueOnce(createResponse());
 
-    renderWithProviders(<HealthTimeline />, {
-      authContext: createAuthenticatedContext(),
-    });
+    renderTimeline();
 
     expect(
-      await screen.findByText('Your health timeline could not be loaded. Please try again.')
+      await screen.findByText(
+        'Your health timeline could not be loaded. Please try again.'
+      )
     ).toBeInTheDocument();
 
     await userEvent.click(
@@ -118,50 +121,31 @@ describe('HealthTimeline', () => {
     expect(healthTimelineService.getTimeline).toHaveBeenCalledTimes(2);
   });
 
-    it('loads more events and appends them to the timeline', async () => {
+  it('loads more events and appends them to the timeline', async () => {
     healthTimelineService.getTimeline
-      .mockResolvedValueOnce({
-        events: [
-          {
-            id: 'event-1',
-            category: 'assessment',
-            source: 'health_risk_assessment',
-            occurred_at: '2026-11-18T14:00:00.000Z',
-            created_at: '2026-11-18T14:00:00.000Z',
-            detail_reference: {
-              entity_type: 'assessment',
-              entity_id: 'record-1',
-            },
-          },
-        ],
-        total: 2,
-        limit: 20,
-        offset: 0,
-        has_more: true,
-      })
-      .mockResolvedValueOnce({
-        events: [
-          {
-            id: 'event-2',
-            category: 'medication',
-            source: 'prescription',
-            occurred_at: '2026-11-17T14:00:00.000Z',
-            created_at: '2026-11-17T14:00:00.000Z',
-            detail_reference: {
-              entity_type: 'prescription',
-              entity_id: 'record-2',
-            },
-          },
-        ],
-        total: 2,
-        limit: 20,
-        offset: 1,
-        has_more: false,
-      });
+      .mockResolvedValueOnce(
+        createResponse({
+          events: [createEvent()],
+          total: 2,
+          has_more: true,
+        })
+      )
+      .mockResolvedValueOnce(
+        createResponse({
+          events: [
+            createEvent({
+              id: 'event-2',
+              category: 'medication',
+              source: 'prescription',
+              date: '2026-11-17T14:00:00.000Z',
+            }),
+          ],
+          total: 2,
+          offset: 1,
+        })
+      );
 
-    renderWithProviders(<HealthTimeline />, {
-      authContext: createAuthenticatedContext(),
-    });
+    renderTimeline();
 
     expect(
       await screen.findByText('Health risk assessment')
@@ -187,51 +171,32 @@ describe('HealthTimeline', () => {
     ).not.toBeInTheDocument();
   });
 
-    it('keeps existing events and allows retry when loading more fails', async () => {
+  it('keeps existing events and allows retry when loading more fails', async () => {
     healthTimelineService.getTimeline
-      .mockResolvedValueOnce({
-        events: [
-          {
-            id: 'event-1',
-            category: 'assessment',
-            source: 'health_risk_assessment',
-            occurred_at: '2026-11-18T14:00:00.000Z',
-            created_at: '2026-11-18T14:00:00.000Z',
-            detail_reference: {
-              entity_type: 'assessment',
-              entity_id: 'record-1',
-            },
-          },
-        ],
-        total: 2,
-        limit: 20,
-        offset: 0,
-        has_more: true,
-      })
+      .mockResolvedValueOnce(
+        createResponse({
+          events: [createEvent()],
+          total: 2,
+          has_more: true,
+        })
+      )
       .mockRejectedValueOnce(new Error('Network error'))
-      .mockResolvedValueOnce({
-        events: [
-          {
-            id: 'event-2',
-            category: 'medication',
-            source: 'prescription',
-            occurred_at: '2026-11-17T14:00:00.000Z',
-            created_at: '2026-11-17T14:00:00.000Z',
-            detail_reference: {
-              entity_type: 'prescription',
-              entity_id: 'record-2',
-            },
-          },
-        ],
-        total: 2,
-        limit: 20,
-        offset: 1,
-        has_more: false,
-      });
+      .mockResolvedValueOnce(
+        createResponse({
+          events: [
+            createEvent({
+              id: 'event-2',
+              category: 'medication',
+              source: 'prescription',
+              date: '2026-11-17T14:00:00.000Z',
+            }),
+          ],
+          total: 2,
+          offset: 1,
+        })
+      );
 
-    renderWithProviders(<HealthTimeline />, {
-      authContext: createAuthenticatedContext(),
-    });
+    renderTimeline();
 
     expect(
       await screen.findByText('Health risk assessment')
@@ -242,7 +207,9 @@ describe('HealthTimeline', () => {
     );
 
     expect(
-      await screen.findByText('More events could not be loaded. Please try again.')
+      await screen.findByText(
+        'More events could not be loaded. Please try again.'
+      )
     ).toBeInTheDocument();
 
     expect(screen.getByText('Health risk assessment')).toBeInTheDocument();

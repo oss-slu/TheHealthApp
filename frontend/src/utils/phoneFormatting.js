@@ -88,8 +88,8 @@ export function parsePhoneNumber(input, selectedCountryCode = '+1') {
     }
 
     // International number with unsupported prefix:
-    // Safe standard E.164 rule: total digits between 10 and 15
-    const isValid = cleanDigits.length >= 10 && cleanDigits.length <= 15;
+    // Enforce valid E.164 leading digit (1-9) and 10 to 15 total digits
+    const isValid = /^[1-9]\d{9,14}$/.test(cleanDigits);
     return {
       isValid,
       canonical: canonicalCandidate,

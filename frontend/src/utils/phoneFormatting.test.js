@@ -53,6 +53,9 @@ describe('phoneFormatting utility', () => {
 
       const tooShort = parsePhoneNumber('+44 123', '+1');
       expect(tooShort.isValid).toBe(false);
+
+      const leadingZero = parsePhoneNumber('+0123456789', '+1');
+      expect(leadingZero.isValid).toBe(false);
     });
   });
 

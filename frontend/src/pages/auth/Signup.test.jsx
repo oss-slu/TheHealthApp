@@ -318,6 +318,7 @@ describe('Signup', () => {
       { country: '+34', invalidNumber: '91234567' },
       { country: '+971', invalidNumber: '50123456' },
       { country: '+1', invalidNumber: '555123456' },
+      { country: '+1', invalidNumber: '+0123456789' },
     ])('rejects invalid local length $invalidNumber for $country', async ({ country, invalidNumber }) => {
       const user = userEvent.setup();
       renderSignup();

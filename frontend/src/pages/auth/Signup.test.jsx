@@ -50,7 +50,7 @@ describe('Signup', () => {
     it('renders gender dropdown with options', () => {
       renderSignup();
 
-      const genderSelect = screen.getByRole('combobox');
+      const genderSelect = document.querySelector('select[name="gender"]');
       expect(genderSelect).toBeInTheDocument();
     });
   });
@@ -120,19 +120,20 @@ describe('Signup', () => {
       await user.type(phoneInput, '123');
       await user.tab();
 
-      expect(screen.getByText(/enter a valid 10-15 digit phone number/i)).toBeInTheDocument();
+      expect(screen.getByText(/enter a valid phone number for the selected country/i)).toBeInTheDocument();
     });
   });
 
   describe('Form Submission', () => {
     const fillValidForm = async (user) => {
-      await user.type(screen.getByLabelText(/username/i), 'john_doe');
-      await user.type(screen.getByLabelText(/full name/i), 'John Doe');
-      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
-      await user.selectOptions(screen.getByRole('combobox'), 'male');
-      await user.type(screen.getByPlaceholderText(/phone number/i), '1234567890');
-      await user.type(screen.getByLabelText(/^password$/i), 'Password123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'Password123');
+    await user.type(screen.getByLabelText(/username/i), 'john_doe');
+    await user.type(screen.getByLabelText(/full name/i), 'John Doe');
+    fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
+    const genderSelect = document.querySelector('select[name="gender"]');
+    await user.selectOptions(genderSelect, 'male');
+    await user.type(screen.getByPlaceholderText(/phone number/i), '1234567890');
+    await user.type(screen.getByLabelText(/^password$/i), 'Password123');
+    await user.type(screen.getByLabelText(/confirm password/i), 'Password123');
     };
 
     it('enables submit button when form is valid', async () => {
@@ -159,7 +160,7 @@ describe('Signup', () => {
           name: 'John Doe',
           date_of_birth: '2000-01-01',
           gender: 'male',
-          phone: '1234567890',
+          phone: '+11234567890',
           password: 'Password123',
         });
       });
@@ -189,8 +190,9 @@ describe('Signup', () => {
     await user.type(screen.getByLabelText(/username/i), 'existing_user');
     await user.type(screen.getByPlaceholderText(/enter your full name/i), 'John Doe');
     fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
-    await user.selectOptions(screen.getByRole('combobox'), 'male');
-    await user.type(screen.getByPlaceholderText(/10-15 digit phone number/i), '1234567890');
+    const genderSelect = document.querySelector('select[name="gender"]');
+    await user.selectOptions(genderSelect, 'male');
+    await user.type(screen.getByPlaceholderText(/local phone number|phone number/i), '1234567890');
     await user.type(screen.getByPlaceholderText(/^enter password$/i), 'Password123!');
     await user.type(screen.getByPlaceholderText(/^confirm password$/i), 'Password123!');
     const submitButton = screen.getByRole('button', { name: /sign up|signup/i });
@@ -207,10 +209,11 @@ describe('Signup', () => {
       mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
       renderSignup();
 
-      await user.type(screen.getByLabelText(/username/i), 'john_doe');
-      await user.type(screen.getByLabelText(/full name/i), 'John Doe');
-      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
-      await user.selectOptions(screen.getByRole('combobox'), 'male');
+    await user.type(screen.getByLabelText(/username/i), 'john_doe');
+    await user.type(screen.getByLabelText(/full name/i), 'John Doe');
+    fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
+    const genderSelect = document.querySelector('select[name="gender"]');
+    await user.selectOptions(genderSelect, 'male');
       
       // Try to type letters - they should be stripped
       const phoneInput = screen.getByPlaceholderText(/phone number/i);
@@ -223,10 +226,120 @@ describe('Signup', () => {
       await waitFor(() => {
         expect(mockSignup).toHaveBeenCalledWith(
           expect.objectContaining({
-            phone: '1234567890',
+            phone: '+11234567890',
           })
         );
       });
+    });
+  });
+
+  describe('International phone formatting & normalization', () => {
+    const fillBaseForm = async (user) => {
+      await user.type(screen.getByLabelText(/username/i), 'john_doe');
+      await user.type(screen.getByLabelText(/full name/i), 'John Doe');
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2000-01-01' } });
+      const genderSelect = document.querySelector('select[name="gender"]');
+      await user.selectOptions(genderSelect, 'male');
+      await user.type(screen.getByLabelText(/^password$/i), 'Password123');
+      await user.type(screen.getByLabelText(/confirm password/i), 'Password123');
+    };
+
+    it.each([
+      {
+        scenario: 'default +1 local input',
+        country: null,
+        phoneValue: '1234567890',
+        expectedPhone: '+11234567890',
+      },
+      {
+        scenario: 'selecting +34 with 9-digit local number',
+        country: '+34',
+        phoneValue: '912345678',
+        expectedPhone: '+34912345678',
+      },
+      {
+        scenario: 'selecting +971 with 9-digit local number',
+        country: '+971',
+        phoneValue: '501234567',
+        expectedPhone: '+971501234567',
+      },
+      {
+        scenario: 'formatted local input',
+        country: null,
+        phoneValue: '(555) 123-4567',
+        expectedPhone: '+15551234567',
+      },
+      {
+        scenario: 'pasted +15551234567 unchanged without duplicate +1',
+        country: null,
+        phoneValue: '+15551234567',
+        expectedPhone: '+15551234567',
+      },
+      {
+        scenario: 'pasted +34912345678 unchanged without prepending dropdown country code',
+        country: null,
+        phoneValue: '+34912345678',
+        expectedPhone: '+34912345678',
+      },
+      {
+        scenario: 'pasted E.164 values with surrounding whitespace',
+        country: null,
+        phoneValue: '  +34 912345678  ',
+        expectedPhone: '+34912345678',
+      },
+    ])('submits $scenario as canonical phone payload', async ({ country, phoneValue, expectedPhone }) => {
+      const user = userEvent.setup();
+      mockSignup.mockResolvedValueOnce({ username: 'john_doe' });
+      renderSignup();
+      await fillBaseForm(user);
+
+      if (country) {
+        const countrySelect = screen.getByRole('combobox', { name: /country code/i });
+        await user.selectOptions(countrySelect, country);
+      }
+
+      const phoneInput = screen.getByPlaceholderText(/local phone number|phone number/i);
+      fireEvent.change(phoneInput, { target: { name: 'phone', value: phoneValue } });
+
+      const submitBtn = screen.getByRole('button', { name: /sign up|signup/i });
+      expect(submitBtn).toBeEnabled();
+      await user.click(submitBtn);
+
+      await waitFor(() => {
+        expect(mockSignup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            phone: expectedPhone,
+          })
+        );
+      });
+    });
+
+    it.each([
+      { country: '+34', invalidNumber: '91234567' },
+      { country: '+971', invalidNumber: '50123456' },
+      { country: '+1', invalidNumber: '555123456' },
+      { country: '+1', invalidNumber: '+0123456789' },
+    ])('rejects invalid local length $invalidNumber for $country', async ({ country, invalidNumber }) => {
+      const user = userEvent.setup();
+      renderSignup();
+
+      const countrySelect = screen.getByRole('combobox', { name: /country code/i });
+      const phoneInput = screen.getByPlaceholderText(/local phone number|phone number/i);
+
+      await user.selectOptions(countrySelect, country);
+      await user.type(phoneInput, invalidNumber);
+      await user.tab();
+
+      expect(screen.getByText(/enter a valid phone number for the selected country/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /sign up|signup/i })).toBeDisabled();
+    });
+
+    it('uses the active translation for Country Code accessible label in RTL/Arabic', () => {
+      renderWithProviders(<Signup onAuthSuccess={mockOnAuthSuccess} />, {
+        locale: 'ar',
+        dir: 'rtl',
+      });
+      expect(screen.getByRole('combobox', { name: /رمز الدولة/i })).toBeInTheDocument();
     });
   });
 

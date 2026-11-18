@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+**/node_modules
+dist
+**/dist
+backend/.env
+backend/.venv
+*.pyc
+__pycache__
+**/__pycache__
+brag-output
+uploads

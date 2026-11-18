@@ -8,7 +8,7 @@
 - The user is taken only from the token. Query parameters such as `user_id` are ignored, and every database query is filtered by the signed-in user's ID.
 - Responses are sent with `Cache-Control: no-store`. The app does not keep a copy of the export.
 
-## What is included (schema 1.1)
+## What is included (schema 1.2)
 
 | Section | Fields |
 | --- | --- |
@@ -17,6 +17,8 @@
 | `consent` | `consent_given`, `data_usage`, `marketing`, `version`, `recorded_at`, plus `current_policy_version` and `valid_for_current_policy`. The last one uses the same rule as the backend `user_has_valid_consent`. |
 | `questionnaires[]` | `id`, `submitted_at` (created), `updated_at`, and every answer field |
 | `risk_assessments[]` | `id`, `assessed_at` and the full stored `result` |
+| `integrations.connections[]` | `id`, `provider`, `granted_types`, `status`, `connected_at`, `disconnected_at`, `updated_at`. Disconnected connections are included. See [integrations](integrations.md). |
+| `integrations.imported_measurements[]` | `id`, `connection_id`, `provider`, `source_record_id`, `measurement_type`, `value`, `unit`, `recorded_at`, `imported_at` |
 
 ## What is excluded, and why
 
@@ -28,4 +30,4 @@
 
 ## Changing the export
 
-Add any new field on `User`, `Questionnaire` or `HealthRiskAssessment` to the export, or list it under exclusions above. If you change the shape, bump `schema_version`.
+Add any new field on `User`, `Questionnaire`, `HealthRiskAssessment`, `IntegrationConnection` or `ImportedMeasurement` to the export, or list it under exclusions above. If you change the shape, bump `schema_version`.

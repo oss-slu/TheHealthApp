@@ -6,6 +6,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { AuthContext } from '../context/AuthContext';
 import commonEn from '../../public/locales/en/common.json';
+import commonAr from '../../public/locales/ar/common.json';
 import { ThemeProvider } from '../context/ThemeContext';
 import framinghamEn from '../../public/locales/en/framingham.json';
 import summaryEn from '../../public/locales/en/summary.json';
@@ -153,6 +154,7 @@ testI18n.use(initReactI18next).init({
         openMenu: 'فتح القائمة',
         backgroundTheme: 'سمة الخلفية',
         allRightsReserved: 'جميع الحقوق محفوظة.',
+        connectedApps: commonAr.connectedApps,
         themes: {
           calm: 'هادئ',
           clinical: 'سريري',

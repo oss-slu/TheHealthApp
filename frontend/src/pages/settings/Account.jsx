@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { showSuccessToast } from '../../lib/toast.js';
 import { userHasValidHealthConsent } from '../../lib/consentConstants.js';
 import { authService } from '../../services/authService.js';
+import ConnectedHealthApps from './ConnectedHealthApps.jsx';
 
 const Account = () => {
   const { t } = useTranslation(['common', 'auth', 'errors']);
@@ -266,6 +267,10 @@ const Account = () => {
             </button>
             {exportStatus ? <p role="status" className="mt-2 text-sm text-green-800">{exportStatus}</p> : null}
             {exportError ? <p role="alert" className="mt-2 text-sm text-red-700">{exportError}</p> : null}
+          </div>
+
+          <div className="mt-5 border-t border-gray-200 pt-5">
+            <ConnectedHealthApps />
           </div>
 
           <div className="mt-5 border-t border-gray-200 pt-5">

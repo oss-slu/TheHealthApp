@@ -8,7 +8,7 @@ Implements [#202](https://github.com/oss-slu/TheHealthApp/issues/202), part of [
 - **Read-only.** Adapters only read from a provider. The app never writes back.
 - **Explicit permission.** Users grant each measurement type one by one. Nothing outside those types is imported.
 - **Provenance.** Every imported value records which provider it came from, when it was measured and when it was imported.
-- **User control.** Users can always see their connections, even after withdrawing health consent or after integrations are switched off. Disconnecting and deleting imported data are handled by the "disconnect, delete-imported-data, privacy, and test flows" issue.
+- **User control.** Users can always see, disconnect and delete the data from their connections, even after withdrawing health consent or after integrations are switched off ([#207](https://github.com/oss-slu/TheHealthApp/issues/207)).
 
 ## Architecture
 
@@ -58,8 +58,10 @@ Connecting again replaces `granted_types` with the new choice and reuses the sam
 | Method | Path | Auth | Notes |
 | --- | --- | --- | --- |
 | `GET` | `/api/v1/integrations/providers` | Signed in | `{ enabled, providers }`. `providers` is empty while integrations are disabled. |
-| `GET` | `/api/v1/users/me/connections` | Signed in | The user's own connections. Not gated by consent or the feature flag. |
+| `GET` | `/api/v1/users/me/connections` | Signed in | The user's own connections, each with `imported_count`. Not gated by consent or the feature flag. |
 | `POST` | `/api/v1/users/me/connections` | Signed in, health consent | Body `{ provider, granted_types }`. Creates or replaces the grant. |
+| `POST` | `/api/v1/users/me/connections/{id}/disconnect` | Signed in | Optional body `{ delete_imported_data }` (default `false`). Returns `{ connection, deleted_count }`. Not gated by consent or the feature flag. |
+| `DELETE` | `/api/v1/users/me/connections/{id}/measurements` | Signed in | Deletes every value imported through that connection. Returns `{ connection, deleted_count }`. Not gated by consent or the feature flag. |
 
 Errors from `POST`:
 
@@ -70,6 +72,21 @@ Errors from `POST`:
 | 422 | `UNKNOWN_PROVIDER` | The provider is not in the registry |
 | 422 | `UNSUPPORTED_MEASUREMENT_TYPE` | A requested type is not supported by that provider. `details` lists them. |
 | 422 | `VALIDATION_ERROR` | `granted_types` is empty or has an unknown value |
+
+Errors from disconnect and delete:
+
+| Status | `error.code` | When |
+| --- | --- | --- |
+| 404 | `CONNECTION_NOT_FOUND` | No connection with that ID belongs to the signed-in user. Other users' connections get the same response, so IDs cannot be probed. |
+| 422 | `VALIDATION_ERROR` | The ID is not a valid UUID |
+
+## Disconnecting and deleting imported data
+
+- **Disconnect** sets `status` to `disconnected` and records `disconnected_at`. From then on `allows()` is false for every type, so nothing more is imported. Data already imported is kept unless the user also asks to delete it. Disconnecting again is not an error and keeps the original `disconnected_at`.
+- **Delete imported data** permanently removes every `imported_measurements` record for that connection and does not change the connection's status. If the provider is still connected, later imports can bring data back, so the UI suggests disconnecting first.
+- Both actions are scoped by user ID as well as connection ID. Manually entered data, questionnaires and risk assessments are never touched.
+- Both are available from **Account Settings → Privacy and your data → Connected health apps**, with a confirmation step and success, empty and error messages.
+- Connections and imported values are included in the [user data export](user-data-export.md), so users can download a copy before deleting.
 
 ## Providers
 

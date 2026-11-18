@@ -105,6 +105,8 @@ from .models import (
     IntegrationConnection,
     IntegrationConnectionCreate,
     IntegrationConnectionResponse,
+    ConnectionDisconnectRequest,
+    ConnectionActionResult,
     IntegrationProviderInfo,
     IntegrationProvidersData,
     ImportedMeasurement,
@@ -434,9 +436,11 @@ def _export_profile_photo(photo_url: str | None) -> dict | None:
 async def export_own_data(current_user: Annotated[User, Depends(get_current_user)]):
     questionnaires = await Questionnaire.find({"user_id": current_user.id}).sort("created_at").to_list()
     risk_assessments = await HealthRiskAssessment.find({"user_id": current_user.id}).sort("created_at").to_list()
+    connections = await IntegrationConnection.find({"user_id": current_user.id}).sort("connected_at").to_list()
+    imported = await ImportedMeasurement.find({"user_id": current_user.id}).sort("recorded_at").to_list()
 
     export = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "exported_at": datetime.now(timezone.utc),
         "profile": {
             "username": current_user.username,
@@ -491,6 +495,34 @@ async def export_own_data(current_user: Annotated[User, Depends(get_current_user
             }
             for record in risk_assessments
         ],
+        "integrations": {
+            "connections": [
+                {
+                    "id": str(connection.id),
+                    "provider": connection.provider,
+                    "granted_types": connection.granted_types,
+                    "status": connection.status,
+                    "connected_at": connection.connected_at,
+                    "disconnected_at": connection.disconnected_at,
+                    "updated_at": connection.updated_at,
+                }
+                for connection in connections
+            ],
+            "imported_measurements": [
+                {
+                    "id": str(record.id),
+                    "connection_id": str(record.connection_id),
+                    "provider": record.provider,
+                    "source_record_id": record.source_record_id,
+                    "measurement_type": record.measurement_type,
+                    "value": record.value,
+                    "unit": record.unit,
+                    "recorded_at": record.recorded_at,
+                    "imported_at": record.imported_at,
+                }
+                for record in imported
+            ],
+        },
     }
     return JSONResponse(
         content=jsonable_encoder(export),
@@ -1011,6 +1043,34 @@ async def get_medication_doses(
     )
 
 
+def _own_imported_measurements(connection: IntegrationConnection):
+    # Filter by user as well as connection so a query can never reach another user's records.
+    return ImportedMeasurement.find(
+        ImportedMeasurement.user_id == connection.user_id,
+        ImportedMeasurement.connection_id == connection.id,
+    )
+
+
+async def _connection_response(connection: IntegrationConnection) -> IntegrationConnectionResponse:
+    response = IntegrationConnectionResponse.model_validate(connection)
+    response.imported_count = await _own_imported_measurements(connection).count()
+    return response
+
+
+async def _get_own_connection(connection_id: uuid.UUID, user: User) -> IntegrationConnection:
+    connection = await IntegrationConnection.find_one(
+        IntegrationConnection.id == connection_id,
+        IntegrationConnection.user_id == user.id,
+    )
+    if not connection:
+        # Same response for missing and other users' connections, so IDs cannot be probed.
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "CONNECTION_NOT_FOUND", "message": "Connection not found"},
+        )
+    return connection
+
+
 @app.get(
     "/api/v1/integrations/providers",
     response_model=SuccessResponse[IntegrationProvidersData],
@@ -1052,10 +1112,7 @@ async def list_own_connections(
     ).sort(+IntegrationConnection.connected_at).to_list()
 
     return SuccessResponse(
-        data=[
-            IntegrationConnectionResponse.model_validate(connection)
-            for connection in connections
-        ]
+        data=[await _connection_response(connection) for connection in connections]
     )
 
 
@@ -1128,8 +1185,62 @@ async def grant_connection(
                 detail="This provider is already being connected",
             )
 
+    return SuccessResponse(data=await _connection_response(connection))
+
+
+# Disconnecting and deleting imported data are never gated by consent or the feature flag:
+# users must always be able to withdraw access and remove what was imported.
+@app.post(
+    "/api/v1/users/me/connections/{connection_id}/disconnect",
+    response_model=SuccessResponse[ConnectionActionResult],
+    tags=["Integrations"],
+)
+async def disconnect_connection(
+    connection_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    payload: ConnectionDisconnectRequest | None = None,
+):
+    payload = payload or ConnectionDisconnectRequest()
+    connection = await _get_own_connection(connection_id, current_user)
+
+    # Disconnecting twice is not an error; the original disconnect time is kept.
+    if connection.status != ConnectionStatus.disconnected:
+        now = datetime.now(timezone.utc)
+        connection.status = ConnectionStatus.disconnected
+        connection.disconnected_at = now
+        connection.updated_at = now
+        await connection.save()
+
+    deleted_count = 0
+    if payload.delete_imported_data:
+        result = await _own_imported_measurements(connection).delete()
+        deleted_count = result.deleted_count if result else 0
+
     return SuccessResponse(
-        data=IntegrationConnectionResponse.model_validate(connection)
+        data=ConnectionActionResult(
+            connection=await _connection_response(connection),
+            deleted_count=deleted_count,
+        )
+    )
+
+
+@app.delete(
+    "/api/v1/users/me/connections/{connection_id}/measurements",
+    response_model=SuccessResponse[ConnectionActionResult],
+    tags=["Integrations"],
+)
+async def delete_imported_measurements(
+    connection_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    connection = await _get_own_connection(connection_id, current_user)
+    result = await _own_imported_measurements(connection).delete()
+
+    return SuccessResponse(
+        data=ConnectionActionResult(
+            connection=await _connection_response(connection),
+            deleted_count=result.deleted_count if result else 0,
+        )
     )
 
 

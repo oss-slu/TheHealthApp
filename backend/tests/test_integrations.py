@@ -303,6 +303,207 @@ async def test_list_connections_available_without_consent_or_feature_flag(client
     assert len(response.json()["data"]) == 1
 
 
+# --- Disconnecting and deleting imported data (#207) ---
+
+async def make_connection(user, provider="apple_health", **overrides):
+    fields = dict(user_id=user.id, provider=provider, granted_types=[MeasurementType.heart_rate])
+    fields.update(overrides)
+    return await IntegrationConnection(**fields).insert()
+
+
+async def import_measurements(connection, count):
+    for index in range(count):
+        await ImportedMeasurement(
+            user_id=connection.user_id,
+            connection_id=connection.id,
+            provider=connection.provider,
+            source_record_id=f"record-{index}",
+            measurement_type=MeasurementType.heart_rate,
+            value=60 + index,
+            unit="count/min",
+            recorded_at=datetime.now(timezone.utc),
+        ).insert()
+
+
+async def stored_count(connection):
+    return await ImportedMeasurement.find(ImportedMeasurement.connection_id == connection.id).count()
+
+
+@pytest.mark.anyio
+async def test_list_connections_reports_imported_count(client, test_user):
+    connection = await make_connection(test_user)
+    await import_measurements(connection, 3)
+
+    response = await client.get("/api/v1/users/me/connections")
+
+    assert response.json()["data"][0]["imported_count"] == 3
+
+
+@pytest.mark.anyio
+async def test_disconnect_revokes_permission_and_keeps_imported_data(client, test_user):
+    connection = await make_connection(test_user)
+    await import_measurements(connection, 2)
+
+    response = await client.post(f"/api/v1/users/me/connections/{connection.id}/disconnect")
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["deleted_count"] == 0
+    assert data["connection"]["status"] == "disconnected"
+    assert data["connection"]["disconnected_at"]
+    assert data["connection"]["imported_count"] == 2
+
+    stored = await IntegrationConnection.get(connection.id)
+    assert stored.status == ConnectionStatus.disconnected
+    assert not stored.allows(MeasurementType.heart_rate)
+    assert await stored_count(connection) == 2
+
+
+@pytest.mark.anyio
+async def test_disconnect_can_delete_imported_data_in_the_same_step(client, test_user):
+    connection = await make_connection(test_user)
+    await import_measurements(connection, 2)
+
+    response = await client.post(
+        f"/api/v1/users/me/connections/{connection.id}/disconnect",
+        json={"delete_imported_data": True},
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["deleted_count"] == 2
+    assert data["connection"]["status"] == "disconnected"
+    assert data["connection"]["imported_count"] == 0
+    assert await stored_count(connection) == 0
+
+
+@pytest.mark.anyio
+async def test_disconnect_twice_keeps_the_original_disconnect_time(client, test_user):
+    connection = await make_connection(test_user)
+    url = f"/api/v1/users/me/connections/{connection.id}/disconnect"
+
+    first = await client.post(url)
+    second = await client.post(url)
+
+    assert second.status_code == 200
+    assert (
+        second.json()["data"]["connection"]["disconnected_at"]
+        == first.json()["data"]["connection"]["disconnected_at"]
+    )
+
+
+@pytest.mark.anyio
+async def test_delete_imported_data_removes_only_that_connections_records(client, test_user):
+    apple = await make_connection(test_user, "apple_health")
+    android = await make_connection(test_user, "health_connect")
+    await import_measurements(apple, 3)
+    await import_measurements(android, 1)
+
+    response = await client.delete(f"/api/v1/users/me/connections/{apple.id}/measurements")
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["deleted_count"] == 3
+    assert data["connection"]["imported_count"] == 0
+    # Deleting data does not change whether the provider is connected.
+    assert data["connection"]["status"] == "connected"
+    assert await stored_count(apple) == 0
+    assert await stored_count(android) == 1
+
+
+@pytest.mark.anyio
+async def test_delete_imported_data_when_there_is_none(client, test_user):
+    connection = await make_connection(test_user)
+
+    response = await client.delete(f"/api/v1/users/me/connections/{connection.id}/measurements")
+
+    assert response.status_code == 200
+    assert response.json()["data"]["deleted_count"] == 0
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("action", ["disconnect", "delete"])
+async def test_cannot_change_another_users_connection(client, action):
+    other_user = make_user()
+    connection = await make_connection(other_user)
+    await import_measurements(connection, 1)
+
+    if action == "disconnect":
+        response = await client.post(
+            f"/api/v1/users/me/connections/{connection.id}/disconnect",
+            json={"delete_imported_data": True},
+        )
+    else:
+        response = await client.delete(f"/api/v1/users/me/connections/{connection.id}/measurements")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "CONNECTION_NOT_FOUND"
+    stored = await IntegrationConnection.get(connection.id)
+    assert stored.status == ConnectionStatus.connected
+    assert await stored_count(connection) == 1
+
+
+@pytest.mark.anyio
+async def test_unknown_connection_returns_not_found(client):
+    response = await client.post(f"/api/v1/users/me/connections/{uuid.uuid4()}/disconnect")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "CONNECTION_NOT_FOUND"
+
+
+@pytest.mark.anyio
+async def test_malformed_connection_id_is_a_validation_error(client):
+    response = await client.post("/api/v1/users/me/connections/not-a-uuid/disconnect")
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.anyio
+async def test_disconnect_and_delete_work_without_consent_or_feature_flag(client_for):
+    # Withdrawing access and removing imported data must never depend on consent or the flag.
+    user = make_user(consent_given=False, data_usage=False)
+    connection = await make_connection(user)
+    await import_measurements(connection, 1)
+
+    async with client_for(user) as test_client:
+        deleted = await test_client.delete(f"/api/v1/users/me/connections/{connection.id}/measurements")
+        disconnected = await test_client.post(f"/api/v1/users/me/connections/{connection.id}/disconnect")
+
+    assert deleted.status_code == 200
+    assert deleted.json()["data"]["deleted_count"] == 1
+    assert disconnected.status_code == 200
+    assert disconnected.json()["data"]["connection"]["status"] == "disconnected"
+
+
+@pytest.mark.anyio
+async def test_disconnect_and_delete_require_authentication(test_db):
+    connection_id = uuid.uuid4()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as anonymous:
+        disconnect = await anonymous.post(f"/api/v1/users/me/connections/{connection_id}/disconnect")
+        delete = await anonymous.delete(f"/api/v1/users/me/connections/{connection_id}/measurements")
+
+    assert disconnect.status_code in (401, 403)
+    assert delete.status_code in (401, 403)
+
+
+@pytest.mark.anyio
+async def test_reconnecting_after_disconnect_restores_access(client, test_user, integrations_enabled):
+    connection = await make_connection(test_user)
+    await client.post(f"/api/v1/users/me/connections/{connection.id}/disconnect")
+
+    response = await client.post(
+        "/api/v1/users/me/connections",
+        json={"provider": "apple_health", "granted_types": ["steps"]},
+    )
+
+    data = response.json()["data"]
+    assert data["id"] == str(connection.id)
+    assert data["status"] == "connected"
+    assert data["disconnected_at"] is None
+    assert data["granted_types"] == ["steps"]
+
+
 # --- Permission and provenance rules ---
 
 def test_disconnected_connection_allows_nothing():

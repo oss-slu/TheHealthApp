@@ -208,9 +208,9 @@ async def lifespan(app: FastAPI):
             HealthRiskAssessment,
             Prescription,
             MedicationDose,
-            MedicationReminder,
             IntegrationConnection,
             ImportedMeasurement,
+            MedicationReminder,
         ],
     )
     print("Database connection established.")

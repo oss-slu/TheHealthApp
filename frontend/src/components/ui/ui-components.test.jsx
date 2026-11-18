@@ -113,6 +113,39 @@ describe('Reusable health UI components', () => {
     expect(onConfirm).toHaveBeenCalled();
   });
 
+  it('ConfirmDialog can focus Cancel first, holds extra content, and closes on Escape', async () => {
+    const user = userEvent.setup();
+    const onCancel = vi.fn();
+    renderUi(
+      <ConfirmDialog
+        open
+        title="Delete data?"
+        description="This cannot be undone."
+        initialFocus="cancel"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={vi.fn()}
+        onCancel={onCancel}
+      >
+        <label>
+          <input type="checkbox" /> Also remove history
+        </label>
+      </ConfirmDialog>
+    );
+
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
+    expect(screen.getByRole('checkbox', { name: 'Also remove history' })).toBeInTheDocument();
+
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Delete' })).toHaveFocus();
+    await user.tab();
+    // Focus wraps to the first control instead of leaving the dialog.
+    expect(screen.getByRole('checkbox')).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
   it('ConfirmDialog renders nothing when closed', () => {
     renderUi(
       <ConfirmDialog

@@ -15,8 +15,12 @@ from starlette.requests import Request
 from src.health_summary import build_health_summary
 from src.main import app, calculate_risk_assessment, create_access_token, export_own_data, get_health_summary
 from src.models import (
+    ConnectionStatus,
     GenderEnum,
     HealthRiskAssessment,
+    ImportedMeasurement,
+    IntegrationConnection,
+    MeasurementType,
     HealthRiskInput,
     HealthRiskOutput,
     Questionnaire,
@@ -223,6 +227,22 @@ def no_health_records():
 class UserDataExportTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.user = make_export_user()
+        self.integration_queries = {}
+        self.connections = []
+        self.imported = []
+
+        def find_for(collection, records):
+            def find(query):
+                self.integration_queries[collection] = query
+                return FakeQuery(records)
+            return find
+
+        for patcher in (
+            patch.object(IntegrationConnection, "find", side_effect=find_for("connections", self.connections)),
+            patch.object(ImportedMeasurement, "find", side_effect=find_for("imported", self.imported)),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     async def test_export_scopes_records_to_current_user_and_excludes_credentials(self):
         queries = {}
@@ -305,7 +325,50 @@ class UserDataExportTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(data["consent"]["consent_given"])
         self.assertEqual(data["questionnaires"], [])
         self.assertEqual(data["risk_assessments"], [])
+        self.assertEqual(data["integrations"], {"connections": [], "imported_measurements": []})
         self.assertEqual(data["profile"]["username"], self.user.username)
+
+    async def test_export_includes_connections_and_imported_data_with_provenance(self):
+        connection_id = uuid4()
+        self.connections.append(SimpleNamespace(
+            id=connection_id,
+            provider="apple_health",
+            granted_types=[MeasurementType.heart_rate],
+            status=ConnectionStatus.disconnected,
+            connected_at=datetime(2026, 3, 1, tzinfo=timezone.utc),
+            disconnected_at=datetime(2026, 3, 5, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 3, 5, tzinfo=timezone.utc),
+        ))
+        self.imported.append(SimpleNamespace(
+            id=uuid4(),
+            connection_id=connection_id,
+            provider="apple_health",
+            source_record_id="hk-1",
+            measurement_type=MeasurementType.heart_rate,
+            value=62.0,
+            unit="count/min",
+            recorded_at=datetime(2026, 3, 2, 8, tzinfo=timezone.utc),
+            imported_at=datetime(2026, 3, 2, 9, tzinfo=timezone.utc),
+        ))
+        questionnaire_find, risk_find = no_health_records()
+        with questionnaire_find, risk_find:
+            response = await export_own_data(self.user)
+
+        data = json.loads(response.body)
+        self.assertEqual(data["schema_version"], "1.2")
+        self.assertEqual(self.integration_queries, {
+            "connections": {"user_id": self.user.id},
+            "imported": {"user_id": self.user.id},
+        })
+        connection = data["integrations"]["connections"][0]
+        self.assertEqual(connection["id"], str(connection_id))
+        self.assertEqual(connection["status"], "disconnected")
+        self.assertEqual(connection["granted_types"], ["heart_rate"])
+        measurement = data["integrations"]["imported_measurements"][0]
+        self.assertEqual(measurement["connection_id"], str(connection_id))
+        self.assertEqual(measurement["provider"], "apple_health")
+        self.assertEqual(measurement["unit"], "count/min")
+        self.assertEqual(measurement["recorded_at"], "2026-03-02T08:00:00+00:00")
 
     async def test_export_reports_invalid_consent_using_backend_rule(self):
         cases = {
@@ -373,6 +436,8 @@ class UserDataExportEndpointAuthTests(unittest.TestCase):
             patch("src.main.is_token_revoked", new=AsyncMock(return_value=False)),
             patch.object(Questionnaire, "find", side_effect=find),
             patch.object(HealthRiskAssessment, "find", side_effect=find),
+            patch.object(IntegrationConnection, "find", side_effect=find),
+            patch.object(ImportedMeasurement, "find", side_effect=find),
         ):
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -409,7 +474,7 @@ class UserDataExportEndpointAuthTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["profile"]["username"], "signed-in-user")
-        self.assertEqual(self.queries, [{"user_id": self.signed_in.id}, {"user_id": self.signed_in.id}])
+        self.assertEqual(self.queries, [{"user_id": self.signed_in.id}] * 4)
         self.assertNotIn("other-user", response.text)
         self.assertNotIn("must-not-export", response.text)
 

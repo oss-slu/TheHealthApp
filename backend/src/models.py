@@ -1,9 +1,10 @@
 import uuid
+import re
 from beanie import Document, Indexed
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 from enum import Enum
 from datetime import date, datetime, timezone
-from typing import Optional, Annotated, Generic, TypeVar
+from typing import Optional, Annotated, Generic, TypeVar, Any
 from pymongo import IndexModel
 
 # --- Consent (must match frontend CURRENT_CONSENT_VERSION) ---
@@ -30,6 +31,22 @@ def validate_date_of_birth(date_of_birth: date) -> date:
     if age < 13 or age > 120:
         raise ValueError("Date of birth must correspond to an age between 13 and 120")
     return date_of_birth
+
+
+def normalize_phone(phone: Any) -> Any:
+    """Normalize phone number by removing formatting characters while preserving a leading '+'.
+
+    Leaves non-string values unchanged so Pydantic can report validation errors.
+    """
+    if not isinstance(phone, str):
+        return phone
+    stripped = phone.strip()
+    if not stripped:
+        return stripped
+    has_plus = stripped.startswith("+")
+    rest = stripped[1:] if has_plus else stripped
+    cleaned = re.sub(r'[\s\-().+]', '', rest)
+    return f"+{cleaned}" if has_plus else cleaned
 
 
 # --- Database Model ---
@@ -111,6 +128,11 @@ class UserCreate(BaseModel):
     phone: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]
     password: str
 
+    @field_validator('phone', mode='before')
+    @classmethod
+    def normalize_phone_value(cls, v: Any) -> Any:
+        return normalize_phone(v)
+
     @field_validator('date_of_birth')
     @classmethod
     def validate_birth_date(cls, value: date) -> date:
@@ -127,6 +149,11 @@ class UserUpdate(BaseModel):
     name: Optional[Annotated[str, StringConstraints(min_length=2, max_length=50)]] = None
     date_of_birth: Optional[date] = None
     phone: Optional[Annotated[str, StringConstraints(strip_whitespace=True, pattern=r'^\+?[0-9]{10,15}$')]] = None
+
+    @field_validator('phone', mode='before')
+    @classmethod
+    def normalize_phone_value(cls, v: Any) -> Any:
+        return normalize_phone(v)
 
     @field_validator('date_of_birth')
     @classmethod
@@ -650,3 +677,194 @@ class HealthTimelineResponse(BaseModel):
     limit: int = Field(..., ge=1, le=100)
     offset: int = Field(..., ge=0)
     has_more: bool
+
+
+# --- Connected-health integrations (#202) ---
+class MeasurementType(str, Enum):
+    heart_rate = "heart_rate"
+    blood_pressure_systolic = "blood_pressure_systolic"
+    blood_pressure_diastolic = "blood_pressure_diastolic"
+    body_weight = "body_weight"
+    blood_glucose = "blood_glucose"
+    steps = "steps"
+
+
+class ConnectionStatus(str, Enum):
+    connected = "connected"
+    disconnected = "disconnected"
+
+
+class IntegrationConnection(Document):
+    """A user's explicit, read-only permission for one provider to import the listed measurement types."""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    provider: str
+    granted_types: list[MeasurementType]
+    status: ConnectionStatus = ConnectionStatus.connected
+    connected_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    disconnected_at: Optional[datetime] = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    def allows(self, measurement_type: MeasurementType) -> bool:
+        return (
+            self.status == ConnectionStatus.connected
+            and measurement_type in self.granted_types
+        )
+
+    class Settings:
+        name = "integration_connections"
+        indexes = [
+            IndexModel([("user_id", 1), ("provider", 1)], unique=True),
+        ]
+
+
+class ImportedMeasurement(Document):
+    """A single imported value. Provenance fields record where and when it came from."""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    connection_id: uuid.UUID
+    provider: str
+    source_record_id: Optional[str] = None
+    measurement_type: MeasurementType
+    value: float
+    unit: str
+    recorded_at: datetime
+    imported_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "imported_measurements"
+        indexes = [
+            IndexModel([("user_id", 1), ("measurement_type", 1), ("recorded_at", -1)]),
+            IndexModel([("user_id", 1), ("connection_id", 1)]),
+        ]
+
+
+class IntegrationProviderInfo(BaseModel):
+    id: str
+    name: str
+    supported_types: list[MeasurementType]
+    limitations: str
+
+
+class IntegrationProvidersData(BaseModel):
+    enabled: bool
+    providers: list[IntegrationProviderInfo]
+
+
+class IntegrationConnectionCreate(BaseModel):
+    provider: str
+    granted_types: list[MeasurementType] = Field(min_length=1)
+
+    @field_validator("granted_types")
+    @classmethod
+    def deduplicate_types(cls, value: list[MeasurementType]) -> list[MeasurementType]:
+        return list(dict.fromkeys(value))
+
+
+class IntegrationConnectionResponse(BaseModel):
+    id: uuid.UUID
+    provider: str
+    granted_types: list[MeasurementType]
+    status: ConnectionStatus
+    connected_at: datetime
+    disconnected_at: Optional[datetime] = None
+    updated_at: datetime
+    imported_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class ConnectionDisconnectRequest(BaseModel):
+    delete_imported_data: bool = False
+
+
+class ConnectionActionResult(BaseModel):
+    """Result of disconnecting a provider or deleting its imported data."""
+
+    connection: IntegrationConnectionResponse
+    deleted_count: int
+
+
+# --- Medication reminders ---
+class MedicationReminder(Document):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    prescription_id: uuid.UUID
+    reminder_time: str
+    enabled: bool = False
+    paused: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "medication_reminders"
+        indexes = [
+            IndexModel(
+                [
+                    ("user_id", 1),
+                    ("prescription_id", 1),
+                ],
+                unique=True,
+            )
+        ]
+
+
+class MedicationReminderCreate(BaseModel):
+    reminder_time: str
+
+    @field_validator("reminder_time")
+    @classmethod
+    def validate_reminder_time(cls, value: str) -> str:
+        import re
+
+        if not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value):
+            raise ValueError("Reminder time must use HH:MM format")
+        return value
+
+
+class MedicationReminderUpdate(BaseModel):
+    reminder_time: Optional[str] = None
+    enabled: Optional[bool] = None
+    paused: Optional[bool] = None
+
+    @field_validator("reminder_time", mode="before")
+    @classmethod
+    def validate_reminder_time(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            raise ValueError("Reminder time cannot be null")
+
+        import re
+
+        if not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", value):
+            raise ValueError("Reminder time must use HH:MM format")
+        return value
+
+    @field_validator("enabled", mode="before")
+    @classmethod
+    def validate_enabled(cls, value: Optional[bool]) -> Optional[bool]:
+        if value is None:
+            raise ValueError("Enabled cannot be null")
+        return value
+
+    @field_validator("paused", mode="before")
+    @classmethod
+    def validate_paused(cls, value: Optional[bool]) -> Optional[bool]:
+        if value is None:
+            raise ValueError("Paused cannot be null")
+        return value
+
+
+class MedicationReminderResponse(BaseModel):
+    id: uuid.UUID
+    prescription_id: uuid.UUID
+    reminder_time: str
+    enabled: bool
+    paused: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -11,19 +11,51 @@ from src.models import HealthEvent, User
 
 
 class FakeTimelineQuery:
-    """Mimics the Beanie query methods used by the timeline endpoint."""
+    """Applies the real filter, sort, skip and limit to in-memory records."""
 
-    def __init__(self, records):
-        self.records = records
+    def __init__(self, records, event_filter):
+        self.event_filter = event_filter
+        self.records = [r for r in records if self._matches(r)]
         self.offset = 0
         self.page_limit = None
         self.sort_order = None
+
+    @staticmethod
+    def _as_naive_utc(value):
+        if value.tzinfo is not None:
+            return value.astimezone(timezone.utc).replace(tzinfo=None)
+        return value
+
+    def _matches(self, record):
+        for field, expected in self.event_filter.items():
+            actual = getattr(record, field)
+            if field == "occurred_at":
+                actual = self._as_naive_utc(actual)
+                if "$gte" in expected and actual < expected["$gte"]:
+                    return False
+                if "$lt" in expected and actual >= expected["$lt"]:
+                    return False
+            elif actual != expected:
+                return False
+        return True
 
     async def count(self):
         return len(self.records)
 
     def sort(self, *args):
         self.sort_order = args
+        # Apply keys from least to most significant (stable sorts).
+        for key in reversed(args):
+            descending = key.startswith("-")
+            field = key.lstrip("+-")
+            field = "id" if field == "_id" else field
+            self.records = sorted(
+                self.records,
+                key=lambda r, f=field: self._as_naive_utc(getattr(r, f))
+                if f == "occurred_at"
+                else getattr(r, f),
+                reverse=descending,
+            )
         return self
 
     def skip(self, offset):
@@ -86,7 +118,7 @@ class HealthTimelineEndpointTests(unittest.TestCase):
 
         def find(query):
             self.queries.append(query)
-            fake_query = FakeTimelineQuery(self.records)
+            fake_query = FakeTimelineQuery(self.records, query)
             self.fake_queries.append(fake_query)
             return fake_query
 
@@ -105,7 +137,7 @@ class HealthTimelineEndpointTests(unittest.TestCase):
             "Authorization": f"Bearer {create_access_token(str(user.id))}"
         }
 
-    
+
     def test_rejects_request_without_credentials(self):
         response = self.client.get(self.url)
 
@@ -130,13 +162,16 @@ class HealthTimelineEndpointTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(self.queries, [])
 
-    
+
     def test_returns_only_authenticated_users_events(self):
-        event = make_event(
-            self.signed_in.id,
-            datetime(2026, 11, 16, 12, tzinfo=timezone.utc),
+        occurred_at = datetime(2026, 11, 16, 12, tzinfo=timezone.utc)
+        own_event = make_event(self.signed_in.id, occurred_at)
+        other_event = make_event(self.other.id, occurred_at)
+        newer_other_event = make_event(
+            self.other.id,
+            datetime(2026, 11, 17, 12, tzinfo=timezone.utc),
         )
-        self.records = [event]
+        self.records = [other_event, own_event, newer_other_event]
 
         response = self.client.get(
             self.url,
@@ -145,17 +180,52 @@ class HealthTimelineEndpointTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()["data"]["events"]), 1)
+        data = response.json()["data"]
+        self.assertEqual(data["total"], 1)
         self.assertEqual(
-            self.queries[0]["user_id"],
-            self.signed_in.id,
+            [event["id"] for event in data["events"]],
+            [str(own_event.id)],
         )
-        self.assertNotEqual(
-            self.queries[0]["user_id"],
-            self.other.id,
+        returned_ids = {event["id"] for event in data["events"]}
+        self.assertNotIn(str(other_event.id), returned_ids)
+        self.assertNotIn(str(newer_other_event.id), returned_ids)
+        self.assertEqual(self.queries[0]["user_id"], self.signed_in.id)
+
+    def test_orders_same_timestamp_events_deterministically_across_pages(self):
+        shared_time = datetime(2026, 11, 16, 12, tzinfo=timezone.utc)
+        self.records = [
+            make_event(self.signed_in.id, shared_time) for _ in range(5)
+        ]
+        self.records.append(
+            make_event(
+                self.signed_in.id,
+                datetime(2026, 11, 17, 12, tzinfo=timezone.utc),
+            )
         )
 
-    
+        paged_ids = []
+        for offset in (0, 2, 4):
+            response = self.client.get(
+                self.url,
+                params={"limit": 2, "offset": offset},
+                headers=self.auth_header(self.signed_in),
+            )
+            self.assertEqual(response.status_code, 200)
+            paged_ids.extend(
+                event["id"] for event in response.json()["data"]["events"]
+            )
+
+        self.assertEqual(len(paged_ids), 6)
+        self.assertEqual(len(set(paged_ids)), 6)
+        newest = max(self.records, key=lambda r: r.occurred_at)
+        self.assertEqual(paged_ids[0], str(newest.id))
+        tied = sorted(
+            (r for r in self.records if r is not newest),
+            key=lambda r: r.id,
+            reverse=True,
+        )
+        self.assertEqual(paged_ids[1:], [str(r.id) for r in tied])
+
     def test_returns_successful_empty_timeline(self):
         response = self.client.get(
             self.url,
@@ -171,7 +241,7 @@ class HealthTimelineEndpointTests(unittest.TestCase):
         self.assertEqual(data["offset"], 0)
         self.assertFalse(data["has_more"])
 
-    
+
     def test_applies_pagination(self):
         self.records = [
             make_event(
@@ -188,7 +258,10 @@ class HealthTimelineEndpointTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(self.fake_queries[0].sort_order, ("-occurred_at",))
+        self.assertEqual(
+            self.fake_queries[0].sort_order,
+            ("-occurred_at", "-_id"),
+        )
 
         data = response.json()["data"]
         self.assertEqual(len(data["events"]), 2)
@@ -197,7 +270,7 @@ class HealthTimelineEndpointTests(unittest.TestCase):
         self.assertEqual(data["offset"], 2)
         self.assertTrue(data["has_more"])
 
-    
+
     def test_filters_by_category(self):
         self.records = [
             make_event(
@@ -218,7 +291,7 @@ class HealthTimelineEndpointTests(unittest.TestCase):
             "measurement",
         )
 
-    
+
     def test_filters_by_date_range(self):
         start_at = "2026-11-01T00:00:00Z"
         end_before = "2026-11-16T00:00:00Z"
@@ -244,7 +317,7 @@ class HealthTimelineEndpointTests(unittest.TestCase):
             datetime(2026, 11, 16),
         )
 
-    
+
     def test_rejects_incomplete_date_range(self):
         response = self.client.get(
             self.url,
@@ -268,7 +341,7 @@ class HealthTimelineEndpointTests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.queries, [])
 
-    
+
     def test_rejects_invalid_pagination_parameters(self):
         invalid_requests = [
             {"limit": 0},
@@ -288,7 +361,7 @@ class HealthTimelineEndpointTests(unittest.TestCase):
 
         self.assertEqual(self.queries, [])
 
-    
+
     def test_rejects_invalid_category(self):
         response = self.client.get(
             self.url,
@@ -299,7 +372,7 @@ class HealthTimelineEndpointTests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.queries, [])
 
-    
+
     def test_returns_generic_error_when_database_fails(self):
         with patch.object(
             HealthEvent,
@@ -318,5 +391,6 @@ class HealthTimelineEndpointTests(unittest.TestCase):
         )
         self.assertNotIn("Database connection details", response.text)
 
+
 if __name__ == "__main__":
-    unittest.main()    
+    unittest.main()

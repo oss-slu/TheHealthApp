@@ -5,7 +5,7 @@ import bcrypt
 from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Optional
 from pymongo.errors import DuplicateKeyError
 
 from fastapi import (
@@ -49,6 +49,10 @@ class Settings(BaseSettings):
         description="Comma-separated browser origins permitted for CORS (Vite :5173/5174, Dockerized UI :3000).",
     )
     ALLOWED_ORIGIN_REGEX: str | None = Field(default=None)
+    INTEGRATIONS_ENABLED: bool = Field(
+        default=False,
+        description="Offer connected-health integrations. Core features never depend on them.",
+    )
 
 settings = Settings()
 
@@ -102,7 +106,21 @@ from .models import (
     MedicationDose,
     MedicationDoseCreate,
     MedicationDoseResponse,
+    ConnectionStatus,
+    IntegrationConnection,
+    IntegrationConnectionCreate,
+    IntegrationConnectionResponse,
+    ConnectionDisconnectRequest,
+    ConnectionActionResult,
+    IntegrationProviderInfo,
+    IntegrationProvidersData,
+    ImportedMeasurement,
+    MedicationReminder,
+    MedicationReminderCreate,
+    MedicationReminderUpdate,
+    MedicationReminderResponse,
 )
+from .integrations import PROVIDERS, get_provider, unsupported_types
 from .risk_calculator import calculate_health_risk
 from .health_summary import build_health_summary
 
@@ -196,6 +214,9 @@ async def lifespan(app: FastAPI):
             Prescription,
             MedicationDose,
             HealthEvent,
+            IntegrationConnection,
+            ImportedMeasurement,
+            MedicationReminder,
         ],
     )
     print("Database connection established.")
@@ -421,9 +442,11 @@ def _export_profile_photo(photo_url: str | None) -> dict | None:
 async def export_own_data(current_user: Annotated[User, Depends(get_current_user)]):
     questionnaires = await Questionnaire.find({"user_id": current_user.id}).sort("created_at").to_list()
     risk_assessments = await HealthRiskAssessment.find({"user_id": current_user.id}).sort("created_at").to_list()
+    connections = await IntegrationConnection.find({"user_id": current_user.id}).sort("connected_at").to_list()
+    imported = await ImportedMeasurement.find({"user_id": current_user.id}).sort("recorded_at").to_list()
 
     export = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "exported_at": datetime.now(timezone.utc),
         "profile": {
             "username": current_user.username,
@@ -478,6 +501,34 @@ async def export_own_data(current_user: Annotated[User, Depends(get_current_user
             }
             for record in risk_assessments
         ],
+        "integrations": {
+            "connections": [
+                {
+                    "id": str(connection.id),
+                    "provider": connection.provider,
+                    "granted_types": connection.granted_types,
+                    "status": connection.status,
+                    "connected_at": connection.connected_at,
+                    "disconnected_at": connection.disconnected_at,
+                    "updated_at": connection.updated_at,
+                }
+                for connection in connections
+            ],
+            "imported_measurements": [
+                {
+                    "id": str(record.id),
+                    "connection_id": str(record.connection_id),
+                    "provider": record.provider,
+                    "source_record_id": record.source_record_id,
+                    "measurement_type": record.measurement_type,
+                    "value": record.value,
+                    "unit": record.unit,
+                    "recorded_at": record.recorded_at,
+                    "imported_at": record.imported_at,
+                }
+                for record in imported
+            ],
+        },
     }
     return JSONResponse(
         content=jsonable_encoder(export),
@@ -680,7 +731,7 @@ async def get_health_timeline(
         total = await query.count()
 
         events = await (
-            query.sort("-occurred_at")
+            query.sort("-occurred_at", "-_id")
             .skip(offset)
             .limit(limit)
             .to_list()
@@ -1070,3 +1121,354 @@ async def get_medication_doses(
         ]
     )
 
+
+def _own_imported_measurements(connection: IntegrationConnection):
+    # Filter by user as well as connection so a query can never reach another user's records.
+    return ImportedMeasurement.find(
+        ImportedMeasurement.user_id == connection.user_id,
+        ImportedMeasurement.connection_id == connection.id,
+    )
+
+
+async def _connection_response(connection: IntegrationConnection) -> IntegrationConnectionResponse:
+    response = IntegrationConnectionResponse.model_validate(connection)
+    response.imported_count = await _own_imported_measurements(connection).count()
+    return response
+
+
+async def _get_own_connection(connection_id: uuid.UUID, user: User) -> IntegrationConnection:
+    connection = await IntegrationConnection.find_one(
+        IntegrationConnection.id == connection_id,
+        IntegrationConnection.user_id == user.id,
+    )
+    if not connection:
+        # Same response for missing and other users' connections, so IDs cannot be probed.
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "CONNECTION_NOT_FOUND", "message": "Connection not found"},
+        )
+    return connection
+
+
+@app.get(
+    "/api/v1/integrations/providers",
+    response_model=SuccessResponse[IntegrationProvidersData],
+    tags=["Integrations"],
+)
+async def list_integration_providers(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    providers = []
+    if settings.INTEGRATIONS_ENABLED:
+        providers = [
+            IntegrationProviderInfo(
+                id=provider.id,
+                name=provider.name,
+                supported_types=list(provider.supported_types),
+                limitations=provider.limitations,
+            )
+            for provider in PROVIDERS.values()
+        ]
+    return SuccessResponse(
+        data=IntegrationProvidersData(
+            enabled=settings.INTEGRATIONS_ENABLED,
+            providers=providers,
+        )
+    )
+
+
+@app.get(
+    "/api/v1/users/me/connections",
+    response_model=SuccessResponse[list[IntegrationConnectionResponse]],
+    tags=["Integrations"],
+)
+async def list_own_connections(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    # Not gated by consent or the feature flag: users must always be able to see what is connected.
+    connections = await IntegrationConnection.find(
+        IntegrationConnection.user_id == current_user.id,
+    ).sort(+IntegrationConnection.connected_at).to_list()
+
+    return SuccessResponse(
+        data=[await _connection_response(connection) for connection in connections]
+    )
+
+
+@app.post(
+    "/api/v1/users/me/connections",
+    response_model=SuccessResponse[IntegrationConnectionResponse],
+    tags=["Integrations"],
+)
+async def grant_connection(
+    connection_data: IntegrationConnectionCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    if not settings.INTEGRATIONS_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "INTEGRATIONS_DISABLED",
+                "message": "Connected-health integrations are not enabled",
+            },
+        )
+
+    provider = get_provider(connection_data.provider)
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "UNKNOWN_PROVIDER",
+                "message": f"Unknown provider '{connection_data.provider}'",
+            },
+        )
+
+    unsupported = unsupported_types(provider, connection_data.granted_types)
+    if unsupported:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "UNSUPPORTED_MEASUREMENT_TYPE",
+                "message": f"{provider.name} does not support the requested measurement types",
+                "details": [measurement_type.value for measurement_type in unsupported],
+            },
+        )
+
+    now = datetime.now(timezone.utc)
+    connection = await IntegrationConnection.find_one(
+        IntegrationConnection.user_id == current_user.id,
+        IntegrationConnection.provider == provider.id,
+    )
+
+    # A new grant replaces the previous one, so permissions always match the user's latest choice.
+    if connection:
+        connection.granted_types = connection_data.granted_types
+        connection.status = ConnectionStatus.connected
+        connection.connected_at = now
+        connection.disconnected_at = None
+        connection.updated_at = now
+        await connection.save()
+    else:
+        connection = IntegrationConnection(
+            user_id=current_user.id,
+            provider=provider.id,
+            granted_types=connection_data.granted_types,
+            connected_at=now,
+            updated_at=now,
+        )
+        try:
+            await connection.insert()
+        except DuplicateKeyError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This provider is already being connected",
+            )
+
+    return SuccessResponse(data=await _connection_response(connection))
+
+
+# Disconnecting and deleting imported data are never gated by consent or the feature flag:
+# users must always be able to withdraw access and remove what was imported.
+@app.post(
+    "/api/v1/users/me/connections/{connection_id}/disconnect",
+    response_model=SuccessResponse[ConnectionActionResult],
+    tags=["Integrations"],
+)
+async def disconnect_connection(
+    connection_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    payload: ConnectionDisconnectRequest | None = None,
+):
+    payload = payload or ConnectionDisconnectRequest()
+    connection = await _get_own_connection(connection_id, current_user)
+
+    # Disconnecting twice is not an error; the original disconnect time is kept.
+    if connection.status != ConnectionStatus.disconnected:
+        now = datetime.now(timezone.utc)
+        connection.status = ConnectionStatus.disconnected
+        connection.disconnected_at = now
+        connection.updated_at = now
+        await connection.save()
+
+    deleted_count = 0
+    if payload.delete_imported_data:
+        result = await _own_imported_measurements(connection).delete()
+        deleted_count = result.deleted_count if result else 0
+
+    return SuccessResponse(
+        data=ConnectionActionResult(
+            connection=await _connection_response(connection),
+            deleted_count=deleted_count,
+        )
+    )
+
+
+@app.delete(
+    "/api/v1/users/me/connections/{connection_id}/measurements",
+    response_model=SuccessResponse[ConnectionActionResult],
+    tags=["Integrations"],
+)
+async def delete_imported_measurements(
+    connection_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    connection = await _get_own_connection(connection_id, current_user)
+    result = await _own_imported_measurements(connection).delete()
+
+    return SuccessResponse(
+        data=ConnectionActionResult(
+            connection=await _connection_response(connection),
+            deleted_count=result.deleted_count if result else 0,
+        )
+    )
+
+
+@app.post(
+    "/api/v1/prescriptions/{prescription_id}/reminder",
+    response_model=SuccessResponse[MedicationReminderResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_medication_reminder(
+    prescription_id: uuid.UUID,
+    reminder_data: MedicationReminderCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    existing_reminder = await MedicationReminder.find_one(
+        MedicationReminder.user_id == current_user.id,
+        MedicationReminder.prescription_id == prescription.id,
+    )
+
+    if existing_reminder:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A reminder already exists for this prescription",
+        )
+
+    now = datetime.now(timezone.utc)
+    reminder = MedicationReminder(
+        user_id=current_user.id,
+        prescription_id=prescription.id,
+        reminder_time=reminder_data.reminder_time,
+        enabled=False,
+        paused=False,
+        created_at=now,
+        updated_at=now,
+    )
+    try:
+        await reminder.insert()
+    except DuplicateKeyError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A reminder already exists for this prescription",
+        )
+
+    return SuccessResponse(
+        data=MedicationReminderResponse.model_validate(reminder)
+    )
+
+
+@app.get(
+    "/api/v1/prescriptions/{prescription_id}/reminder",
+    response_model=SuccessResponse[
+        Optional[MedicationReminderResponse]
+    ],
+)
+async def get_medication_reminder(
+    prescription_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    reminder = await MedicationReminder.find_one(
+        MedicationReminder.user_id == current_user.id,
+        MedicationReminder.prescription_id == prescription.id,
+    )
+
+    if not reminder:
+        return SuccessResponse(data=None)
+
+    return SuccessResponse(
+        data=MedicationReminderResponse.model_validate(reminder)
+    )
+
+
+@app.patch(
+    "/api/v1/prescriptions/{prescription_id}/reminder",
+    response_model=SuccessResponse[MedicationReminderResponse],
+)
+async def update_medication_reminder(
+    prescription_id: uuid.UUID,
+    reminder_data: MedicationReminderUpdate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    reminder = await MedicationReminder.find_one(
+        MedicationReminder.user_id == current_user.id,
+        MedicationReminder.prescription_id == prescription.id,
+    )
+
+    if not reminder:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reminder not found",
+        )
+
+    updates = reminder_data.model_dump(exclude_unset=True)
+
+    if not updates:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="At least one reminder setting must be provided",
+        )
+
+    if (
+        updates.get("paused", reminder.paused)
+        and not updates.get("enabled", reminder.enabled)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="A disabled reminder cannot be paused",
+        )
+
+    for field, value in updates.items():
+        setattr(reminder, field, value)
+
+    reminder.updated_at = datetime.now(timezone.utc)
+    await reminder.save()
+
+    return SuccessResponse(
+        data=MedicationReminderResponse.model_validate(reminder)
+    )

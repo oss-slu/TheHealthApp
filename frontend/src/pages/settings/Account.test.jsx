@@ -9,6 +9,15 @@ vi.mock('../../services/authService', () => ({
   authService: { exportOwnData: vi.fn() },
 }));
 
+// Connected-apps behaviour is covered in ConnectedHealthApps.test.jsx.
+vi.mock('../../services/integrationService', () => ({
+  integrationService: {
+    listConnections: vi.fn().mockResolvedValue([]),
+    disconnect: vi.fn(),
+    deleteImportedData: vi.fn(),
+  },
+}));
+
 // App loads translations over HTTP; tests use the inline instance from test-utils instead.
 vi.mock('../../i18n', () => ({}));
 
@@ -88,6 +97,15 @@ describe('Account Settings route', () => {
     expect(screen.getByText(CONSENT_NOT_GRANTED)).toBeInTheDocument();
   });
 
+  it('shows connected health app controls without health consent', async () => {
+    renderAppAt('/settings/account', withoutConsent());
+
+    expect(await screen.findByRole('heading', { name: 'Connected health apps' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('You have not connected any health apps, so no data has been imported.'),
+    ).toBeInTheDocument();
+  });
+
   it('still sends health routes to the consent page for the same user', () => {
     renderAppAt('/dashboard', withoutConsent());
 
@@ -131,7 +149,7 @@ describe('Account privacy controls', () => {
 
     expect(authService.exportOwnData).toHaveBeenCalledOnce();
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce();
-    expect(await screen.findByRole('status')).toHaveTextContent('Your data export was downloaded.');
+    expect(await screen.findByText('Your data export was downloaded.')).toHaveAttribute('role', 'status');
   });
 
   it('explains when there are no saved health records', async () => {
@@ -141,7 +159,7 @@ describe('Account privacy controls', () => {
 
     await user.click(screen.getByRole('button', { name: 'Download my data' }));
 
-    expect(await screen.findByRole('status')).toHaveTextContent('You have no saved questionnaire or risk assessment records yet.');
+    expect(await screen.findByText(/You have no saved questionnaire or risk assessment records yet./)).toHaveAttribute('role', 'status');
   });
 
   it('announces export failures accessibly', async () => {

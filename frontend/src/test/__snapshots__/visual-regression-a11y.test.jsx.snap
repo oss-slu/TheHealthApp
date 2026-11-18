@@ -285,6 +285,29 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
                 <a
                   class="surface-elevated flex h-full flex-col p-5 transition-colors hover:border-[var(--color-brand-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
                   data-discover="true"
+                  href="/health-timeline"
+                >
+                  <h3
+                    class="font-display text-lg font-semibold text-[var(--text-primary)]"
+                  >
+                    timeline:navLabel
+                  </h3>
+                  <p
+                    class="mt-2 flex-1 text-sm text-[var(--text-secondary)]"
+                  >
+                    timeline:dashboardDescription
+                  </p>
+                  <span
+                    class="mt-4 text-sm font-semibold text-[var(--color-brand-700)]"
+                  >
+                    dashboard:viewDetails →
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a
+                  class="surface-elevated flex h-full flex-col p-5 transition-colors hover:border-[var(--color-brand-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                  data-discover="true"
                   href="/modules/framingham-risk"
                 >
                   <h3

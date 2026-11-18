@@ -1,0 +1,45 @@
+
+{
+  "navLabel": "健康时间线",
+  "dashboardDescription": "按时间顺序查看您的健康活动。",
+  "title": "我的健康时间线",
+  "intro": "查看保存在您账户中的健康活动时间记录。",
+  "loading": "正在加载您的健康时间线...",
+  "loadErrorTitle": "时间线暂时无法使用",
+  "loadError": "无法加载您的健康时间线。请重试。",
+  "retry": "重试",
+  "emptyTitle": "目前没有健康活动",
+  "emptyDescription": "完成评估、记录测量数据或使用健康功能后，您的健康活动将显示在这里。",
+  "loadMore": "加载更多",
+  "loadingMore": "正在加载更多事件...",
+  "loadMoreError": "无法加载更多事件。请重试。",
+  "eventDate": "日期",
+  "eventType": "事件类型",
+  "viewRelated": "查看相关信息",
+  "categories": {
+    "assessment": "评估",
+    "measurement": "测量",
+    "medication": "药物",
+    "symptom": "症状",
+    "goal": "目标",
+    "note": "备注"
+  },
+  "sources": {
+    "health_risk_assessment": "健康风险评估",
+    "questionnaire": "健康问卷",
+    "manual_measurement": "已记录健康测量数据",
+    "prescription": "已添加或更新处方",
+    "medication_dose": "用药剂量活动",
+    "manual_symptom": "已记录症状",
+    "user_goal": "已创建健康目标",
+    "user_note": "已创建健康备注"
+  },
+  "iconLabels": {
+    "assessment": "评估事件",
+    "measurement": "测量事件",
+    "medication": "药物事件",
+    "symptom": "症状事件",
+    "goal": "目标事件",
+    "note": "备注事件"
+  }
+}

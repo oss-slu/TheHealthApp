@@ -1,0 +1,45 @@
+
+{
+  "navLabel": "Cronología de salud",
+  "dashboardDescription": "Consulta tu actividad de salud en orden cronológico.",
+  "title": "Mi cronología de salud",
+  "intro": "Consulta un historial cronológico de la actividad de salud guardada en tu cuenta.",
+  "loading": "Cargando tu cronología de salud...",
+  "loadErrorTitle": "Cronología no disponible",
+  "loadError": "No se pudo cargar tu cronología de salud. Inténtalo de nuevo.",
+  "retry": "Intentar de nuevo",
+  "emptyTitle": "Todavía no hay actividad de salud",
+  "emptyDescription": "Tu actividad de salud aparecerá aquí cuando completes evaluaciones, registres mediciones y utilices las funciones de salud.",
+  "loadMore": "Cargar más",
+  "loadingMore": "Cargando más eventos...",
+  "loadMoreError": "No se pudieron cargar más eventos. Inténtalo de nuevo.",
+  "eventDate": "Fecha",
+  "eventType": "Tipo de evento",
+  "viewRelated": "Ver información relacionada",
+  "categories": {
+    "assessment": "Evaluación",
+    "measurement": "Medición",
+    "medication": "Medicamento",
+    "symptom": "Síntoma",
+    "goal": "Objetivo",
+    "note": "Nota"
+  },
+  "sources": {
+    "health_risk_assessment": "Evaluación de riesgos de salud",
+    "questionnaire": "Cuestionario de salud",
+    "manual_measurement": "Medición de salud registrada",
+    "prescription": "Receta añadida o actualizada",
+    "medication_dose": "Actividad de dosis de medicamento",
+    "manual_symptom": "Síntoma registrado",
+    "user_goal": "Objetivo de salud creado",
+    "user_note": "Nota de salud creada"
+  },
+  "iconLabels": {
+    "assessment": "Evento de evaluación",
+    "measurement": "Evento de medición",
+    "medication": "Evento de medicamento",
+    "symptom": "Evento de síntoma",
+    "goal": "Evento de objetivo",
+    "note": "Evento de nota"
+  }
+}

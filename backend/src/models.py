@@ -1,7 +1,7 @@
 import uuid
 import re
 from beanie import Document, Indexed
-from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 from enum import Enum
 from datetime import date, datetime, timezone
 from typing import Optional, Annotated, Generic, TypeVar, Any
@@ -525,6 +525,151 @@ class MedicationDoseResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class HealthEventCategory(str, Enum):
+    assessment = "assessment"
+    measurement = "measurement"
+    medication = "medication"
+    symptom = "symptom"
+    goal = "goal"
+    note = "note"
+
+
+class HealthEventSource(str, Enum):
+    health_risk_assessment = "health_risk_assessment"
+    questionnaire = "questionnaire"
+    manual_measurement = "manual_measurement"
+    prescription = "prescription"
+    medication_dose = "medication_dose"
+    manual_symptom = "manual_symptom"
+    user_goal = "user_goal"
+    user_note = "user_note"
+
+
+HEALTH_EVENT_SOURCE_CATEGORIES = {
+    HealthEventSource.health_risk_assessment: HealthEventCategory.assessment,
+    HealthEventSource.questionnaire: HealthEventCategory.assessment,
+    HealthEventSource.manual_measurement: HealthEventCategory.measurement,
+    HealthEventSource.prescription: HealthEventCategory.medication,
+    HealthEventSource.medication_dose: HealthEventCategory.medication,
+    HealthEventSource.manual_symptom: HealthEventCategory.symptom,
+    HealthEventSource.user_goal: HealthEventCategory.goal,
+    HealthEventSource.user_note: HealthEventCategory.note,
+}
+
+HEALTH_EVENT_SOURCE_REFERENCE_TYPES = {
+    HealthEventSource.health_risk_assessment: "health_risk_assessment",
+    HealthEventSource.questionnaire: "questionnaire",
+    HealthEventSource.manual_measurement: "measurement",
+    HealthEventSource.prescription: "prescription",
+    HealthEventSource.medication_dose: "medication_dose",
+    HealthEventSource.manual_symptom: "symptom",
+    HealthEventSource.user_goal: "goal",
+    HealthEventSource.user_note: "note",
+}
+
+
+class HealthEventReference(BaseModel):
+    """Identifies the record containing the event's detailed information."""
+
+    entity_type: str = Field(min_length=1, max_length=50)
+    entity_id: uuid.UUID
+
+def _validate_event_timestamp(value: datetime) -> datetime:
+    """Require timezone-aware timestamps and normalize them to UTC."""
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("occurred_at must include a timezone")
+    return value.astimezone(timezone.utc)
+
+
+def _validate_event_details(
+    category: HealthEventCategory,
+    source: HealthEventSource,
+    detail_reference: HealthEventReference,
+) -> None:
+    """Validate that an event's category, source, and reference agree."""
+    expected_category = HEALTH_EVENT_SOURCE_CATEGORIES[source]
+    if category != expected_category:
+        raise ValueError(
+            f"Source '{source.value}' is not valid "
+            f"for category '{category.value}'"
+        )
+
+    expected_reference_type = HEALTH_EVENT_SOURCE_REFERENCE_TYPES[source]
+    if detail_reference.entity_type != expected_reference_type:
+        raise ValueError(
+            f"Source '{source.value}' requires a detail reference "
+            f"of type '{expected_reference_type}'"
+        )
+
+class HealthEvent(Document):
+    """Common, user-owned event record for the personal health timeline."""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID = Indexed()
+    category: HealthEventCategory
+    source: HealthEventSource
+    occurred_at: datetime
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    detail_reference: HealthEventReference
+
+    @field_validator("occurred_at")
+    @classmethod
+    def validate_occurred_at(cls, value):
+        return _validate_event_timestamp(value)
+
+    @model_validator(mode="after")
+    def validate_category_source(self):
+        _validate_event_details(
+            self.category,
+            self.source,
+            self.detail_reference,
+        )
+        return self
+
+    class Settings:
+        name = "health_events"
+        indexes = [
+            IndexModel([("user_id", 1), ("occurred_at", -1)])
+        ]
+
+
+class HealthEventCreate(BaseModel):
+    """Validated event data; ownership comes from the authenticated user."""
+
+    model_config = ConfigDict(extra="forbid")
+    category: HealthEventCategory
+    source: HealthEventSource
+    occurred_at: datetime
+    detail_reference: HealthEventReference
+
+    @field_validator("occurred_at")
+    @classmethod
+    def validate_occurred_at(cls, value):
+        return _validate_event_timestamp(value)
+
+    @model_validator(mode="after")
+    def validate_category_source(self):
+        _validate_event_details(
+            self.category,
+            self.source,
+            self.detail_reference,
+        )
+        return self
+
+
+class HealthEventResponse(BaseModel):
+    id: uuid.UUID
+    category: HealthEventCategory
+    source: HealthEventSource
+    occurred_at: datetime
+    created_at: datetime
+    detail_reference: HealthEventReference
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Connected-health integrations (#202) ---

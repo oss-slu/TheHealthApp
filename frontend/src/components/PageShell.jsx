@@ -8,7 +8,7 @@ import { THEMES } from '../context/theme';
 const LANG_CODES = ['en', 'hi', 'es', 'ar', 'zh'];
 
 const PageShell = ({ children, title, showNav = true, variant = 'default' }) => {
-  const { t, i18n } = useTranslation(['common', 'auth', 'dashboard', 'modules', 'summary']);
+  const { t, i18n } = useTranslation(['common', 'auth', 'dashboard', 'modules', 'summary', 'timeline']);
   const [langOpen, setLangOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -23,6 +23,7 @@ const PageShell = ({ children, title, showNav = true, variant = 'default' }) => 
       ? [
           { path: '/dashboard', label: t('dashboard:menuLabel', 'Dashboard') },
           { path: '/health-summary', label: t('dashboard:healthSummary', 'Health Summary') },
+          { path: '/health-timeline', label: t('timeline:navLabel', 'Health timeline') },
           { path: '/modules/framingham-risk', label: t('dashboard:framingham', 'Risk Assessment') },
           { path: '/settings/account', label: t('common:accountSettings', 'Settings') },
         ]

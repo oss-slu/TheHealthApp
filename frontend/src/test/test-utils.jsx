@@ -10,6 +10,7 @@ import commonAr from '../../public/locales/ar/common.json';
 import { ThemeProvider } from '../context/ThemeContext';
 import framinghamEn from '../../public/locales/en/framingham.json';
 import summaryEn from '../../public/locales/en/summary.json';
+import timelineEn from '../../public/locales/en/timeline.json';
 import modulesEn from '../../public/locales/en/modules.json';
 import modulesAr from '../../public/locales/ar/modules.json';
 
@@ -18,7 +19,7 @@ const testI18n = i18n.createInstance();
 testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'auth', 'dashboard', 'modules', 'errors', 'framingham', 'questionnaire', 'summary'],
+  ns: ['common', 'auth', 'dashboard', 'modules', 'errors', 'framingham', 'questionnaire', 'summary', 'timeline'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
   resources: {
@@ -141,6 +142,7 @@ testI18n.use(initReactI18next).init({
       },
       framingham: framinghamEn,
       summary: summaryEn,
+      timeline: timelineEn,
     },
     ar: {
       common: {

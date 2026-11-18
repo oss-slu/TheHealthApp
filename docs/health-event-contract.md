@@ -65,13 +65,67 @@ The detail reference contains:
 
 Health events are sensitive health information.
 
-Future timeline API operations must:
+Timeline API operations must:
 
 - Require an authenticated user.
 - Require valid health consent.
 - Derive event ownership from the authenticated user.
 - Restrict queries to the authenticated user's records.
 - Never expose another user's events.
+- Ignore any client-supplied `user_id`; the owner is always the authenticated user.
+
+## Timeline Endpoint
+
+`GET /api/v1/users/me/health-timeline`
+
+Returns the authenticated user's health events, newest first.
+
+### Access
+
+- Requires a valid bearer access token. Requests without valid credentials are rejected with `401` or `403`.
+- Requires completed consent for the current policy version. Users without it receive `403`.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `limit` | integer | `20` | Page size, from `1` to `100`. |
+| `offset` | integer | `0` | Number of events to skip. Must be `0` or greater. |
+| `category` | string | none | Return only events in one supported category. |
+| `start_at` | ISO 8601 datetime | none | Inclusive lower bound for `occurred_at`. |
+| `end_before` | ISO 8601 datetime | none | Exclusive upper bound for `occurred_at`. |
+
+`start_at` and `end_before` must be supplied together, must include a timezone offset, and `start_at` must be earlier than `end_before`. Boundaries are converted to UTC before querying.
+
+### Ordering
+
+Events are sorted newest first by `occurred_at`. Events with the same `occurred_at` are ordered by `_id` descending, so the order is deterministic and an event cannot move between pages.
+
+### Response
+
+The response uses the standard success envelope. `data` contains:
+
+| Field | Description |
+|---|---|
+| `events` | The requested page of events, each with `id`, `category`, `source`, `occurred_at`, `created_at`, and `detail_reference`. |
+| `total` | Number of events matching the filters, across all pages. |
+| `limit` | The page size applied. |
+| `offset` | The offset applied. |
+| `has_more` | `true` when more matching events exist after this page. |
+
+An empty timeline returns `200` with an empty `events` list and `total` of `0`.
+
+### User Isolation
+
+The query is always filtered by the authenticated user's ID. Any `user_id` query parameter is ignored, and `total` counts only the authenticated user's events.
+
+### Errors
+
+| Status | Cause |
+|---|---|
+| `401` / `403` | Missing or invalid credentials, or consent not current (`403`). |
+| `422` | `limit` or `offset` out of range, unknown `category`, only one date boundary, a date without a timezone, or `start_at` not before `end_before`. |
+| `500` | Unexpected database failure. The message is generic (`An error occurred while retrieving the health timeline`) and never exposes internal details. |
 
 ## Localization and Accessibility
 
@@ -94,4 +148,4 @@ The timeline API and UI should support:
 
 Events are stored in the MongoDB `health_events` collection.
 
-A compound index on `user_id` and `occurred_at` supports efficient user-scoped chronological queries.
+A compound index on `user_id` and `occurred_at` supports efficient user-scoped chronological queries. The timeline adds `_id` as a secondary sort key for stable pagination.

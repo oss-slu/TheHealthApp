@@ -8,7 +8,8 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Optional
 from pymongo.errors import DuplicateKeyError
 
-from fastapi import FastAPI, HTTPException, status, Depends, Request, UploadFile, File
+from fastapi import (
+    FastAPI, HTTPException, status, Depends, Request, UploadFile, File, Query,)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
@@ -85,6 +86,9 @@ from .models import (
     RevokedToken,
     HealthRiskAssessment,
     HealthEvent,
+    HealthEventCategory,
+    HealthEventResponse,
+    HealthTimelineResponse,
     HealthRiskInput,
     HealthRiskOutput,
     ConsentSubmit,
@@ -677,6 +681,79 @@ def _mongo_utc_naive(value: datetime) -> datetime:
         return value
     return value.astimezone(timezone.utc).replace(tzinfo=None)
 
+
+@app.get(
+    "/api/v1/users/me/health-timeline",
+    response_model=SuccessResponse[HealthTimelineResponse],
+    tags=["Health Timeline"],
+    summary="Get the authenticated user's health timeline",
+)
+async def get_health_timeline(
+    current_user: Annotated[User, Depends(require_health_consent)],
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    category: HealthEventCategory | None = None,
+    start_at: datetime | None = None,
+    end_before: datetime | None = None,
+):
+    if (start_at is None) != (end_before is None):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Both start_at and end_before must be provided together",
+        )
+
+    if start_at is not None and end_before is not None:
+        if (
+            start_at.tzinfo is None
+            or start_at.utcoffset() is None
+            or end_before.tzinfo is None
+            or end_before.utcoffset() is None
+            or start_at >= end_before
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Date boundaries must be timezone-aware and start_at must precede end_before",
+            )
+
+    event_filter = {"user_id": current_user.id}
+
+    if category is not None:
+        event_filter["category"] = category
+
+    if start_at is not None and end_before is not None:
+        event_filter["occurred_at"] = {
+            "$gte": _mongo_utc_naive(start_at),
+            "$lt": _mongo_utc_naive(end_before),
+        }
+
+    try:
+        query = HealthEvent.find(event_filter)
+        total = await query.count()
+
+        events = await (
+            query.sort("-occurred_at", "-_id")
+            .skip(offset)
+            .limit(limit)
+            .to_list()
+        )
+
+        return SuccessResponse(
+            data=HealthTimelineResponse(
+                events=[
+                    HealthEventResponse.model_validate(event)
+                    for event in events
+                    ],
+                    total=total,
+                    limit=limit,
+                    offset=offset,
+                    has_more=offset + len(events) < total,
+                )
+            )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving the health timeline",
+        )
 
 
 @app.get("/api/v1/consent/status", response_model=SuccessResponse[ConsentStatusData], tags=["Consent"])

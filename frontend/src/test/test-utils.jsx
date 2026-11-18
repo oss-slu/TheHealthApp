@@ -62,8 +62,9 @@ testI18n.use(initReactI18next).init({
         namePlaceholder: 'Enter your full name',
         age: 'Age',
         gender: 'Gender',
+        countryCode: 'Country Code',
         phone: 'Phone',
-        phonePlaceholder: '10-15 digit phone number',
+        phonePlaceholder: 'Local phone number',
         resetLinkSent: 'Reset link has been sent.',
         errors: {
           usernameInvalid: 'Invalid username format',
@@ -72,7 +73,7 @@ testI18n.use(initReactI18next).init({
           nameInvalid: 'Name must be at least 2 characters',
           ageInvalid: 'Age must be between 13 and 120',
           genderRequired: 'Please select a gender',
-          phoneInvalid: 'Enter a valid 10-15 digit phone number',
+          phoneInvalid: 'Enter a valid phone number for the selected country',
         },
       },
       dashboard: {
@@ -167,7 +168,12 @@ testI18n.use(initReactI18next).init({
         password: 'كلمة المرور',
         forgotPassword: 'نسيت كلمة المرور؟',
         resetLinkSent: 'تم إرسال رابط إعادة التعيين',
+        countryCode: 'رمز الدولة',
         phone: 'الهاتف',
+        phonePlaceholder: 'رقم الهاتف المحلي',
+        errors: {
+          phoneInvalid: 'أدخل رقم هاتف صالح للبلد المحدد',
+        },
       },
       dashboard: {
         title: 'لوحة التحكم',

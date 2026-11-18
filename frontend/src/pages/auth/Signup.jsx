@@ -11,6 +11,7 @@ import {
   validateUsername,
 } from '../../utils/validation';
 import { formatDateForInput, isValidDateOfBirth } from '../../utils/dateOfBirth';
+import { parsePhoneNumber } from '../../utils/phoneFormatting';
 
 const Signup = ({ onAuthSuccess = () => {} }) => {
   const { t } = useTranslation(['auth', 'common', 'errors']);
@@ -25,6 +26,7 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
     password: '',
     confirm: '',
   });
+  const [countryCode, setCountryCode] = useState('+1');
   const [touched, setTouched] = useState({
     username: false,
     name: false,
@@ -47,7 +49,12 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
     [form.dateOfBirth],
   );
   const genderValid = ['male', 'female', 'other', 'na'].includes(form.gender);
-  const phoneValid = /^\+?[0-9]{10,15}$/.test(form.phone);
+  const phoneValidation = useMemo(
+    () => parsePhoneNumber(form.phone, countryCode),
+    [form.phone, countryCode]
+  );
+  const phoneValid = phoneValidation.isValid;
+
   const passwordValid = useMemo(
     () => validatePassword(form.password),
     [form.password]
@@ -59,10 +66,13 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
   const onChange = (e) => {
     const { name, value } = e.target;
     if (error) setError(null);
-    // Restrict phone field to numbers only
     if (name === 'phone') {
-      const numericValue = value.replace(/\D/g, ''); // Remove all non-digit characters
-      setForm((prev) => ({ ...prev, [name]: numericValue }));
+      const sanitizedValue = value.replace(/[^\d+\s\-().]/g, '');
+      setForm((prev) => ({ ...prev, [name]: sanitizedValue }));
+      const parsed = parsePhoneNumber(sanitizedValue, countryCode);
+      if (parsed.isInternational && parsed.matchedSupportedCountry && parsed.countryCode !== countryCode) {
+        setCountryCode(parsed.countryCode);
+      }
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
@@ -93,12 +103,16 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
 
     try {
       const normalizedUsername = normalizeUsername(form.username);
+      const parsedPhone = parsePhoneNumber(form.phone, countryCode);
+      if (!parsedPhone.isValid) {
+        return;
+      }
       const payload = {
         username: normalizedUsername,
         name: form.name.trim(),
         date_of_birth: form.dateOfBirth,
         gender: form.gender,
-        phone: form.phone,
+        phone: parsedPhone.canonical,
         password: form.password,
       };
 
@@ -237,22 +251,40 @@ const Signup = ({ onAuthSuccess = () => {} }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">{t('auth:phone')} *</label>
-              <input
-                type="tel"
-                className={`w-full border rounded px-3 py-2 ${
-                  touched.phone && !phoneValid ? 'border-red-500' : 'border-gray-300'
-                }`}
-                name="phone"
-                value={form.phone}
-                onChange={onChange}
-                onBlur={onBlur}
-                placeholder={t('auth:phonePlaceholder', '10-15 digit phone number')}
-                autoComplete="tel"
-                inputMode="numeric"
-              />
+              <label className="block text-sm font-medium mb-1" htmlFor="phone">
+                {t('auth:phone')} *
+              </label>
+              <div className="flex gap-2">
+                <select
+                  aria-label={t('auth:countryCode', 'Country Code')}
+                  name="countryCode"
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value)}
+                  className="w-28 px-2 py-2 border rounded border-gray-300 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="+1">+1 (US)</option>
+                  <option value="+34">+34 (ES)</option>
+                  <option value="+91">+91 (IN)</option>
+                  <option value="+86">+86 (CN)</option>
+                  <option value="+971">+971 (AE)</option>
+                </select>
+                <input
+                  id="phone"
+                  type="tel"
+                  className={`flex-1 border rounded px-3 py-2 ${
+                    touched.phone && !phoneValid ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  name="phone"
+                  value={form.phone}
+                  onChange={onChange}
+                  onBlur={onBlur}
+                  placeholder={t('auth:phonePlaceholder', 'Local phone number')}
+                  autoComplete="tel"
+                  inputMode="numeric"
+                />
+              </div>
               {touched.phone && !phoneValid && (
-                <p className="text-xs text-red-600 mt-1">{t('auth:errors.phoneInvalid', 'Enter a valid 10-15 digit phone number')}</p>
+                <p className="text-xs text-red-600 mt-1">{t('auth:errors.phoneInvalid', 'Enter a valid phone number for the selected country')}</p>
               )}
             </div>
 

@@ -5,7 +5,7 @@ import bcrypt
 from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Optional
 from pymongo.errors import DuplicateKeyError
 
 from fastapi import FastAPI, HTTPException, status, Depends, Request, UploadFile, File
@@ -48,6 +48,10 @@ class Settings(BaseSettings):
         description="Comma-separated browser origins permitted for CORS (Vite :5173/5174, Dockerized UI :3000).",
     )
     ALLOWED_ORIGIN_REGEX: str | None = Field(default=None)
+    INTEGRATIONS_ENABLED: bool = Field(
+        default=False,
+        description="Offer connected-health integrations. Core features never depend on them.",
+    )
 
 settings = Settings()
 
@@ -98,7 +102,19 @@ from .models import (
     MedicationDose,
     MedicationDoseCreate,
     MedicationDoseResponse,
+    ConnectionStatus,
+    IntegrationConnection,
+    IntegrationConnectionCreate,
+    IntegrationConnectionResponse,
+    IntegrationProviderInfo,
+    IntegrationProvidersData,
+    ImportedMeasurement,
+    MedicationReminder,
+    MedicationReminderCreate,
+    MedicationReminderUpdate,
+    MedicationReminderResponse,
 )
+from .integrations import PROVIDERS, get_provider, unsupported_types
 from .risk_calculator import calculate_health_risk
 from .health_summary import build_health_summary
 
@@ -192,6 +208,9 @@ async def lifespan(app: FastAPI):
             Prescription,
             MedicationDose,
             HealthEvent,
+            IntegrationConnection,
+            ImportedMeasurement,
+            MedicationReminder,
         ],
     )
     print("Database connection established.")
@@ -993,3 +1012,275 @@ async def get_medication_doses(
         ]
     )
 
+
+@app.get(
+    "/api/v1/integrations/providers",
+    response_model=SuccessResponse[IntegrationProvidersData],
+    tags=["Integrations"],
+)
+async def list_integration_providers(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    providers = []
+    if settings.INTEGRATIONS_ENABLED:
+        providers = [
+            IntegrationProviderInfo(
+                id=provider.id,
+                name=provider.name,
+                supported_types=list(provider.supported_types),
+                limitations=provider.limitations,
+            )
+            for provider in PROVIDERS.values()
+        ]
+    return SuccessResponse(
+        data=IntegrationProvidersData(
+            enabled=settings.INTEGRATIONS_ENABLED,
+            providers=providers,
+        )
+    )
+
+
+@app.get(
+    "/api/v1/users/me/connections",
+    response_model=SuccessResponse[list[IntegrationConnectionResponse]],
+    tags=["Integrations"],
+)
+async def list_own_connections(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    # Not gated by consent or the feature flag: users must always be able to see what is connected.
+    connections = await IntegrationConnection.find(
+        IntegrationConnection.user_id == current_user.id,
+    ).sort(+IntegrationConnection.connected_at).to_list()
+
+    return SuccessResponse(
+        data=[
+            IntegrationConnectionResponse.model_validate(connection)
+            for connection in connections
+        ]
+    )
+
+
+@app.post(
+    "/api/v1/users/me/connections",
+    response_model=SuccessResponse[IntegrationConnectionResponse],
+    tags=["Integrations"],
+)
+async def grant_connection(
+    connection_data: IntegrationConnectionCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    if not settings.INTEGRATIONS_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "INTEGRATIONS_DISABLED",
+                "message": "Connected-health integrations are not enabled",
+            },
+        )
+
+    provider = get_provider(connection_data.provider)
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "UNKNOWN_PROVIDER",
+                "message": f"Unknown provider '{connection_data.provider}'",
+            },
+        )
+
+    unsupported = unsupported_types(provider, connection_data.granted_types)
+    if unsupported:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "UNSUPPORTED_MEASUREMENT_TYPE",
+                "message": f"{provider.name} does not support the requested measurement types",
+                "details": [measurement_type.value for measurement_type in unsupported],
+            },
+        )
+
+    now = datetime.now(timezone.utc)
+    connection = await IntegrationConnection.find_one(
+        IntegrationConnection.user_id == current_user.id,
+        IntegrationConnection.provider == provider.id,
+    )
+
+    # A new grant replaces the previous one, so permissions always match the user's latest choice.
+    if connection:
+        connection.granted_types = connection_data.granted_types
+        connection.status = ConnectionStatus.connected
+        connection.connected_at = now
+        connection.disconnected_at = None
+        connection.updated_at = now
+        await connection.save()
+    else:
+        connection = IntegrationConnection(
+            user_id=current_user.id,
+            provider=provider.id,
+            granted_types=connection_data.granted_types,
+            connected_at=now,
+            updated_at=now,
+        )
+        try:
+            await connection.insert()
+        except DuplicateKeyError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This provider is already being connected",
+            )
+
+    return SuccessResponse(
+        data=IntegrationConnectionResponse.model_validate(connection)
+    )
+
+
+@app.post(
+    "/api/v1/prescriptions/{prescription_id}/reminder",
+    response_model=SuccessResponse[MedicationReminderResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_medication_reminder(
+    prescription_id: uuid.UUID,
+    reminder_data: MedicationReminderCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    existing_reminder = await MedicationReminder.find_one(
+        MedicationReminder.user_id == current_user.id,
+        MedicationReminder.prescription_id == prescription.id,
+    )
+
+    if existing_reminder:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A reminder already exists for this prescription",
+        )
+
+    now = datetime.now(timezone.utc)
+    reminder = MedicationReminder(
+        user_id=current_user.id,
+        prescription_id=prescription.id,
+        reminder_time=reminder_data.reminder_time,
+        enabled=False,
+        paused=False,
+        created_at=now,
+        updated_at=now,
+    )
+    try:
+        await reminder.insert()
+    except DuplicateKeyError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A reminder already exists for this prescription",
+        )
+
+    return SuccessResponse(
+        data=MedicationReminderResponse.model_validate(reminder)
+    )
+
+
+@app.get(
+    "/api/v1/prescriptions/{prescription_id}/reminder",
+    response_model=SuccessResponse[
+        Optional[MedicationReminderResponse]
+    ],
+)
+async def get_medication_reminder(
+    prescription_id: uuid.UUID,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    reminder = await MedicationReminder.find_one(
+        MedicationReminder.user_id == current_user.id,
+        MedicationReminder.prescription_id == prescription.id,
+    )
+
+    if not reminder:
+        return SuccessResponse(data=None)
+
+    return SuccessResponse(
+        data=MedicationReminderResponse.model_validate(reminder)
+    )
+
+
+@app.patch(
+    "/api/v1/prescriptions/{prescription_id}/reminder",
+    response_model=SuccessResponse[MedicationReminderResponse],
+)
+async def update_medication_reminder(
+    prescription_id: uuid.UUID,
+    reminder_data: MedicationReminderUpdate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    prescription = await Prescription.find_one(
+        Prescription.id == prescription_id,
+        Prescription.user_id == current_user.id,
+        Prescription.archived == False,
+    )
+
+    if not prescription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prescription not found",
+        )
+
+    reminder = await MedicationReminder.find_one(
+        MedicationReminder.user_id == current_user.id,
+        MedicationReminder.prescription_id == prescription.id,
+    )
+
+    if not reminder:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reminder not found",
+        )
+
+    updates = reminder_data.model_dump(exclude_unset=True)
+
+    if not updates:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="At least one reminder setting must be provided",
+        )
+
+    if (
+        updates.get("paused", reminder.paused)
+        and not updates.get("enabled", reminder.enabled)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="A disabled reminder cannot be paused",
+        )
+
+    for field, value in updates.items():
+        setattr(reminder, field, value)
+
+    reminder.updated_at = datetime.now(timezone.utc)
+    await reminder.save()
+
+    return SuccessResponse(
+        data=MedicationReminderResponse.model_validate(reminder)
+    )

@@ -740,6 +740,17 @@ class ImportedMeasurement(Document):
             IndexModel([("user_id", 1), ("connection_id", 1)]),
         ]
 
+class ImportedMeasurementResponse(BaseModel):
+    id: uuid.UUID
+    provider: str
+    measurement_type: MeasurementType
+    value: float
+    unit: str
+    recorded_at: datetime
+    imported_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class IntegrationProviderInfo(BaseModel):
     id: str

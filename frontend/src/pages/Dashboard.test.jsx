@@ -3,10 +3,14 @@ import {
   renderWithProviders,
   renderWithRTL,
   screen,
+  fireEvent,
   createAuthenticatedContext,
 } from '../test/test-utils';
 import Dashboard from './Dashboard';
 import apiClient from '../api/client';
+import { healthTimelineService } from '../services/healthTimelineService';
+import { integrationService } from '../services/integrationService';
+import { prescriptionService } from '../services/prescriptionService';
 
 vi.mock('../api/client', () => ({
   default: {
@@ -14,10 +18,39 @@ vi.mock('../api/client', () => ({
   },
 }));
 
+vi.mock('../services/healthTimelineService', () => ({
+  healthTimelineService: {
+    getTimeline: vi.fn(),
+  },
+}));
+
+vi.mock('../services/integrationService', () => ({
+  integrationService: {
+    listMeasurements: vi.fn(),
+  },
+}));
+
+vi.mock('../services/prescriptionService', () => ({
+  prescriptionService: {
+    getAll: vi.fn(),
+  },
+}));
+
 describe('Dashboard', () => {
   beforeEach(() => {
-    apiClient.get.mockResolvedValue({ completed: false });
+  apiClient.get.mockResolvedValue({ completed: false });
+
+  healthTimelineService.getTimeline.mockResolvedValue({
+    events: [],
+    total: 0,
+    limit: 5,
+    offset: 0,
+    has_more: false,
   });
+
+  integrationService.listMeasurements.mockResolvedValue([]);
+  prescriptionService.getAll.mockResolvedValue([]);
+});
 
   const renderDashboard = (options = {}) => {
     return renderWithProviders(<Dashboard />, {
@@ -58,10 +91,164 @@ describe('Dashboard', () => {
       expect(screen.getByText('Framingham Risk Assessment')).toBeInTheDocument();
     });
 
-    it('uses EmptyState for activity instead of empty decorative cards', () => {
+    it('uses EmptyState for activity instead of empty decorative cards', async () => {
       renderDashboard();
-      expect(screen.getByTestId('empty-state')).toBeInTheDocument();
-      expect(screen.getByText(/no recent assessments yet/i)).toBeInTheDocument();
+
+      const activitySection = screen.getByRole('region', {
+      name: /recent activity/i,
+    });
+
+      expect(
+      await screen.findByText(/no recent activity yet/i)
+    ).toBeInTheDocument();
+
+      expect(activitySection.querySelector('[data-testid="empty-state"]'))
+      .toBeInTheDocument();
+    });
+
+        it('renders real health measurements returned by the service', async () => {
+      integrationService.listMeasurements.mockResolvedValueOnce([
+        {
+          id: 'measurement-1',
+          measurement_type: 'body_weight',
+          value: 72,
+          unit: 'kg',
+          recorded_at: '2026-11-18T10:30:00Z',
+        },
+      ]);
+
+      renderDashboard();
+
+      expect(await screen.findByText('72 kg')).toBeInTheDocument();
+    });
+
+        it('provides an action when no measurements are available', async () => {
+      integrationService.listMeasurements.mockResolvedValueOnce([]);
+
+      renderDashboard();
+
+      expect(
+        await screen.findByText(/no measurements yet/i)
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByRole('link', { name: /add a measurement/i })
+      ).toHaveAttribute('href', '/health-summary');
+    });
+
+        it('renders active medications returned by the service', async () => {
+      prescriptionService.getAll.mockResolvedValueOnce([
+        {
+          id: 'prescription-1',
+          medication_name: 'Metformin',
+          dosage: '500 mg',
+          frequency: 'Twice daily',
+          next_dose: '2026-11-20T08:00:00Z',
+        },
+      ]);
+
+      renderDashboard();
+
+      expect(await screen.findByText('Metformin')).toBeInTheDocument();
+      expect(screen.getByText(/500 mg · Twice daily/)).toBeInTheDocument();
+    });
+
+        it('renders recent health activity returned by the timeline service', async () => {
+      healthTimelineService.getTimeline.mockResolvedValueOnce({
+        events: [
+          {
+            id: 'activity-1',
+            category: 'assessment',
+            source: 'health_risk_assessment',
+            occurred_at: '2026-11-18T10:30:00Z',
+            created_at: '2026-11-18T10:30:00Z',
+          },
+        ],
+        total: 1,
+        limit: 5,
+        offset: 0,
+        has_more: false,
+      });
+
+      renderDashboard();
+
+      expect(await screen.findByText(/health risk assessment/i)).toBeInTheDocument();
+    });
+
+    it('shows an error state when recent activity fails to load', async () => {
+      healthTimelineService.getTimeline.mockRejectedValueOnce(
+        new Error('Network error')
+      );
+
+      renderDashboard();
+
+      expect(
+        await screen.findByText(/recent activity could not be loaded/i)
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByRole('button', { name: /try again/i })
+      ).toBeInTheDocument();
+    });
+
+        it('retries loading measurements successfully', async () => {
+      integrationService.listMeasurements
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce([
+          {
+            id: 'measurement-retry-1',
+            measurement_type: 'body_weight',
+            value: 70,
+            unit: 'kg',
+            recorded_at: '2026-11-19T10:30:00Z',
+          },
+        ]);
+
+      renderDashboard();
+
+      fireEvent.click(
+        await screen.findAllByRole('button', { name: /try again/i }).then(
+          (buttons) => buttons.find((button) =>
+            button.closest('section')?.getAttribute('aria-labelledby') ===
+            'dashboard-measurements-heading'
+          )
+        )
+      );
+
+      expect(await screen.findByText('70 kg')).toBeInTheDocument();
+      expect(integrationService.listMeasurements).toHaveBeenCalledTimes(2);
+    });
+
+        it('retries loading recent activity successfully', async () => {
+      healthTimelineService.getTimeline
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({
+          events: [
+            {
+              id: 'activity-retry-1',
+              category: 'assessment',
+              source: 'health_risk_assessment',
+              occurred_at: '2026-11-18T10:30:00Z',
+              created_at: '2026-11-18T10:30:00Z',
+            },
+          ],
+          total: 1,
+          limit: 5,
+          offset: 0,
+          has_more: false,
+        });
+
+      renderDashboard();
+
+      fireEvent.click(
+        await screen.findByRole('button', { name: /try again/i })
+      );
+
+      expect(
+        await screen.findByText(/health risk assessment/i)
+      ).toBeInTheDocument();
+
+      expect(healthTimelineService.getTimeline).toHaveBeenCalledTimes(2);
     });
 
     it('renders status metrics with token-driven status', () => {
@@ -71,6 +258,90 @@ describe('Dashboard', () => {
       expect(metrics[0]).toHaveAttribute('data-status');
     });
   });
+    it('shows an error state when measurements fail to load', async () => {
+      integrationService.listMeasurements.mockRejectedValueOnce(
+        new Error('Network error')
+      );
+
+      renderDashboard();
+
+      expect(
+        await screen.findByText(/measurements could not be loaded/i)
+      ).toBeInTheDocument();
+    });
+
+    it('retries loading measurements successfully', async () => {
+      integrationService.listMeasurements
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce([
+          {
+            id: 'measurement-retry-1',
+            measurement_type: 'body_weight',
+            value: 70,
+            unit: 'kg',
+            recorded_at: '2026-11-19T10:30:00Z',
+          },
+        ]);
+
+      renderDashboard();
+
+      const retryButtons = await screen.findAllByRole('button', {
+        name: /try again/i,
+      });
+      const measurementsRetryButton = retryButtons.find(
+        (button) =>
+          button.closest('section')?.getAttribute('aria-labelledby') ===
+          'dashboard-measurements-heading'
+      );
+
+      fireEvent.click(measurementsRetryButton);
+
+      expect(await screen.findByText('70 kg')).toBeInTheDocument();
+      expect(integrationService.listMeasurements).toHaveBeenCalledTimes(2);
+    });
+
+    it('shows an error state when medications fail to load', async () => {
+      prescriptionService.getAll.mockRejectedValueOnce(
+        new Error('Network error')
+      );
+
+      renderDashboard();
+
+      expect(
+        await screen.findByText(/medications could not be loaded/i)
+      ).toBeInTheDocument();
+    });
+
+    it('retries loading medications successfully', async () => {
+      prescriptionService.getAll
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce([
+          {
+            id: 'prescription-retry-1',
+            medication_name: 'Lisinopril',
+            dosage: '10 mg',
+            frequency: 'Once daily',
+            next_dose: '2026-11-20T08:00:00Z',
+          },
+        ]);
+
+      renderDashboard();
+
+      const retryButtons = await screen.findAllByRole('button', {
+        name: /try again/i,
+      });
+      const medicationsRetryButton = retryButtons.find(
+        (button) =>
+          button.closest('section')?.getAttribute('aria-labelledby') ===
+          'dashboard-medications-heading'
+      );
+
+      fireEvent.click(medicationsRetryButton);
+
+      expect(await screen.findByText('Lisinopril')).toBeInTheDocument();
+      expect(prescriptionService.getAll).toHaveBeenCalledTimes(2);
+    });
+
 
   describe('Module Navigation', () => {
     it('framingham link points to correct path', () => {

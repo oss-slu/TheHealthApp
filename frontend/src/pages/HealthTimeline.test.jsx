@@ -66,7 +66,9 @@ describe('HealthTimeline', () => {
       await screen.findByText('Health risk assessment')
     ).toBeInTheDocument();
 
-    expect(screen.getByText('Assessment')).toBeInTheDocument();
+    expect(
+      screen.getByText('Assessment', { selector: 'p' })
+    ).toBeInTheDocument();
 
     expect(
       screen.getByRole('link', { name: 'View related information' })
@@ -75,7 +77,29 @@ describe('HealthTimeline', () => {
     expect(healthTimelineService.getTimeline).toHaveBeenCalledWith({
       limit: 20,
       offset: 0,
-    });
+  });
+  });
+
+  it('links manual measurement events to the health summary', async () => {
+    healthTimelineService.getTimeline.mockResolvedValueOnce(
+      createResponse({
+        events: [
+          createEvent({
+            id: 'measurement-1',
+            category: 'measurement',
+            source: 'manual_measurement',
+          }),
+        ],
+      })
+    );
+
+    renderTimeline();
+
+    expect(
+      await screen.findByRole('link', {
+        name: 'View related information',
+      })
+    ).toHaveAttribute('href', '/health-summary');
   });
 
   it('displays an accessible empty state when there are no events', async () => {
@@ -96,6 +120,28 @@ describe('HealthTimeline', () => {
       'status'
     );
   });
+
+  it('displays a filtered empty state when a category has no events', async () => {
+  healthTimelineService.getTimeline
+    .mockResolvedValueOnce(createResponse())
+    .mockResolvedValueOnce(createResponse());
+
+  renderTimeline();
+
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Measurement' })
+  );
+
+  expect(
+    await screen.findByText('No matching activity')
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByText(
+      'No Measurement activity has been recorded yet.'
+    )
+  ).toBeInTheDocument();
+});
 
   it('displays an error and retries loading the timeline', async () => {
     healthTimelineService.getTimeline
@@ -171,6 +217,57 @@ describe('HealthTimeline', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('keeps the selected category when loading more events', async () => {
+  healthTimelineService.getTimeline
+  .mockResolvedValueOnce(createResponse())
+    .mockResolvedValueOnce(
+      createResponse({
+        events: [
+          createEvent({
+            id: 'measurement-1',
+            category: 'measurement',
+            source: 'manual_measurement',
+          }),
+        ],
+        total: 2,
+        has_more: true,
+      })
+    )
+    .mockResolvedValueOnce(
+      createResponse({
+        events: [
+          createEvent({
+            id: 'measurement-2',
+            category: 'measurement',
+            source: 'manual_measurement',
+          }),
+        ],
+        total: 2,
+        offset: 1,
+      })
+    );
+
+  renderTimeline();
+
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Measurement' })
+  );
+
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Load more' })
+  );
+
+  expect(
+    await screen.findAllByText('Health measurement recorded')
+  ).toHaveLength(2);
+
+  expect(healthTimelineService.getTimeline).toHaveBeenNthCalledWith(3, {
+    limit: 20,
+    offset: 1,
+    category: 'measurement',
+  });
+});
+
   it('keeps existing events and allows retry when loading more fails', async () => {
     healthTimelineService.getTimeline
       .mockResolvedValueOnce(
@@ -224,4 +321,46 @@ describe('HealthTimeline', () => {
 
     expect(healthTimelineService.getTimeline).toHaveBeenCalledTimes(3);
   });
+
+  it('filters timeline events by category', async () => {
+  healthTimelineService.getTimeline
+    .mockResolvedValueOnce(
+      createResponse({ events: [createEvent()] })
+    )
+    .mockResolvedValueOnce(
+      createResponse({
+        events: [
+          createEvent({
+            id: 'measurement-1',
+            category: 'measurement',
+            source: 'manual_measurement',
+          }),
+        ],
+      })
+    );
+
+  renderTimeline();
+
+  expect(
+    await screen.findByText('Health risk assessment')
+  ).toBeInTheDocument();
+
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Measurement' })
+  );
+
+  expect(
+    await screen.findByText('Health measurement recorded')
+  ).toBeInTheDocument();
+
+  expect(healthTimelineService.getTimeline).toHaveBeenNthCalledWith(2, {
+    limit: 20,
+    offset: 0,
+    category: 'measurement',
+  });
+
+  expect(
+    screen.queryByText('Health risk assessment')
+  ).not.toBeInTheDocument();
+});
 });

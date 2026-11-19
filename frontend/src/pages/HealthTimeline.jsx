@@ -18,6 +18,7 @@ const EVENT_ICONS = {
 const EVENT_LINKS = {
   health_risk_assessment: '/modules/framingham-risk',
   questionnaire: '/questionnaire',
+  manual_measurement: '/health-summary',
   prescription: '/modules/prescription',
   medication_dose: '/modules/prescription',
 };
@@ -44,15 +45,30 @@ const HealthTimeline = () => {
   const [error, setError] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  const CATEGORIES = [
+    'all',
+    'assessment',
+    'measurement',
+    'medication',
+    'symptom',
+    'goal',
+    'note',
+  ];
 
     const loadTimeline = useCallback(async () => {
     setLoading(true);
     setError(false);
+    setEvents([]);
+    setHasMore(false);
+    setLoadMoreError(false);
 
     try {
       const response = await healthTimelineService.getTimeline({
         limit: PAGE_SIZE,
         offset: 0,
+        ...(selectedCategory !== 'all' && { category: selectedCategory }),
       });
 
       setEvents(response.events || []);
@@ -62,7 +78,7 @@ const HealthTimeline = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedCategory]);
 
   useEffect(() => {
     loadTimeline();
@@ -78,6 +94,7 @@ const HealthTimeline = () => {
       const response = await healthTimelineService.getTimeline({
         limit: PAGE_SIZE,
         offset: events.length,
+        ...(selectedCategory !== 'all' && { category: selectedCategory }),
       });
 
       setEvents((previousEvents) => [
@@ -126,6 +143,29 @@ const HealthTimeline = () => {
             {t('intro')}
           </p>
         </header>
+        <div
+  role="group"
+  aria-label={t('filterLabel')}
+  className="flex flex-wrap gap-2"
+>
+  {CATEGORIES.map((category) => (
+    <button
+      key={category}
+      type="button"
+      aria-pressed={selectedCategory === category}
+      onClick={() => setSelectedCategory(category)}
+      className={`rounded-[var(--radius-md)] border px-4 py-2 text-sm font-semibold transition-colors ${
+        selectedCategory === category
+          ? 'border-[var(--color-primary)] bg-[var(--surface-muted)] text-[var(--text-primary)]'
+          : 'border-[var(--surface-border)] text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]'
+      }`}
+    >
+      {category === 'all'
+        ? t('allCategories')
+        : t(`categories.${category}`)}
+    </button>
+  ))}
+</div>
                 {loading && <LoadingState label={t('loading')} />}
 
         {error && (
@@ -139,11 +179,21 @@ const HealthTimeline = () => {
         )}
 
         {!loading && !error && events.length === 0 && (
-          <EmptyState
-            title={t('emptyTitle')}
-            description={t('emptyDescription')}
-          />
-        )}
+  <EmptyState
+    title={
+      selectedCategory === 'all'
+        ? t('emptyTitle')
+        : t('filteredEmptyTitle')
+    }
+    description={
+      selectedCategory === 'all'
+        ? t('emptyDescription')
+        : t('filteredEmptyDescription', {
+            category: t(`categories.${selectedCategory}`),
+          })
+    }
+  />
+)}
 
         {!loading && !error && events.length > 0 && (
           <section aria-label={t('title')} className="space-y-5">

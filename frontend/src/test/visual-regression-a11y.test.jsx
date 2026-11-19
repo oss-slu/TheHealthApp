@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { screen, waitFor } from '@testing-library/react';
+import { renderWithProviders, renderWithRTL } from './test-utils';
 import Dashboard from '../pages/Dashboard';
 
 vi.mock('../api/client', () => ({
@@ -43,11 +43,7 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
 
     it('renders dashboard correctly at mobile viewport dimensions (375px)', () => {
       setViewport(375, 667);
-      const { container } = render(
-        <MemoryRouter initialEntries={['/dashboard']}>
-          <Dashboard />
-        </MemoryRouter>
-      );
+      const { container } = renderWithProviders(<Dashboard />, { route: '/dashboard' });
 
       const responsiveGrid = container.querySelector('.grid');
       expect(responsiveGrid).toBeInTheDocument();
@@ -56,11 +52,7 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
 
     it('renders dashboard correctly at desktop viewport dimensions (1280px)', () => {
       setViewport(1280, 800);
-      const { container } = render(
-        <MemoryRouter initialEntries={['/dashboard']}>
-          <Dashboard />
-        </MemoryRouter>
-      );
+      const { container } = renderWithProviders(<Dashboard />, { route: '/dashboard' });
 
       const responsiveGrid = container.querySelector('.grid-cols-1.md\\:grid-cols-2');
       expect(responsiveGrid).toBeInTheDocument();
@@ -70,11 +62,7 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
 
   describe('2. Accessibility (a11y) & ARIA Behavior', () => {
     it('ensures interactive cards and links have accessible names and receive keyboard focus', () => {
-      render(
-        <MemoryRouter initialEntries={['/dashboard']}>
-          <Dashboard />
-        </MemoryRouter>
-      );
+      renderWithProviders(<Dashboard />, { route: '/dashboard' });
 
       const links = screen.getAllByRole('link');
       expect(links.length).toBeGreaterThan(0);
@@ -100,11 +88,7 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
     });
 
     it('maintains strict heading hierarchy and ARIA semantics', () => {
-      render(
-        <MemoryRouter initialEntries={['/dashboard']}>
-          <Dashboard />
-        </MemoryRouter>
-      );
+      renderWithProviders(<Dashboard />, { route: '/dashboard' });
 
       const headings = screen.getAllByRole('heading');
       expect(headings.length).toBeGreaterThan(0);
@@ -117,15 +101,8 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
   });
 
   describe('3. Arabic RTL Layout & Interaction', () => {
-    it('renders dashboard with Arabic locale, dir="rtl", and lang="ar"', () => {
-      document.documentElement.dir = 'rtl';
-      document.documentElement.lang = 'ar';
-
-      const { container } = render(
-        <MemoryRouter initialEntries={['/dashboard']}>
-          <Dashboard />
-        </MemoryRouter>
-      );
+        it('renders dashboard with Arabic locale, dir="rtl", and lang="ar"', () => {
+      const { container } = renderWithRTL(<Dashboard />, { route: '/dashboard' });
 
       expect(document.documentElement.dir).toBe('rtl');
       expect(document.documentElement.lang).toBe('ar');
@@ -151,11 +128,7 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
         dispatchEvent: vi.fn(),
       }));
 
-      const { container } = render(
-        <MemoryRouter initialEntries={['/dashboard']}>
-          <Dashboard />
-        </MemoryRouter>
-      );
+      const { container } = renderWithProviders(<Dashboard />, { route: '/dashboard' });
 
       expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
 
@@ -166,14 +139,10 @@ describe('Issue #160: Responsive, Accessibility, RTL, and Visual Regression Veri
 
   describe('5. Visual Regression DOM Snapshots', () => {
     it('matches visual DOM snapshot for mobile and desktop views', async () => {
-      const { asFragment } = render(
-        <MemoryRouter initialEntries={['/dashboard']}>
-          <Dashboard />
-        </MemoryRouter>
-      );
+      const { asFragment } = renderWithProviders(<Dashboard />, { route: '/dashboard' });
 
       await waitFor(() => {
-        expect(screen.getByText('dashboard:profileIncomplete')).toBeInTheDocument();
+        expect(screen.getByText('Incomplete')).toBeInTheDocument();
       });
       expect(asFragment()).toMatchSnapshot();
     });

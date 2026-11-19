@@ -115,6 +115,7 @@ from .models import (
     IntegrationProviderInfo,
     IntegrationProvidersData,
     ImportedMeasurement,
+    ImportedMeasurementResponse,
     MedicationReminder,
     MedicationReminderCreate,
     MedicationReminderUpdate,
@@ -1194,6 +1195,24 @@ async def list_own_connections(
         data=[await _connection_response(connection) for connection in connections]
     )
 
+@app.get(
+    "/api/v1/users/me/measurements",
+    response_model=SuccessResponse[list[ImportedMeasurementResponse]],
+    tags=["Integrations"],
+)
+async def list_own_imported_measurements(
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    measurements = await ImportedMeasurement.find(
+        ImportedMeasurement.user_id == current_user.id,
+    ).sort(-ImportedMeasurement.recorded_at).to_list()
+
+    return SuccessResponse(
+        data=[
+            ImportedMeasurementResponse.model_validate(measurement)
+            for measurement in measurements
+        ]
+    )
 
 @app.post(
     "/api/v1/users/me/connections",

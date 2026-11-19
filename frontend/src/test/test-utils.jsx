@@ -10,7 +10,9 @@ import commonAr from '../../public/locales/ar/common.json';
 import { ThemeProvider } from '../context/ThemeContext';
 import framinghamEn from '../../public/locales/en/framingham.json';
 import summaryEn from '../../public/locales/en/summary.json';
+import timelineEn from '../../public/locales/en/timeline.json';
 import modulesEn from '../../public/locales/en/modules.json';
+import dashboardEn from '../../public/locales/en/dashboard.json';
 import modulesAr from '../../public/locales/ar/modules.json';
 
 // Create a test i18n instance with inline translations
@@ -18,7 +20,7 @@ const testI18n = i18n.createInstance();
 testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'auth', 'dashboard', 'modules', 'errors', 'framingham', 'questionnaire', 'summary'],
+  ns: ['common', 'auth', 'dashboard', 'modules', 'errors', 'framingham', 'questionnaire', 'summary', 'timeline'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
   resources: {
@@ -77,10 +79,18 @@ testI18n.use(initReactI18next).init({
         },
       },
       dashboard: {
+        ...dashboardEn,
         title: 'Dashboard',
         menuLabel: 'Dashboard',
         recentAssessments: 'Recent activity',
-        noRecent: 'No recent assessments yet',
+        noRecent: 'No recent activity yet',
+        activityErrorTitle: 'Activity unavailable',
+        activityError: 'Recent activity could not be loaded.',
+        retry: 'Try again',
+        measurementsErrorTitle: 'Measurements unavailable',
+        measurementsError: 'Measurements could not be loaded.',
+        medicationsErrorTitle: 'Medications unavailable',
+        medicationsError: 'Medications could not be loaded.',
         healthStatus: 'Your health snapshot',
         promptAssess: 'Complete your profile to unlock personalized status.',
         reminders: 'Reminders',
@@ -106,7 +116,7 @@ testI18n.use(initReactI18next).init({
         nextStepAssess: 'Risk assessment',
         nextStepQuestionnaire: 'Questionnaire',
         nextStepHint: 'Guided from your current progress',
-        activityEmptyDesc: 'When you finish assessments, they will appear here.',
+        activityEmptyDesc: 'Your health activity will appear here as you use health features.',
       },
       modules: {
         heartRisk: 'Heart Risk Assessment',
@@ -141,6 +151,7 @@ testI18n.use(initReactI18next).init({
       },
       framingham: framinghamEn,
       summary: summaryEn,
+      timeline: timelineEn,
     },
     ar: {
       common: {

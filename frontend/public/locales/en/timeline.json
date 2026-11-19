@@ -1,0 +1,49 @@
+
+{
+  "navLabel": "Health timeline",
+  "dashboardDescription": "View your health activity in chronological order.",
+  "title": "My health timeline",
+  "intro": "See a chronological history of your health activity saved in your account.",
+  "filterLabel": "Filter timeline by category",
+  "allCategories": "All categories",
+  "loading": "Loading your health timeline...",
+  "loadErrorTitle": "Timeline unavailable",
+  "loadError": "Your health timeline could not be loaded. Please try again.",
+  "retry": "Try again",
+  "emptyTitle": "No health activity yet",
+  "emptyDescription": "Your health activity will appear here as you complete assessments, record measurements, and use health features.",
+  "filteredEmptyTitle": "No matching activity",
+  "filteredEmptyDescription": "No {{category}} activity has been recorded yet.",
+  "loadMore": "Load more",
+  "loadingMore": "Loading more events...",
+  "loadMoreError": "More events could not be loaded. Please try again.",
+  "eventDate": "Date",
+  "eventType": "Event type",
+  "viewRelated": "View related information",
+  "categories": {
+    "assessment": "Assessment",
+    "measurement": "Measurement",
+    "medication": "Medication",
+    "symptom": "Symptom",
+    "goal": "Goal",
+    "note": "Note"
+  },
+  "sources": {
+    "health_risk_assessment": "Health risk assessment",
+    "questionnaire": "Health questionnaire",
+    "manual_measurement": "Health measurement recorded",
+    "prescription": "Prescription added or updated",
+    "medication_dose": "Medication dose activity",
+    "manual_symptom": "Symptom recorded",
+    "user_goal": "Health goal created",
+    "user_note": "Health note created"
+  },
+  "iconLabels": {
+    "assessment": "Assessment event",
+    "measurement": "Measurement event",
+    "medication": "Medication event",
+    "symptom": "Symptom event",
+    "goal": "Goal event",
+    "note": "Note event"
+  }
+}

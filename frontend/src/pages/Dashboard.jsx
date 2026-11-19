@@ -11,6 +11,11 @@ const TOOLS = [
     titleKey: 'summary:navLabel',
     descKey: 'summary:dashboardDescription',
   },
+    {
+    path: '/health-timeline',
+    titleKey: 'timeline:navLabel',
+    descKey: 'timeline:dashboardDescription',
+  },
   {
     path: '/modules/framingham-risk',
     titleKey: 'dashboard:framinghamCardTitle',
@@ -34,7 +39,7 @@ const TOOLS = [
 ];
 
 const Dashboard = () => {
-  const { t } = useTranslation(['dashboard', 'modules', 'questionnaire', 'common', 'summary']);
+  const { t } = useTranslation(['dashboard', 'modules', 'questionnaire', 'common', 'summary', 'timeline']);
   const location = useLocation();
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [questionnaireComplete, setQuestionnaireComplete] = useState(

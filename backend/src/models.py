@@ -4,7 +4,7 @@ from beanie import Document, Indexed
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 from enum import Enum
 from datetime import date, datetime, timezone
-from typing import Optional, Annotated, Generic, TypeVar, Any
+from typing import Optional, Annotated, Generic, TypeVar, Any, Literal
 from pymongo import IndexModel
 
 # --- Consent (must match frontend CURRENT_CONSENT_VERSION) ---
@@ -91,6 +91,7 @@ class RevokedToken(Document):
 class Questionnaire(Document):
     """Stores a user's completed health questionnaire."""
 
+    timeline_reference_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     user_id: uuid.UUID = Indexed()
 
     first_name: str
@@ -526,6 +527,50 @@ class MedicationDoseResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class CheckInFeeling(str, Enum):
+    good = "good"
+    okay = "okay"
+    not_well = "not_well"
+
+
+class DailyCheckIn(Document):
+    """A user's daily wellness check-in."""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    check_in_date: date
+    feeling: CheckInFeeling
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+    class Settings:
+        name = "daily_check_ins"
+        indexes = [
+            IndexModel(
+                [("user_id", 1), ("check_in_date", 1)],
+                unique=True,
+            )
+        ]
+
+class NextActionDismissal(Document):
+    """Stores a user's dismissed dashboard next actions."""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID
+    action_key: str = Field(min_length=1, max_length=100)
+    dismissed_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+    class Settings:
+        name = "next_action_dismissals"
+        indexes = [
+            IndexModel(
+                [("user_id", 1), ("action_key", 1)],
+                unique=True,
+            )
+        ]
 
 class HealthEventCategory(str, Enum):
     assessment = "assessment"
@@ -534,6 +579,7 @@ class HealthEventCategory(str, Enum):
     symptom = "symptom"
     goal = "goal"
     note = "note"
+    check_in = "check_in"
 
 
 class HealthEventSource(str, Enum):
@@ -545,6 +591,7 @@ class HealthEventSource(str, Enum):
     manual_symptom = "manual_symptom"
     user_goal = "user_goal"
     user_note = "user_note"
+    daily_check_in = "daily_check_in"
 
 
 HEALTH_EVENT_SOURCE_CATEGORIES = {
@@ -556,6 +603,7 @@ HEALTH_EVENT_SOURCE_CATEGORIES = {
     HealthEventSource.manual_symptom: HealthEventCategory.symptom,
     HealthEventSource.user_goal: HealthEventCategory.goal,
     HealthEventSource.user_note: HealthEventCategory.note,
+    HealthEventSource.daily_check_in: HealthEventCategory.check_in,
 }
 
 HEALTH_EVENT_SOURCE_REFERENCE_TYPES = {
@@ -567,6 +615,7 @@ HEALTH_EVENT_SOURCE_REFERENCE_TYPES = {
     HealthEventSource.manual_symptom: "symptom",
     HealthEventSource.user_goal: "goal",
     HealthEventSource.user_note: "note",
+    HealthEventSource.daily_check_in: "daily_check_in",
 }
 
 
@@ -798,6 +847,30 @@ class ConnectionActionResult(BaseModel):
     connection: IntegrationConnectionResponse
     deleted_count: int
 
+class DailyCheckInCreate(BaseModel):
+    """Validated input for a daily wellness check-in."""
+
+    feeling: CheckInFeeling
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class DailyCheckInResponse(BaseModel):
+    """Daily check-in data returned to its owner."""
+
+    id: uuid.UUID
+    check_in_date: date
+    feeling: CheckInFeeling
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class NextActionDismissalCreate(BaseModel):
+    """Validated input for dismissing a dashboard next action."""
+
+    action_key: Literal["complete_questionnaire"]
+
+    model_config = ConfigDict(extra="forbid")
 
 # --- Medication reminders ---
 class MedicationReminder(Document):

@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Optional
 from pymongo.errors import DuplicateKeyError
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import (
     FastAPI, HTTPException, status, Depends, Request, UploadFile, File, Query,)
@@ -120,6 +121,13 @@ from .models import (
     MedicationReminderCreate,
     MedicationReminderUpdate,
     MedicationReminderResponse,
+    DailyCheckIn,
+    DailyCheckInCreate,
+    DailyCheckInResponse,
+    NextActionDismissal,
+    HealthEventReference,
+    HealthEventSource,
+    NextActionDismissalCreate,
 )
 from .integrations import PROVIDERS, get_provider, unsupported_types
 from .risk_calculator import calculate_health_risk
@@ -218,6 +226,8 @@ async def lifespan(app: FastAPI):
             IntegrationConnection,
             ImportedMeasurement,
             MedicationReminder,
+            DailyCheckIn,
+            NextActionDismissal,
         ],
     )
     print("Database connection established.")
@@ -592,6 +602,33 @@ async def submit_questionnaire(
 
     await questionnaire.insert()
 
+    now = datetime.now(timezone.utc)
+
+    try:
+        event = HealthEvent(
+            user_id=current_user.id,
+            category=HealthEventCategory.assessment,
+            source=HealthEventSource.questionnaire,
+            occurred_at=now,
+            created_at=now,
+            detail_reference=HealthEventReference(
+                entity_type="questionnaire",
+                entity_id=questionnaire.timeline_reference_id,
+            ),
+        )
+        await event.insert()
+    except Exception:
+        # Roll back the questionnaire if its timeline event cannot be saved.
+        try:
+            await questionnaire.delete()
+        except Exception:
+            pass
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while recording the questionnaire in the timeline",
+        )
+
     return SuccessResponse(
         data={
             "message": "Questionnaire submitted successfully",
@@ -607,14 +644,91 @@ async def get_questionnaire_status(
     current_user: Annotated[User, Depends(require_health_consent)],
 ):
     questionnaire = await Questionnaire.find_one(
-        Questionnaire.user_id == current_user.id
-    )
+    {"user_id": current_user.id}
+)
 
     return SuccessResponse(
         data={
             "completed": questionnaire is not None,
         }
     )
+
+@app.get(
+    "/api/v1/users/me/next-action",
+    response_model=SuccessResponse[dict],
+    tags=["Dashboard"],
+    summary="Get the authenticated user's next dashboard action",
+)
+async def get_next_action(
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    questionnaire = await Questionnaire.find_one(
+    {"user_id": current_user.id}
+)
+
+    if questionnaire is not None:
+        return SuccessResponse(data={"action": None})
+
+    dismissal = await NextActionDismissal.find_one(
+        {
+            "user_id": current_user.id,
+            "action_key": "complete_questionnaire",
+        }
+    )
+
+    if dismissal is not None:
+        return SuccessResponse(data={"action": None})
+
+    return SuccessResponse(
+        data={
+            "action": {
+                "key": "complete_questionnaire",
+                "href": "/questionnaire",
+            }
+        }
+    )
+
+
+@app.post(
+    "/api/v1/users/me/next-action/dismiss",
+    response_model=SuccessResponse[dict],
+    tags=["Dashboard"],
+    summary="Dismiss the authenticated user's next dashboard action",
+)
+async def dismiss_next_action(
+    payload: NextActionDismissalCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+):
+    questionnaire = await Questionnaire.find_one(
+    {"user_id": current_user.id}
+)
+
+    if questionnaire is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This action is no longer available",
+        )
+
+    dismissal = await NextActionDismissal.find_one(
+        {
+            "user_id": current_user.id,
+            "action_key": payload.action_key,
+        }
+    )
+
+    if dismissal is None:
+        dismissal = NextActionDismissal(
+            user_id=current_user.id,
+            action_key=payload.action_key,
+        )
+
+        try:
+            await dismissal.insert()
+        except DuplicateKeyError:
+            # Another request may have dismissed the action first.
+            pass
+
+    return SuccessResponse(data={"dismissed": True})
 
 @app.get(
     "/api/v1/users/me/health-summary",
@@ -682,6 +796,125 @@ def _mongo_utc_naive(value: datetime) -> datetime:
         return value
     return value.astimezone(timezone.utc).replace(tzinfo=None)
 
+def _get_local_check_in_date(timezone_name: str) -> date:
+    """Return today's date in a validated IANA timezone."""
+    try:
+        return datetime.now(ZoneInfo(timezone_name)).date()
+    except (ZoneInfoNotFoundError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="A valid IANA timezone is required",
+        )
+
+@app.get(
+    "/api/v1/users/me/daily-check-in",
+    response_model=SuccessResponse[dict],
+    tags=["Daily Check-In"],
+    summary="Get the authenticated user's daily check-in",
+)
+async def get_daily_check_in(
+    current_user: Annotated[User, Depends(require_health_consent)],
+    timezone_name: str = Query(
+        ...,
+        alias="timezone",
+        min_length=1,
+        max_length=100,
+    ),
+):
+    check_in_date = _get_local_check_in_date(timezone_name)
+
+    try:
+        check_in = await DailyCheckIn.find_one(
+            {
+                "user_id": current_user.id,
+                "check_in_date": check_in_date,
+            }
+        )
+
+        return SuccessResponse(
+            data={
+                "completed": check_in is not None,
+                "check_in": (
+                    DailyCheckInResponse.model_validate(check_in)
+                    if check_in
+                    else None
+                ),
+            }
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving the daily check-in",
+        )
+
+
+@app.post(
+    "/api/v1/users/me/daily-check-in",
+    response_model=SuccessResponse[DailyCheckInResponse],
+    tags=["Daily Check-In"],
+    summary="Submit the authenticated user's daily check-in",
+)
+async def submit_daily_check_in(
+    payload: DailyCheckInCreate,
+    current_user: Annotated[User, Depends(require_health_consent)],
+    timezone_name: str = Query(
+        ...,
+        alias="timezone",
+        min_length=1,
+        max_length=100,
+    ),
+):
+    check_in_date = _get_local_check_in_date(timezone_name)
+    now = datetime.now(timezone.utc)
+
+    check_in = DailyCheckIn(
+        user_id=current_user.id,
+        check_in_date=check_in_date,
+        feeling=payload.feeling,
+        created_at=now,
+    )
+
+    try:
+        await check_in.insert()
+    except DuplicateKeyError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You have already completed today's check-in",
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while saving the daily check-in",
+        )
+
+    try:
+        event = HealthEvent(
+            user_id=current_user.id,
+            category=HealthEventCategory.check_in,
+            source=HealthEventSource.daily_check_in,
+            occurred_at=now,
+            created_at=now,
+            detail_reference=HealthEventReference(
+                entity_type="daily_check_in",
+                entity_id=check_in.id,
+            ),
+        )
+        await event.insert()
+    except Exception:
+        # Roll back the check-in if its timeline event cannot be saved.
+        try:
+            await check_in.delete()
+        except Exception:
+            pass
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while recording the check-in in the timeline",
+        )
+
+    return SuccessResponse(
+        data=DailyCheckInResponse.model_validate(check_in)
+    )
 
 @app.get(
     "/api/v1/users/me/health-timeline",

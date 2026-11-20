@@ -58,5 +58,34 @@
   "goalsHeading": "Health goals",
   "goalsUnavailable": "Goal tracking isn't available yet",
   "goalsUnavailableDesc": "Health goal tracking will appear here when this feature becomes available.",
-  "addMeasurement": "Add a measurement"
+  "addMeasurement": "Add a measurement",
+  "dailyCheckIn": {
+    "heading": "Daily check-in",
+    "question": "How are you feeling today?",
+    "description": "Take a moment to check in with yourself.",
+    "good": "Good",
+    "okay": "Okay",
+    "notWell": "Not well",
+    "submit": "Save check-in",
+    "submitting": "Saving...",
+    "completed": "Thanks for checking in today!",
+    "completedFeeling": "Your response:",
+    "loading": "Loading your daily check-in...",
+    "errorTitle": "Check-in unavailable",
+    "error": "Your daily check-in couldn't be loaded or saved.",
+    "retry": "Try again",
+    "selectFeeling": "Please choose how you're feeling before saving."
+  },
+    "nextAction": {
+    "heading": "Your next step",
+    "title": "Complete your health questionnaire",
+    "description": "Finish your questionnaire to help personalize your health dashboard.",
+    "cta": "Complete questionnaire",
+    "dismiss": "Dismiss",
+    "dismissing": "Dismissing...",
+    "loading": "Loading your next step...",
+    "errorTitle": "Next step unavailable",
+    "error": "Your next step couldn't be loaded. Please try again.",
+    "retry": "Try again"
+  }
 }

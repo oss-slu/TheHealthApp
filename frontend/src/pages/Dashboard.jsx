@@ -58,6 +58,107 @@ const Dashboard = () => {
   };
 }, []);
   const [loadingStatus, setLoadingStatus] = useState(true);
+  const [nextAction, setNextAction] = useState(null);
+  const [nextActionLoading, setNextActionLoading] = useState(true);
+  const [nextActionError, setNextActionError] = useState(false);
+  const [nextActionDismissing, setNextActionDismissing] = useState(false);
+  const [checkIn, setCheckIn] = useState(null);
+  const [checkInLoading, setCheckInLoading] = useState(true);
+  const [checkInSubmitting, setCheckInSubmitting] = useState(false);
+  const [checkInError, setCheckInError] = useState(false);
+  const [checkInFeeling, setCheckInFeeling] = useState('');
+  const [checkInCompleted, setCheckInCompleted] = useState(false);
+
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  const loadDailyCheckIn = useCallback(async () => {
+    setCheckInLoading(true);
+    setCheckInError(false);
+
+    try {
+      const response = await apiClient.get('/users/me/daily-check-in', {
+        params: { timezone: userTimezone },
+      });
+
+      if (isMounted.current) {
+        setCheckIn(response?.check_in || null);
+        setCheckInCompleted(Boolean(response?.completed));
+      }
+    } catch (error) {
+      console.error('Failed to load daily check-in:', error);
+      if (isMounted.current) setCheckInError(true);
+    } finally {
+      if (isMounted.current) setCheckInLoading(false);
+    }
+  }, [userTimezone]);
+
+  const submitDailyCheckIn = async () => {
+    if (!checkInFeeling || checkInSubmitting) return;
+
+    setCheckInSubmitting(true);
+    setCheckInError(false);
+
+    try {
+      const response = await apiClient.post(
+        '/users/me/daily-check-in',
+        { feeling: checkInFeeling },
+        { params: { timezone: userTimezone } },
+      );
+
+      if (isMounted.current) {
+        setCheckIn(response);
+        setCheckInCompleted(true);
+        setCheckInFeeling('');
+        loadActivity();
+      }
+    } catch (error) {
+      console.error('Failed to submit daily check-in:', error);
+      if (isMounted.current) setCheckInError(true);
+    } finally {
+      if (isMounted.current) setCheckInSubmitting(false);
+    }
+  };
+
+  const loadNextAction = useCallback(async () => {
+    setNextActionLoading(true);
+    setNextActionError(false);
+
+    try {
+      const response = await apiClient.get('/users/me/next-action');
+
+      if (isMounted.current) {
+        setNextAction(response?.action || null);
+      }
+    } catch (error) {
+      console.error('Failed to load dashboard next action:', error);
+      if (isMounted.current) setNextActionError(true);
+    } finally {
+      if (isMounted.current) setNextActionLoading(false);
+    }
+  }, []);
+
+  const dismissNextAction = async () => {
+    if (!nextAction || nextActionDismissing) return;
+
+    setNextActionDismissing(true);
+    setNextActionError(false);
+
+    try {
+      await apiClient.post('/users/me/next-action/dismiss', {
+        action_key: nextAction.key,
+      });
+
+      if (isMounted.current) {
+        setNextAction(null);
+      }
+    } catch (error) {
+      console.error('Failed to dismiss dashboard next action:', error);
+      if (isMounted.current) setNextActionError(true);
+    } finally {
+      if (isMounted.current) setNextActionDismissing(false);
+    }
+  };
+
   const [questionnaireComplete, setQuestionnaireComplete] = useState(
     Boolean(location.state?.questionnaireComplete)
   );
@@ -157,7 +258,9 @@ const Dashboard = () => {
     loadActivity();
     loadMeasurements();
     loadPrescriptions();
-  }, [loadActivity, loadMeasurements, loadPrescriptions]);
+    loadDailyCheckIn();
+    loadNextAction();
+  }, [loadActivity, loadMeasurements, loadPrescriptions, loadDailyCheckIn, loadNextAction]);
 
   const primaryHref = questionnaireComplete ? '/modules/framingham-risk' : '/questionnaire';
   const primaryTitle = questionnaireComplete
@@ -195,9 +298,172 @@ const Dashboard = () => {
               </span>
             </span>
           </Link>
+
         </section>
 
-        <section aria-labelledby="dashboard-status-heading">
+          {(nextActionLoading || nextActionError || nextAction) && (
+          <section
+            aria-labelledby="next-action-heading"
+            className="surface-elevated p-5 sm:p-6"
+            data-testid="next-action"
+          >
+            {nextActionLoading ? (
+              <LoadingState label={t('dashboard:nextAction.loading')} />
+            ) : nextActionError ? (
+              <ErrorAlert
+                title={t('dashboard:nextAction.errorTitle')}
+                onRetry={loadNextAction}
+                retryLabel={t('dashboard:nextAction.retry')}
+              >
+                {t('dashboard:nextAction.error')}
+              </ErrorAlert>
+            ) : (
+              <>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-brand-700)]">
+                      {t('dashboard:nextAction.heading')}
+                    </p>
+                    <h2
+                      id="next-action-heading"
+                      className="mt-2 font-display text-xl font-semibold"
+                    >
+                      {t('dashboard:nextAction.title')}
+                    </h2>
+                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                      {t('dashboard:nextAction.description')}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={dismissNextAction}
+                    disabled={nextActionDismissing}
+                    className="text-sm font-medium text-[var(--text-secondary)] underline underline-offset-4 hover:text-[var(--text-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {nextActionDismissing
+                      ? t('dashboard:nextAction.dismissing')
+                      : t('dashboard:nextAction.dismiss')}
+                  </button>
+                </div>
+
+                <Link
+                  to={nextAction.href}
+                  className="mt-4 inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-brand-700)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-brand-800)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                >
+                  {t('dashboard:nextAction.cta')}
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </>
+            )}
+          </section>
+        )}
+
+        <section
+          aria-labelledby="daily-check-in-heading"
+          className="surface-elevated p-5 sm:p-6"
+          data-testid="daily-check-in"
+        >
+          <div className="mb-4">
+            <h2
+              id="daily-check-in-heading"
+              className="font-display text-xl font-semibold"
+            >
+              {t('dashboard:dailyCheckIn.heading')}
+            </h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              {t('dashboard:dailyCheckIn.description')}
+            </p>
+          </div>
+
+          {checkInLoading ? (
+            <LoadingState label={t('dashboard:dailyCheckIn.loading')} />
+          ) : checkInError ? (
+            <ErrorAlert
+              title={t('dashboard:dailyCheckIn.errorTitle')}
+              onRetry={loadDailyCheckIn}
+              retryLabel={t('dashboard:dailyCheckIn.retry')}
+            >
+              {t('dashboard:dailyCheckIn.error')}
+            </ErrorAlert>
+          ) : checkInCompleted ? (
+            <div
+              className="rounded-[var(--radius-md)] bg-[var(--surface-subtle)] p-4"
+              role="status"
+              aria-live="polite"
+            >
+              <p className="font-semibold text-[var(--text-primary)]">
+                {t('dashboard:dailyCheckIn.completed')}
+              </p>
+              {checkIn?.feeling && (
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                  {t('dashboard:dailyCheckIn.completedFeeling')}{' '}
+                  <span className="font-semibold text-[var(--text-primary)]">
+                    {t(`dashboard:dailyCheckIn.${checkIn.feeling}`)}
+                  </span>
+                </p>
+              )}
+            </div>
+          ) : (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitDailyCheckIn();
+              }}
+              className="space-y-4"
+            >
+              <fieldset disabled={checkInSubmitting}>
+                <legend className="mb-3 font-medium text-[var(--text-primary)]">
+                  {t('dashboard:dailyCheckIn.question')}
+                </legend>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {['good', 'okay', 'not_well'].map((feeling) => (
+                    <label
+                      key={feeling}
+                      className={`flex cursor-pointer items-center gap-3 rounded-[var(--radius-md)] border p-4 transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--focus-ring)] ${
+                        checkInFeeling === feeling
+                          ? 'border-[var(--color-brand-600)] bg-[var(--surface-subtle)]'
+                          : 'border-[var(--border-default)]'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="daily-check-in-feeling"
+                        value={feeling}
+                        checked={checkInFeeling === feeling}
+                        onChange={() => setCheckInFeeling(feeling)}
+                        className="h-4 w-4 accent-[var(--color-brand-600)]"
+                      />
+                      <span className="text-sm font-medium text-[var(--text-primary)]">
+                        {t(`dashboard:dailyCheckIn.${feeling === 'not_well' ? 'notWell' : feeling}`)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              {checkInError && (
+                <p role="alert" className="text-sm text-[var(--color-danger-700)]">
+                  {t('dashboard:dailyCheckIn.error')}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={!checkInFeeling || checkInSubmitting}
+                className="rounded-[var(--radius-md)] bg-[var(--color-brand-600)] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+              >
+                {checkInSubmitting
+                  ? t('dashboard:dailyCheckIn.submitting')
+                  : t('dashboard:dailyCheckIn.submit')}
+              </button>
+            </form>
+          )}
+        </section>
+
+
+                <section aria-labelledby="dashboard-status-heading">
           <div className="mb-4 flex items-end justify-between gap-3">
             <h2 id="dashboard-status-heading" className="font-display text-xl font-semibold">
               {t('dashboard:healthStatus')}

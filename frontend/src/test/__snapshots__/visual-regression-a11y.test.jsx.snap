@@ -177,6 +177,94 @@ exports[`Issue #160: Responsive, Accessibility, RTL, and Visual Regression Verif
             </a>
           </section>
           <section
+            aria-labelledby="daily-check-in-heading"
+            class="surface-elevated p-5 sm:p-6"
+            data-testid="daily-check-in"
+          >
+            <div
+              class="mb-4"
+            >
+              <h2
+                class="font-display text-xl font-semibold"
+                id="daily-check-in-heading"
+              >
+                Daily check-in
+              </h2>
+              <p
+                class="mt-1 text-sm text-[var(--text-secondary)]"
+              >
+                Take a moment to check in with yourself.
+              </p>
+            </div>
+            <form
+              class="space-y-4"
+            >
+              <fieldset>
+                <legend
+                  class="mb-3 font-medium text-[var(--text-primary)]"
+                >
+                  How are you feeling today?
+                </legend>
+                <div
+                  class="grid grid-cols-1 gap-3 sm:grid-cols-3"
+                >
+                  <label
+                    class="flex cursor-pointer items-center gap-3 rounded-[var(--radius-md)] border p-4 transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--focus-ring)] border-[var(--border-default)]"
+                  >
+                    <input
+                      class="h-4 w-4 accent-[var(--color-brand-600)]"
+                      name="daily-check-in-feeling"
+                      type="radio"
+                      value="good"
+                    />
+                    <span
+                      class="text-sm font-medium text-[var(--text-primary)]"
+                    >
+                      Good
+                    </span>
+                  </label>
+                  <label
+                    class="flex cursor-pointer items-center gap-3 rounded-[var(--radius-md)] border p-4 transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--focus-ring)] border-[var(--border-default)]"
+                  >
+                    <input
+                      class="h-4 w-4 accent-[var(--color-brand-600)]"
+                      name="daily-check-in-feeling"
+                      type="radio"
+                      value="okay"
+                    />
+                    <span
+                      class="text-sm font-medium text-[var(--text-primary)]"
+                    >
+                      Okay
+                    </span>
+                  </label>
+                  <label
+                    class="flex cursor-pointer items-center gap-3 rounded-[var(--radius-md)] border p-4 transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--focus-ring)] border-[var(--border-default)]"
+                  >
+                    <input
+                      class="h-4 w-4 accent-[var(--color-brand-600)]"
+                      name="daily-check-in-feeling"
+                      type="radio"
+                      value="not_well"
+                    />
+                    <span
+                      class="text-sm font-medium text-[var(--text-primary)]"
+                    >
+                      Not well
+                    </span>
+                  </label>
+                </div>
+              </fieldset>
+              <button
+                class="rounded-[var(--radius-md)] bg-[var(--color-brand-600)] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+                disabled=""
+                type="submit"
+              >
+                Save check-in
+              </button>
+            </form>
+          </section>
+          <section
             aria-labelledby="dashboard-status-heading"
           >
             <div

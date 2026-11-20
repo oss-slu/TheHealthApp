@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -10,6 +10,9 @@ from src.models import (
     HealthEventCreate,
     HealthEventReference,
     HealthEventSource,
+    CheckInFeeling,
+    DailyCheckInCreate,
+    DailyCheckInResponse,
 )
 
 
@@ -24,6 +27,7 @@ from src.models import (
         (HealthEventCategory.symptom, HealthEventSource.manual_symptom),
         (HealthEventCategory.goal, HealthEventSource.user_goal),
         (HealthEventCategory.note, HealthEventSource.user_note),
+        (HealthEventCategory.check_in, HealthEventSource.daily_check_in),
     ],
 )
 def test_health_event_accepts_valid_category_source(category, source):
@@ -36,6 +40,7 @@ def test_health_event_accepts_valid_category_source(category, source):
         HealthEventSource.manual_symptom: "symptom",
         HealthEventSource.user_goal: "goal",
         HealthEventSource.user_note: "note",
+        HealthEventSource.daily_check_in: "daily_check_in",
     }[source]
 
     event = HealthEventCreate(
@@ -164,3 +169,44 @@ def test_health_event_model_rejects_mismatched_detail_reference():
                 entity_id=uuid.uuid4(),
             ),
         )
+
+def test_daily_check_in_create_accepts_valid_feeling():
+    payload = DailyCheckInCreate(feeling="good")
+
+    assert payload.feeling == CheckInFeeling.good
+
+
+@pytest.mark.parametrize("feeling", ["good", "okay", "not_well"])
+def test_daily_check_in_create_accepts_all_feelings(feeling):
+    payload = DailyCheckInCreate(feeling=feeling)
+
+    assert payload.feeling.value == feeling
+
+
+def test_daily_check_in_create_rejects_invalid_feeling():
+    with pytest.raises(ValidationError):
+        DailyCheckInCreate(feeling="excellent")
+
+
+def test_daily_check_in_create_rejects_client_owned_fields():
+    with pytest.raises(ValidationError):
+        DailyCheckInCreate(
+            feeling="good",
+            user_id=uuid.uuid4(),
+        )
+
+
+def test_daily_check_in_response_contains_expected_fields():
+    check_in_id = uuid.uuid4()
+    response = DailyCheckInResponse.model_validate(
+        {
+            "id": check_in_id,
+            "check_in_date": date(2026, 11, 20),
+            "feeling": CheckInFeeling.okay,
+            "created_at": datetime.now(timezone.utc),
+        }
+    )
+
+    assert response.check_in_date == date(2026, 11, 20)
+    assert response.feeling == CheckInFeeling.okay
+    assert response.id == check_in_id

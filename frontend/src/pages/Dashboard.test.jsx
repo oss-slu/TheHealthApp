@@ -15,6 +15,7 @@ import { prescriptionService } from '../services/prescriptionService';
 vi.mock('../api/client', () => ({
   default: {
     get: vi.fn(),
+    post: vi.fn(),
   },
 }));
 
@@ -39,6 +40,11 @@ vi.mock('../services/prescriptionService', () => ({
 describe('Dashboard', () => {
   beforeEach(() => {
   apiClient.get.mockResolvedValue({ completed: false });
+    apiClient.post.mockResolvedValue({
+    id: 'check-in-1',
+    check_in_date: '2026-11-20',
+    feeling: 'good',
+  });
 
   healthTimelineService.getTimeline.mockResolvedValue({
     events: [],
@@ -58,6 +64,198 @@ describe('Dashboard', () => {
       ...options,
     });
   };
+
+  describe('Daily Check-In', () => {
+    it('renders the daily check-in question and feeling options', async () => {
+      renderDashboard();
+
+      expect(
+        await screen.findByText('How are you feeling today?')
+      ).toBeInTheDocument();
+
+      expect(screen.getByRole('radio', { name: 'Good' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Okay' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Not well' })).toBeInTheDocument();
+
+      expect(
+        screen.getByRole('button', { name: 'Save check-in' })
+      ).toBeDisabled();
+    });
+
+    it('submits the selected feeling and shows the completed state', async () => {
+      renderDashboard();
+
+      const goodOption = await screen.findByRole('radio', { name: 'Good' });
+      fireEvent.click(goodOption);
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Save check-in' })
+      );
+
+      expect(await screen.findByText(/thanks for checking in today/i))
+        .toBeInTheDocument();
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/users/me/daily-check-in',
+        { feeling: 'good' },
+        { params: { timezone: expect.any(String) } }
+      );
+    });
+
+        it('shows an error state when the daily check-in cannot be loaded', async () => {
+          apiClient.get.mockImplementation((url) => {
+            if (url === '/users/me/daily-check-in') {
+            return Promise.reject(new Error('Network error'));
+          }
+
+          return Promise.resolve({ completed: false });
+        });
+      renderDashboard();
+
+      expect(
+        await screen.findByText(/your daily check-in couldn't be loaded or saved/i)
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByRole('button', { name: 'Try again' })
+      ).toBeInTheDocument();
+    });
+
+    it("shows the completed state when today's check-in already exists", async () => {
+      apiClient.get.mockImplementation((url) => {
+  if (url === '/users/me/daily-check-in') {
+    return Promise.resolve({
+      completed: true,
+      check_in: {
+        id: 'check-in-1',
+        check_in_date: '2026-11-20',
+        feeling: 'okay',
+      },
+    });
+  }
+
+  return Promise.resolve({ completed: false });
+});
+
+      renderDashboard();
+
+      expect(
+        await screen.findByText(/thanks for checking in today/i)
+      ).toBeInTheDocument();
+
+      expect(screen.getByText('Okay')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Save check-in' })
+      ).not.toBeInTheDocument();
+    });
+  });
+
+    describe('Next Action', () => {
+    it('displays the next action returned by the API', async () => {
+      apiClient.get.mockImplementation((url) => {
+        if (url === '/users/me/next-action') {
+          return Promise.resolve({
+            action: {
+              key: 'complete_questionnaire',
+              href: '/questionnaire',
+            },
+          });
+        }
+
+        return Promise.resolve({ completed: false });
+      });
+
+      renderDashboard();
+
+      expect(
+        await screen.findByTestId('next-action')
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByRole('heading', {
+          name: 'Complete your health questionnaire',
+        })
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByRole('link', { name: /complete questionnaire/i })
+      ).toHaveAttribute('href', '/questionnaire');
+    });
+
+    it('does not display the card when there is no next action', async () => {
+      apiClient.get.mockImplementation((url) => {
+        if (url === '/users/me/next-action') {
+          return Promise.resolve({ action: null });
+        }
+
+        return Promise.resolve({ completed: false });
+      });
+
+      renderDashboard();
+
+      expect(
+        await screen.findByText('How are you feeling today?')
+      ).toBeInTheDocument();
+
+      expect(screen.queryByTestId('next-action')).not.toBeInTheDocument();
+    });
+
+    it('dismisses the next action', async () => {
+      apiClient.get.mockImplementation((url) => {
+        if (url === '/users/me/next-action') {
+          return Promise.resolve({
+            action: {
+              key: 'complete_questionnaire',
+              href: '/questionnaire',
+            },
+          });
+        }
+
+        return Promise.resolve({ completed: false });
+      });
+
+      renderDashboard();
+
+      const dismissButton = await screen.findByRole('button', {
+        name: 'Dismiss',
+      });
+
+      fireEvent.click(dismissButton);
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/users/me/next-action/dismiss',
+        { action_key: 'complete_questionnaire' }
+      );
+
+      expect(
+        await screen.findByText('How are you feeling today?')
+      ).toBeInTheDocument();
+
+      expect(screen.queryByTestId('next-action')).not.toBeInTheDocument();
+    });
+
+    it('shows an error when the next action cannot be loaded', async () => {
+      apiClient.get.mockImplementation((url) => {
+        if (url === '/users/me/next-action') {
+          return Promise.reject(new Error('Network error'));
+        }
+
+        return Promise.resolve({ completed: false });
+      });
+
+      renderDashboard();
+
+      expect(
+        await screen.findByText(
+          "Your next step couldn't be loaded. Please try again."
+        )
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByRole('button', { name: 'Try again' })
+      ).toBeInTheDocument();
+    });
+  });
 
   describe('Hierarchy', () => {
     it('renders dashboard title as page heading', () => {

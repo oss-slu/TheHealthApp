@@ -58,5 +58,34 @@
   "goalsHeading": "健康目标",
   "goalsUnavailable": "目标跟踪功能尚未开放",
   "goalsUnavailableDesc": "此功能开放后，您的健康目标将显示在这里。",
-  "addMeasurement": "添加一项测量"
+  "addMeasurement": "添加一项测量",
+  "dailyCheckIn": {
+    "heading": "每日状态记录",
+    "question": "您今天感觉怎么样？",
+    "description": "花一点时间关注一下自己的状态。",
+    "good": "良好",
+    "okay": "还可以",
+    "notWell": "不太好",
+    "submit": "保存记录",
+    "submitting": "正在保存...",
+    "completed": "感谢您分享今天的状态！",
+    "completedFeeling": "您的回答：",
+    "loading": "正在加载每日记录...",
+    "errorTitle": "暂时无法使用记录功能",
+    "error": "无法加载或保存您的每日记录。",
+    "retry": "重试",
+    "selectFeeling": "保存前请选择您今天的感受。"
+  },
+    "nextAction": {
+    "heading": "你的下一步",
+    "title": "完成健康问卷",
+    "description": "完成问卷，帮助个性化你的健康仪表板。",
+    "cta": "完成问卷",
+    "dismiss": "关闭",
+    "dismissing": "正在关闭...",
+    "loading": "正在加载你的下一步...",
+    "errorTitle": "下一步暂不可用",
+    "error": "无法加载你的下一步。请重试。",
+    "retry": "重试"
+  }
 }

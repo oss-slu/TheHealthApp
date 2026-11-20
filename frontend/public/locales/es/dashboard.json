@@ -58,5 +58,34 @@
   "goalsHeading": "Objetivos de salud",
   "goalsUnavailable": "El seguimiento de objetivos aún no está disponible",
   "goalsUnavailableDesc": "El seguimiento de objetivos de salud aparecerá aquí cuando esta función esté disponible.",
-  "addMeasurement": "Añadir una medición"
+  "addMeasurement": "Añadir una medición",
+  "dailyCheckIn": {
+    "heading": "Registro diario",
+    "question": "¿Cómo te sientes hoy?",
+    "description": "Tómate un momento para saber cómo te encuentras.",
+    "good": "Bien",
+    "okay": "Regular",
+    "notWell": "Mal",
+    "submit": "Guardar registro",
+    "submitting": "Guardando...",
+    "completed": "¡Gracias por compartir cómo te sientes hoy!",
+    "completedFeeling": "Tu respuesta:",
+    "loading": "Cargando tu registro diario...",
+    "errorTitle": "Registro no disponible",
+    "error": "No se pudo cargar o guardar tu registro diario.",
+    "retry": "Intentar de nuevo",
+    "selectFeeling": "Selecciona cómo te sientes antes de guardar."
+  },
+    "nextAction": {
+    "heading": "Tu siguiente paso",
+    "title": "Completa tu cuestionario de salud",
+    "description": "Completa el cuestionario para personalizar tu panel de salud.",
+    "cta": "Completar cuestionario",
+    "dismiss": "Descartar",
+    "dismissing": "Descartando...",
+    "loading": "Cargando tu siguiente paso...",
+    "errorTitle": "Siguiente paso no disponible",
+    "error": "No se pudo cargar tu siguiente paso. Inténtalo de nuevo.",
+    "retry": "Intentar de nuevo"
+  }
 }

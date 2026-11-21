@@ -7,6 +7,9 @@ export const integrationService = {
   async listConnections() {
     return apiClient.get('/users/me/connections', quiet);
   },
+  async listMeasurements() {
+    return apiClient.get('/users/me/measurements', quiet);
+  },
   async disconnect(connectionId, { deleteImportedData = false } = {}) {
     return apiClient.post(
       `/users/me/connections/${encodeURIComponent(connectionId)}/disconnect`,

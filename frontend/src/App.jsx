@@ -19,6 +19,7 @@ import Prescription from './pages/modules/Prescription';
 import TBA from './pages/modules/TBA';
 import Questionnaire from './pages/Questionnaire';
 import HealthSummary from './pages/HealthSummary';
+import HealthTimeline from './pages/HealthTimeline';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
               <Route path="/modules/tba" element={<TBA />} />
               <Route path="/questionnaire" element={<Questionnaire />} />
               <Route path="/health-summary" element={<HealthSummary />} />
+              <Route path="/health-timeline" element={<HealthTimeline />} />
             </Route>
           </Route>
 

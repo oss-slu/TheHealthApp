@@ -36,6 +36,10 @@ describe('PageShell navigation and accessibility', () => {
 
     expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/dashboard');
     expect(screen.getByRole('link', { name: /health summary/i })).toHaveAttribute('href', '/health-summary');
+    expect(screen.getByRole('link', { name: /health timeline/i })).toHaveAttribute(
+      'href',
+      '/health-timeline'
+    );
     expect(screen.getByRole('link', { name: /risk assessment/i })).toHaveAttribute(
       'href',
       '/modules/framingham-risk'

@@ -1,4 +1,5 @@
 import os
+from urllib import response
 import uuid
 from datetime import datetime, timezone
 
@@ -328,6 +329,88 @@ async def import_measurements(connection, count):
 async def stored_count(connection):
     return await ImportedMeasurement.find(ImportedMeasurement.connection_id == connection.id).count()
 
+@pytest.mark.anyio
+async def test_list_own_measurements_returns_newest_first_and_excludes_other_users(
+    client, test_user
+):
+    own_connection = await make_connection(
+        test_user,
+        status=ConnectionStatus.disconnected,
+    )
+    other_user = make_user()
+    other_connection = await make_connection(other_user)
+
+    older_date = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    newer_date = datetime(2026, 2, 1, tzinfo=timezone.utc)
+
+    await ImportedMeasurement(
+        user_id=test_user.id,
+        connection_id=own_connection.id,
+        provider=own_connection.provider,
+        source_record_id="own-older",
+        measurement_type=MeasurementType.heart_rate,
+        value=60,
+        unit="count/min",
+        recorded_at=older_date,
+    ).insert()
+
+    await ImportedMeasurement(
+        user_id=test_user.id,
+        connection_id=own_connection.id,
+        provider=own_connection.provider,
+        source_record_id="own-newer",
+        measurement_type=MeasurementType.heart_rate,
+        value=75,
+        unit="count/min",
+        recorded_at=newer_date,
+    ).insert()
+
+    await ImportedMeasurement(
+        user_id=other_user.id,
+        connection_id=other_connection.id,
+        provider=other_connection.provider,
+        source_record_id="other-user-record",
+        measurement_type=MeasurementType.heart_rate,
+        value=100,
+        unit="count/min",
+        recorded_at=newer_date,
+    ).insert()
+
+    response = await client.get("/api/v1/users/me/measurements")
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert len(data) == 2
+    assert [item["value"] for item in data] == [75, 60]
+    assert data[0]["recorded_at"] > data[1]["recorded_at"]
+
+    for item in data:
+        assert "user_id" not in item
+        assert "connection_id" not in item
+        assert "source_record_id" not in item
+
+
+@pytest.mark.anyio
+async def test_list_own_measurements_returns_empty_list_when_none_exist(client):
+    response = await client.get("/api/v1/users/me/measurements")
+
+    assert response.status_code == 200
+    assert response.json()["data"] == []
+
+
+@pytest.mark.anyio
+async def test_list_own_measurements_requires_current_health_consent(client_for):
+    user = make_user(consent_given=False, data_usage=False)
+
+    async with client_for(user) as test_client:
+        response = await test_client.get("/api/v1/users/me/measurements")
+
+    assert response.status_code == 403
+    print(response.json())
+    assert response.json()["success"] is False
+    assert response.json()["error"]["message"] == (
+        "Health features require completed consent for the current policy version"
+    )
 
 @pytest.mark.anyio
 async def test_list_connections_reports_imported_count(client, test_user):

@@ -109,7 +109,7 @@ const Dashboard = () => {
         setCheckIn(response);
         setCheckInCompleted(true);
         setCheckInFeeling('');
-        loadActivity();
+        void loadActivity();
       }
     } catch (error) {
       console.error('Failed to submit daily check-in:', error);
@@ -191,7 +191,7 @@ const Dashboard = () => {
       }
     };
 
-    checkQuestionnaireStatus();
+    void checkQuestionnaireStatus();
     return () => {
       cancelled = true;
     };
@@ -255,11 +255,11 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    loadActivity();
-    loadMeasurements();
-    loadPrescriptions();
-    loadDailyCheckIn();
-    loadNextAction();
+    void loadActivity();
+    void loadMeasurements();
+    void loadPrescriptions();
+    void loadDailyCheckIn();
+    void loadNextAction();
   }, [loadActivity, loadMeasurements, loadPrescriptions, loadDailyCheckIn, loadNextAction]);
 
   const primaryHref = questionnaireComplete ? '/modules/framingham-risk' : '/questionnaire';
@@ -408,7 +408,7 @@ const Dashboard = () => {
             <form
               onSubmit={(event) => {
                 event.preventDefault();
-                submitDailyCheckIn();
+                void submitDailyCheckIn();
               }}
               className="space-y-4"
             >

@@ -122,7 +122,7 @@ ML Service (Planned)
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/oss-slu/TheHealthApp.git
+git clone [https://github.com/oss-slu/TheHealthApp.git](https://github.com/oss-slu/TheHealthApp.git)
 cd TheHealthApp
 
 # 2. Start MongoDB (Docker - recommended)
@@ -130,15 +130,25 @@ docker run --name tha-mongo -p 27017:27017 -d mongo:7
 
 # 3. Setup Backend
 cd backend
-cp .env.example .env       # .env is pre-configured for local dev
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+# Unix (Bash/Zsh):
+cp .env.example .env
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Windows (PowerShell):
+# Copy-Item .env.example .env
+# python -m venv .venv
+# .\.venv\Scripts\Activate.ps1
+
 pip install -r requirements.txt
+cd ..
 
 # 4. Setup Frontend (in a new terminal)
 cd frontend
-cp .env.example .env       # .env is pre-configured for local dev
+# Unix (Bash/Zsh): cp .env.example .env
+# Windows (PowerShell): Copy-Item .env.example .env
 npm install
+cd ..
 ```
 
 ### Running the Application
@@ -146,8 +156,14 @@ npm install
 **Terminal 1 - Backend (from `backend/` directory):**
 
 ```bash
+# Unix (Bash / Zsh):
 source .venv/bin/activate
 PYTHONPATH=$(pwd) uvicorn src.main:app --reload --port 8000
+
+# Windows (PowerShell):
+# .\.venv\Scripts\Activate.ps1
+# $env:PYTHONPATH = (Get-Location).Path
+# uvicorn src.main:app --reload --port 8000
 ```
 
 **Terminal 2 - Frontend (from `frontend/` directory):**
@@ -198,16 +214,40 @@ MONGO_INITDB_ROOT_PASSWORD=your-secret-password docker-compose up -d db
 # MONGO_URL=mongodb://userh:your-secret-password@localhost:27017
 ```
 
-### Troubleshooting
+### Smoke Validation Flow
 
-| Issue | Solution |
-|-------|----------|
-| MongoDB connection refused | Ensure Docker container is running: `docker ps` |
-| CORS errors in browser | Verify `ALLOWED_ORIGINS` in backend `.env` matches frontend URL |
-| Module not found (Python) | Ensure `PYTHONPATH=$(pwd)` is set when running uvicorn |
-| Frontend can't reach backend | Check `VITE_API_BASE_URL` in frontend `.env` |
+A 4-step manual smoke verification sequence for contributors after initial setup:
 
----
+1. **Authentication (Auth):**
+   - Navigate to `http://localhost:5173/auth/signup` and complete account creation.
+   - Verify login at `http://localhost:5173/auth/login` issues valid JWT tokens and transitions state.
+2. **Consent & Onboarding:**
+   - Verify the onboarding consent prompt renders immediately after first authentication and user acceptance is recorded.
+3. **Navigation:**
+   - Verify header routing and mobile responsive drawer navigation to `Dashboard`, `Risk Assessment`, and `Settings`.
+4. **Health-flow (Dashboard & Risk Assessment):**
+   - Access `http://localhost:5173/dashboard` to verify user greeting and default health indicator cards render without errors.
+   - Run a risk evaluation flow and verify input acceptance and result rendering.
+
+### Troubleshooting & Diagnostics
+
+#### 1. Setup Failures (Environment & Dependency Issues)
+
+| Symptom | Probable Cause | Action / Resolution |
+|---------|----------------|---------------------|
+| `Activate.ps1 cannot be loaded because running scripts is disabled` | PowerShell ExecutionPolicy restriction | Run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` in PowerShell, then reactivate venv |
+| `bash: npm: command not found` | Node.js not installed or PATH missing | Install Node.js 18+ and open a fresh terminal session |
+| `ModuleNotFoundError: No module named 'src'` | Python search path (`PYTHONPATH`) not set | In Windows PowerShell: `$env:PYTHONPATH=(Get-Location).Path` / In Unix: `export PYTHONPATH=$(pwd)` |
+| `Port 8000 or 5173 already in use` | Zombie or lingering background process | Run uvicorn with alternative port (`--port 8001`) or terminate the conflicting process |
+
+#### 2. Application Failures (Runtime & Service Connectivity)
+
+| Symptom | Probable Cause | Action / Resolution |
+|---------|----------------|---------------------|
+| `ServerSelectionTimeoutError` / `Connection refused (27017)` | MongoDB container inactive | Verify Docker engine is running (`docker ps`) and start container via `docker start tha-mongo` |
+| `Network Error` / `CORS error` in Browser Console | Backend `.env` origins mismatch | Ensure `ALLOWED_ORIGINS` in `backend/.env` includes the frontend origin (`http://localhost:5173`) |
+| `401 Unauthorized` on API requests | Invalid or expired JWT signing secrets | Verify `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` in `backend/.env` and re-authenticate |
+| `500 Internal Server Error` on assessment submit | Database schema or collection uninitialized | Check FastAPI traceback logs or inspect endpoint behavior directly in Swagger UI (`http://localhost:8000/docs`) |
 
 ## Quick Functional Validation
 

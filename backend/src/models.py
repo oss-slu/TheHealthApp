@@ -325,3 +325,109 @@ class HealthRiskOutput(BaseModel):
                 "Please consult a healthcare professional for medical advice.",
         description="Medical disclaimer"
     )
+
+# --- Goal Management Schemas (#184) ---
+class GoalTypeEnum(str, Enum):
+    steps = "steps"
+    exercise = "exercise"
+    water = "water"
+    sleep = "sleep"
+    medication = "medication"
+    custom = "custom"
+
+
+class GoalFrequencyEnum(str, Enum):
+    daily = "daily"
+    weekly = "weekly"
+    monthly = "monthly"
+
+
+class GoalStatusEnum(str, Enum):
+    active = "active"
+    paused = "paused"
+    completed = "completed"
+    archived = "archived"
+
+
+class GoalDocument(Document):
+    """Database model for user goals."""
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    user_id: uuid.UUID = Indexed()
+    
+    title: str = Field(min_length=1, max_length=100)
+    goal_type: GoalTypeEnum
+    target_value: float = Field(gt=0, description="Target value to achieve")
+    unit: str = Field(min_length=1, max_length=20, description="e.g. steps, mins, ml, hours")
+    frequency: GoalFrequencyEnum
+    
+    start_date: datetime = Field(default_factory=datetime.utcnow)
+    end_date: Optional[datetime] = None
+    
+    current_value: float = Field(default=0.0, ge=0)
+    status: GoalStatusEnum = GoalStatusEnum.active
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "goals"
+
+
+class GoalCreate(BaseModel):
+    """Schema for defining and creating a new goal."""
+    title: str = Field(..., min_length=1, max_length=100)
+    goal_type: GoalTypeEnum
+    target_value: float = Field(..., gt=0)
+    unit: str = Field(..., min_length=1, max_length=20)
+    frequency: GoalFrequencyEnum
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+
+    @model_validator(mode="after")
+    def validate_dates(self):
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValueError("end_date must be greater than or equal to start_date")
+        return self
+
+
+class GoalUpdate(BaseModel):
+    """Schema for updating goal targets, rules, or status."""
+    title: Optional[str] = Field(None, min_length=1, max_length=100)
+    target_value: Optional[float] = Field(None, gt=0)
+    unit: Optional[str] = Field(None, min_length=1, max_length=20)
+    frequency: Optional[GoalFrequencyEnum] = None
+    current_value: Optional[float] = Field(None, ge=0)
+    status: Optional[GoalStatusEnum] = None
+    end_date: Optional[datetime] = None
+
+
+class GoalResponse(BaseModel):
+    """Schema for returning goal details with completion status."""
+    id: uuid.UUID
+    user_id: uuid.UUID
+    title: str
+    goal_type: GoalTypeEnum
+    target_value: float
+    unit: str
+    frequency: GoalFrequencyEnum
+    start_date: datetime
+    end_date: Optional[datetime] = None
+    current_value: float = 0.0
+    status: GoalStatusEnum = GoalStatusEnum.active
+    is_completed: bool = False
+    progress_percentage: float = 0.0
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+    @model_validator(mode="after")
+    def compute_completion(self):
+        if self.target_value and self.target_value > 0:
+            val = self.current_value or 0.0
+            pct = round((val / self.target_value) * 100, 1)
+            self.progress_percentage = min(pct, 100.0)
+            if val >= self.target_value:
+                self.is_completed = True
+        return self

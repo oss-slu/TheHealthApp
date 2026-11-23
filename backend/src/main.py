@@ -85,7 +85,10 @@ from .models import (
     user_has_valid_consent,
     Questionnaire,
     QuestionnaireSubmit,
-
+    GoalDocument,
+    GoalCreate,
+    GoalUpdate,
+    GoalResponse,
 )
 from .risk_calculator import calculate_health_risk
 
@@ -171,7 +174,7 @@ def _mongo_connection_string() -> str:
 async def lifespan(app: FastAPI):
     await init_beanie(
         connection_string=_mongo_connection_string(),
-        document_models=[User, RevokedToken, Questionnaire],
+        document_models=[User, RevokedToken, Questionnaire, GoalDocument],
     )
     print("Database connection established.")
     yield
